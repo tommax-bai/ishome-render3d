@@ -1,0 +1,71 @@
+[project]
+name = "render3d-svc"
+version = "0.1.0"
+description = "三维管线 worker：scene-compile / base-render（场景编译与底渲），GPU + 三维引擎伸缩轴（V1.4 物理拆分）"
+requires-python = ">=3.12"
+dependencies = [
+  "ishome-contracts",
+  "temporalio>=1.8",
+  "pydantic>=2.9",
+]
+
+[project.scripts]
+render3d-worker = "render3d_worker.worker:main"
+
+[tool.uv.sources]
+ishome-contracts = { git = "ssh://git@github.com/tommax-bai/ishome-contracts.git", tag = "v0.2.0", subdirectory = "gen/python" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/render3d_worker"]
+
+[dependency-groups]
+dev = [
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "import-linter>=2.1",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+]
+
+# ---------------------------------------------------------------------------
+# ruff（lint + format）——口径同 ishome-aipipe 根配置
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+# ---------------------------------------------------------------------------
+# mypy（strict）
+# ---------------------------------------------------------------------------
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# ---------------------------------------------------------------------------
+# import-linter：模块依赖方向契约（违规挂质量门）。
+# 规则来源：《开发规范与代码分层》§1.3；禁 utils/common/helpers 目录。
+# ---------------------------------------------------------------------------
+[tool.importlinter]
+root_packages = ["render3d_worker"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "worker 内 worker → activities → models 单向"
+type = "layers"
+layers = ["worker", "activities", "models"]
+containers = ["render3d_worker"]
