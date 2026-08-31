@@ -7,10 +7,16 @@ dependencies = [
   "ishome-contracts",
   "temporalio>=1.8",
   "pydantic>=2.9",
+  # 底渲出的是几何/深度/线稿/遮罩四路控制图，不是写实图——写实化归 imagegen 的 realism-pass。
+  # 这四路是确定性光栅（同 render2d"同一份几何画两次要逐字节相同"的口径），
+  # 所以走纯 Python + numpy 软光栅，不引系统级渲染栈与 GPU 依赖。
+  "numpy>=2.1",
+  "pillow>=11",
 ]
 
 [project.scripts]
 render3d-worker = "render3d_worker.worker:main"
+render3d = "render3d_worker.cli:main"
 
 [tool.uv.sources]
 ishome-contracts = { git = "ssh://git@github.com/tommax-bai/ishome-contracts.git", tag = "v0.2.0", subdirectory = "gen/python" }
@@ -65,7 +71,22 @@ root_packages = ["render3d_worker"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
-name = "worker 内 worker → activities → models 单向"
+name = "worker|cli → activities → scene_compile|base_render → mesh|raster → models 单向"
 type = "layers"
-layers = ["worker", "activities", "models"]
+# 两个入口同层且互不可见（"|" = independent siblings）：`worker` 是 Temporal 入口，
+# `cli` 是本地一条命令出图的工具入口。**cli 不许经 activities**——它是不碰 Temporal 与对象存储的那条路，
+# 从它能看见 activities 起，"本地渲一张图不需要起编排"就只是一句承诺而不是结构。
+#
+# `scene_compile`（编场景包）与 `base_render`（底渲）是两个 activity 各自的域，互不可见：
+# 编场景包不该知道怎么渲，底渲只吃编好的场景包、不该反过来编。各自只向下依赖。
+# `mesh`（2D 几何 → 三维网格构建）与 `raster`（软光栅核心）同样互不可见：
+# 建网格不挑光栅口径，光栅只吃网格、不管它从哪张户型图长出来。
+# `models` 是最底层的纯契约，谁都可以看见它，它谁也看不见。
+layers = [
+  "worker | cli",
+  "activities",
+  "scene_compile | base_render",
+  "mesh | raster",
+  "models",
+]
 containers = ["render3d_worker"]

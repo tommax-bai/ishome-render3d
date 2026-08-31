@@ -1,0 +1,1575 @@
+{
+  "revisionId": "rev-fixture-92sqm-3b2l1b-full",
+  "plan": {
+    "frameWidthPx": 1080,
+    "frameHeightPx": 1466,
+    "planBox": [
+      0.2657407407407407,
+      0.19508867667121418,
+      0.7712962962962963,
+      0.6493860845839018
+    ],
+    "outline": [
+      {
+        "axis": "vertical",
+        "positionRatio": 0.27129629629629626,
+        "startRatio": 0.19508867667121418,
+        "endRatio": 0.6493860845839018,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.7657407407407407,
+        "startRatio": 0.19508867667121418,
+        "endRatio": 0.6493860845839018,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.19918144611186903,
+        "startRatio": 0.2657407407407407,
+        "endRatio": 0.7712962962962963,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.645293315143247,
+        "startRatio": 0.2657407407407407,
+        "endRatio": 0.7712962962962963,
+        "thicknessRatio": 0.008185538881309686
+      }
+    ],
+    "walls": [
+      {
+        "axis": "vertical",
+        "positionRatio": 0.27037037037037037,
+        "startRatio": 0.29263301500682126,
+        "endRatio": 0.39631650750341063,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.27037037037037037,
+        "startRatio": 0.40109140518417463,
+        "endRatio": 0.4488403819918145,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.27037037037037037,
+        "startRatio": 0.4768076398362892,
+        "endRatio": 0.4815825375170532,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.27037037037037037,
+        "startRatio": 0.4863574351978172,
+        "endRatio": 0.640518417462483,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.3787037037037037,
+        "startRatio": 0.40109140518417463,
+        "endRatio": 0.4051841746248295,
+        "thicknessRatio": 0.006481481481481481
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.3787037037037037,
+        "startRatio": 0.43724420190995905,
+        "endRatio": 0.4815825375170532,
+        "thicknessRatio": 0.006481481481481481
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.44166666666666665,
+        "startRatio": 0.29263301500682126,
+        "endRatio": 0.3069577080491132,
+        "thicknessRatio": 0.007407407407407408
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.44166666666666665,
+        "startRatio": 0.31582537517053205,
+        "endRatio": 0.4004092769440655,
+        "thicknessRatio": 0.007407407407407408
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.44166666666666665,
+        "startRatio": 0.4542974079126876,
+        "endRatio": 0.5784447476125512,
+        "thicknessRatio": 0.007407407407407408
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.44166666666666665,
+        "startRatio": 0.5879945429740792,
+        "endRatio": 0.6173260572987722,
+        "thicknessRatio": 0.007407407407407408
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.44166666666666665,
+        "startRatio": 0.6302864938608458,
+        "endRatio": 0.640518417462483,
+        "thicknessRatio": 0.007407407407407408
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.4898148148148148,
+        "startRatio": 0.20327421555252387,
+        "endRatio": 0.2837653478854025,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.4898148148148148,
+        "startRatio": 0.29263301500682126,
+        "endRatio": 0.3069577080491132,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.5962962962962963,
+        "startRatio": 0.3601637107776262,
+        "endRatio": 0.39836289222373805,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.5962962962962963,
+        "startRatio": 0.5791268758526603,
+        "endRatio": 0.58731241473397,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.5962962962962963,
+        "startRatio": 0.6439290586630286,
+        "endRatio": 0.6493860845839018,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6148148148148148,
+        "startRatio": 0.21828103683492497,
+        "endRatio": 0.2257844474761255,
+        "thicknessRatio": 0.006481481481481481
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6148148148148148,
+        "startRatio": 0.45497953615279674,
+        "endRatio": 0.6493860845839018,
+        "thicknessRatio": 0.006481481481481481
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6333333333333333,
+        "startRatio": 0.20327421555252387,
+        "endRatio": 0.31105047748976805,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6333333333333333,
+        "startRatio": 0.31582537517053205,
+        "endRatio": 0.3519781718963165,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6333333333333333,
+        "startRatio": 0.3601637107776262,
+        "endRatio": 0.3635743519781719,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6333333333333333,
+        "startRatio": 0.3908594815825375,
+        "endRatio": 0.39836289222373805,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6333333333333333,
+        "startRatio": 0.6030013642564802,
+        "endRatio": 0.6098226466575716,
+        "thicknessRatio": 0.011111111111111112
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.7351851851851852,
+        "startRatio": 0.4072305593451569,
+        "endRatio": 0.4508867667121419,
+        "thicknessRatio": 0.010185185185185186
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.762962962962963,
+        "startRatio": 0.4590723055934516,
+        "endRatio": 0.5784447476125512,
+        "thicknessRatio": 0.020370370370370372
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.762962962962963,
+        "startRatio": 0.5914051841746248,
+        "endRatio": 0.602319236016371,
+        "thicknessRatio": 0.020370370370370372
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.1984993178717599,
+        "startRatio": 0.5,
+        "endRatio": 0.5212962962962963,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.1984993178717599,
+        "startRatio": 0.6064814814814815,
+        "endRatio": 0.6277777777777778,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.22169167803547066,
+        "startRatio": 0.6129629629629629,
+        "endRatio": 0.6277777777777778,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.2878581173260573,
+        "startRatio": 0.2759259259259259,
+        "endRatio": 0.2962962962962963,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.2878581173260573,
+        "startRatio": 0.4185185185185185,
+        "endRatio": 0.43796296296296294,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.2878581173260573,
+        "startRatio": 0.45,
+        "endRatio": 0.48333333333333334,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.3117326057298772,
+        "startRatio": 0.2759259259259259,
+        "endRatio": 0.2759259259259259,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.3117326057298772,
+        "startRatio": 0.45,
+        "endRatio": 0.48333333333333334,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.3117326057298772,
+        "startRatio": 0.4898148148148148,
+        "endRatio": 0.5074074074074074,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.3117326057298772,
+        "startRatio": 0.587037037037037,
+        "endRatio": 0.6277777777777778,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.35607094133697137,
+        "startRatio": 0.44537037037037036,
+        "endRatio": 0.44537037037037036,
+        "thicknessRatio": 0.007503410641200546
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.35607094133697137,
+        "startRatio": 0.6027777777777777,
+        "endRatio": 0.6277777777777778,
+        "thicknessRatio": 0.007503410641200546
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.2759259259259259,
+        "endRatio": 0.387037037037037,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.4351851851851852,
+        "endRatio": 0.43796296296296294,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.6027777777777777,
+        "endRatio": 0.6435185185185185,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.7027777777777777,
+        "endRatio": 0.7296296296296296,
+        "thicknessRatio": 0.008185538881309686
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.3824074074074074,
+        "endRatio": 0.387037037037037,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.4351851851851852,
+        "endRatio": 0.43796296296296294,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.6185185185185185,
+        "endRatio": 0.6231481481481481,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.6722222222222223,
+        "endRatio": 0.7296296296296296,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.7407407407407407,
+        "endRatio": 0.7601851851851852,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.7712962962962963,
+        "endRatio": 0.7712962962962963,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.48362892223738063,
+        "startRatio": 0.27685185185185185,
+        "endRatio": 0.375,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.48362892223738063,
+        "startRatio": 0.44537037037037036,
+        "endRatio": 0.44537037037037036,
+        "thicknessRatio": 0.004092769440654843
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.5832196452933152,
+        "startRatio": 0.45,
+        "endRatio": 0.4888888888888889,
+        "thicknessRatio": 0.008867667121418827
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.5832196452933152,
+        "startRatio": 0.5962962962962963,
+        "endRatio": 0.6074074074074074,
+        "thicknessRatio": 0.008867667121418827
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.5832196452933152,
+        "startRatio": 0.7398148148148148,
+        "endRatio": 0.7518518518518519,
+        "thicknessRatio": 0.008867667121418827
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6064120054570259,
+        "startRatio": 0.6185185185185185,
+        "endRatio": 0.6287037037037037,
+        "thicknessRatio": 0.007503410641200546
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6064120054570259,
+        "startRatio": 0.7398148148148148,
+        "endRatio": 0.7518518518518519,
+        "thicknessRatio": 0.007503410641200546
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6234652114597544,
+        "startRatio": 0.2759259259259259,
+        "endRatio": 0.2759259259259259,
+        "thicknessRatio": 0.01296043656207367
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6234652114597544,
+        "startRatio": 0.41759259259259257,
+        "endRatio": 0.4305555555555556,
+        "thicknessRatio": 0.01296043656207367
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.2759259259259259,
+        "endRatio": 0.2962962962962963,
+        "thicknessRatio": 0.0068212824010914054
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.41759259259259257,
+        "endRatio": 0.4305555555555556,
+        "thicknessRatio": 0.0068212824010914054
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.45,
+        "endRatio": 0.4787037037037037,
+        "thicknessRatio": 0.0068212824010914054
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.5879629629629629,
+        "endRatio": 0.6074074074074074,
+        "thicknessRatio": 0.0068212824010914054
+      }
+    ],
+    "openings": [
+      {
+        "axis": "vertical",
+        "positionRatio": 0.27037037037037037,
+        "startRatio": 0.4495225102319236,
+        "endRatio": 0.4761255115961801,
+        "isOnOuterWall": true,
+        "connects": [
+          "卫生间"
+        ]
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.44166666666666665,
+        "startRatio": 0.40109140518417463,
+        "endRatio": 0.4536152796725784,
+        "isOnOuterWall": false,
+        "connects": [
+          "卫生间",
+          "餐厅"
+        ]
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.5962962962962963,
+        "startRatio": 0.5879945429740792,
+        "endRatio": 0.6432469304229195,
+        "isOnOuterWall": false,
+        "connects": [
+          "阳台"
+        ]
+      },
+      {
+        "axis": "vertical",
+        "positionRatio": 0.6333333333333333,
+        "startRatio": 0.36425648021828105,
+        "endRatio": 0.39017735334242837,
+        "isOnOuterWall": true,
+        "connects": [
+          "餐厅"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.1984993178717599,
+        "startRatio": 0.5222222222222223,
+        "endRatio": 0.6055555555555555,
+        "isOnOuterWall": true,
+        "connects": [
+          "厨房"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.2878581173260573,
+        "startRatio": 0.2972222222222222,
+        "endRatio": 0.41759259259259257,
+        "isOnOuterWall": true,
+        "connects": [
+          "小孩房"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.38796296296296295,
+        "endRatio": 0.43425925925925923,
+        "isOnOuterWall": false,
+        "connects": [
+          "小孩房",
+          "卫生间"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.4388888888888889,
+        "endRatio": 0.6018518518518519,
+        "isOnOuterWall": false,
+        "connects": [
+          "餐厅",
+          "客厅"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.4004092769440655,
+        "startRatio": 0.6444444444444445,
+        "endRatio": 0.7018518518518518,
+        "isOnOuterWall": true,
+        "connects": [
+          "玄关"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.456343792633015,
+        "startRatio": 0.6240740740740741,
+        "endRatio": 0.6712962962962963,
+        "isOnOuterWall": false,
+        "connects": [
+          "玄关",
+          "次卧"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.48362892223738063,
+        "startRatio": 0.37592592592592594,
+        "endRatio": 0.4444444444444444,
+        "isOnOuterWall": false,
+        "connects": [
+          "卫生间",
+          "主卧"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6064120054570259,
+        "startRatio": 0.6296296296296297,
+        "endRatio": 0.7388888888888889,
+        "isOnOuterWall": true,
+        "connects": [
+          "次卧"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.2972222222222222,
+        "endRatio": 0.4166666666666667,
+        "isOnOuterWall": true,
+        "connects": [
+          "主卧"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.43148148148148147,
+        "endRatio": 0.44907407407407407,
+        "isOnOuterWall": true,
+        "connects": [
+          "主卧"
+        ]
+      },
+      {
+        "axis": "horizontal",
+        "positionRatio": 0.6459754433833561,
+        "startRatio": 0.47962962962962963,
+        "endRatio": 0.587037037037037,
+        "isOnOuterWall": true,
+        "connects": [
+          "阳台"
+        ]
+      }
+    ],
+    "rooms": [
+      {
+        "name": "客厅",
+        "boxes": [
+          [
+            0.44166666666666665,
+            0.456343792633015,
+            0.4898148148148148,
+            0.48362892223738063
+          ],
+          [
+            0.44166666666666665,
+            0.48362892223738063,
+            0.4898148148148148,
+            0.5832196452933152
+          ],
+          [
+            0.44166666666666665,
+            0.5832196452933152,
+            0.4898148148148148,
+            0.6064120054570259
+          ],
+          [
+            0.4898148148148148,
+            0.4004092769440655,
+            0.5962962962962963,
+            0.456343792633015
+          ],
+          [
+            0.4898148148148148,
+            0.456343792633015,
+            0.5962962962962963,
+            0.48362892223738063
+          ],
+          [
+            0.4898148148148148,
+            0.48362892223738063,
+            0.5962962962962963,
+            0.5832196452933152
+          ],
+          [
+            0.4898148148148148,
+            0.5832196452933152,
+            0.5962962962962963,
+            0.6064120054570259
+          ],
+          [
+            0.5962962962962963,
+            0.456343792633015,
+            0.6148148148148148,
+            0.48362892223738063
+          ],
+          [
+            0.5962962962962963,
+            0.48362892223738063,
+            0.6148148148148148,
+            0.5832196452933152
+          ]
+        ],
+        "areaRatio": 0.1918,
+        "centroid": [
+          0.5299871754897812,
+          0.5110443521449781
+        ]
+      },
+      {
+        "name": "主卧",
+        "boxes": [
+          [
+            0.27037037037037037,
+            0.48362892223738063,
+            0.3787037037037037,
+            0.5832196452933152
+          ],
+          [
+            0.27037037037037037,
+            0.5832196452933152,
+            0.3787037037037037,
+            0.6064120054570259
+          ],
+          [
+            0.27037037037037037,
+            0.6064120054570259,
+            0.3787037037037037,
+            0.6234652114597544
+          ],
+          [
+            0.27037037037037037,
+            0.6234652114597544,
+            0.3787037037037037,
+            0.6459754433833561
+          ],
+          [
+            0.3787037037037037,
+            0.48362892223738063,
+            0.44166666666666665,
+            0.5832196452933152
+          ],
+          [
+            0.3787037037037037,
+            0.5832196452933152,
+            0.44166666666666665,
+            0.6064120054570259
+          ],
+          [
+            0.3787037037037037,
+            0.6064120054570259,
+            0.44166666666666665,
+            0.6234652114597544
+          ],
+          [
+            0.3787037037037037,
+            0.6234652114597544,
+            0.44166666666666665,
+            0.6459754433833561
+          ]
+        ],
+        "areaRatio": 0.1693,
+        "centroid": [
+          0.3560185185185185,
+          0.5648021828103683
+        ]
+      },
+      {
+        "name": "次卧",
+        "boxes": [
+          [
+            0.6148148148148148,
+            0.456343792633015,
+            0.6333333333333333,
+            0.48362892223738063
+          ],
+          [
+            0.6148148148148148,
+            0.48362892223738063,
+            0.6333333333333333,
+            0.5832196452933152
+          ],
+          [
+            0.6148148148148148,
+            0.5832196452933152,
+            0.6333333333333333,
+            0.6064120054570259
+          ],
+          [
+            0.6333333333333333,
+            0.456343792633015,
+            0.7351851851851852,
+            0.48362892223738063
+          ],
+          [
+            0.6333333333333333,
+            0.48362892223738063,
+            0.7351851851851852,
+            0.5832196452933152
+          ],
+          [
+            0.6333333333333333,
+            0.5832196452933152,
+            0.7351851851851852,
+            0.6064120054570259
+          ],
+          [
+            0.7351851851851852,
+            0.456343792633015,
+            0.762962962962963,
+            0.48362892223738063
+          ],
+          [
+            0.7351851851851852,
+            0.48362892223738063,
+            0.762962962962963,
+            0.5832196452933152
+          ]
+        ],
+        "areaRatio": 0.1314,
+        "centroid": [
+          0.6870928418178271,
+          0.5294847836308382
+        ]
+      },
+      {
+        "name": "小孩房",
+        "boxes": [
+          [
+            0.27037037037037037,
+            0.2878581173260573,
+            0.3787037037037037,
+            0.3117326057298772
+          ],
+          [
+            0.27037037037037037,
+            0.3117326057298772,
+            0.3787037037037037,
+            0.35607094133697137
+          ],
+          [
+            0.27037037037037037,
+            0.35607094133697137,
+            0.3787037037037037,
+            0.4004092769440655
+          ],
+          [
+            0.3787037037037037,
+            0.2878581173260573,
+            0.44166666666666665,
+            0.3117326057298772
+          ],
+          [
+            0.3787037037037037,
+            0.3117326057298772,
+            0.44166666666666665,
+            0.35607094133697137
+          ],
+          [
+            0.3787037037037037,
+            0.35607094133697137,
+            0.44166666666666665,
+            0.4004092769440655
+          ]
+        ],
+        "areaRatio": 0.1174,
+        "centroid": [
+          0.3560185185185185,
+          0.34413369713506137
+        ]
+      },
+      {
+        "name": "餐厅",
+        "boxes": [
+          [
+            0.44166666666666665,
+            0.3117326057298772,
+            0.4898148148148148,
+            0.35607094133697137
+          ],
+          [
+            0.44166666666666665,
+            0.35607094133697137,
+            0.4898148148148148,
+            0.4004092769440655
+          ],
+          [
+            0.44166666666666665,
+            0.4004092769440655,
+            0.4898148148148148,
+            0.456343792633015
+          ],
+          [
+            0.4898148148148148,
+            0.2878581173260573,
+            0.5962962962962963,
+            0.3117326057298772
+          ],
+          [
+            0.4898148148148148,
+            0.3117326057298772,
+            0.5962962962962963,
+            0.35607094133697137
+          ],
+          [
+            0.4898148148148148,
+            0.35607094133697137,
+            0.5962962962962963,
+            0.4004092769440655
+          ]
+        ],
+        "areaRatio": 0.1153,
+        "centroid": [
+          0.5146439912194605,
+          0.35879776028914473
+        ]
+      },
+      {
+        "name": "厨房",
+        "boxes": [
+          [
+            0.4898148148148148,
+            0.1984993178717599,
+            0.5962962962962963,
+            0.22169167803547066
+          ],
+          [
+            0.4898148148148148,
+            0.22169167803547066,
+            0.5962962962962963,
+            0.2878581173260573
+          ],
+          [
+            0.5962962962962963,
+            0.1984993178717599,
+            0.6148148148148148,
+            0.22169167803547066
+          ],
+          [
+            0.5962962962962963,
+            0.22169167803547066,
+            0.6148148148148148,
+            0.2878581173260573
+          ],
+          [
+            0.5962962962962963,
+            0.2878581173260573,
+            0.6148148148148148,
+            0.3117326057298772
+          ],
+          [
+            0.5962962962962963,
+            0.3117326057298772,
+            0.6148148148148148,
+            0.35607094133697137
+          ],
+          [
+            0.6148148148148148,
+            0.1984993178717599,
+            0.6333333333333333,
+            0.22169167803547066
+          ],
+          [
+            0.6148148148148148,
+            0.22169167803547066,
+            0.6333333333333333,
+            0.2878581173260573
+          ],
+          [
+            0.6148148148148148,
+            0.2878581173260573,
+            0.6333333333333333,
+            0.3117326057298772
+          ],
+          [
+            0.6148148148148148,
+            0.3117326057298772,
+            0.6333333333333333,
+            0.35607094133697137
+          ]
+        ],
+        "areaRatio": 0.0935,
+        "centroid": [
+          0.5703361791126654,
+          0.2561449075569593
+        ]
+      },
+      {
+        "name": "卫生间",
+        "boxes": [
+          [
+            0.27037037037037037,
+            0.4004092769440655,
+            0.3787037037037037,
+            0.456343792633015
+          ],
+          [
+            0.27037037037037037,
+            0.456343792633015,
+            0.3787037037037037,
+            0.48362892223738063
+          ],
+          [
+            0.3787037037037037,
+            0.4004092769440655,
+            0.44166666666666665,
+            0.456343792633015
+          ],
+          [
+            0.3787037037037037,
+            0.456343792633015,
+            0.44166666666666665,
+            0.48362892223738063
+          ]
+        ],
+        "areaRatio": 0.0868,
+        "centroid": [
+          0.3560185185185185,
+          0.44201909959072305
+        ]
+      },
+      {
+        "name": "玄关",
+        "boxes": [
+          [
+            0.5962962962962963,
+            0.4004092769440655,
+            0.6148148148148148,
+            0.456343792633015
+          ],
+          [
+            0.6148148148148148,
+            0.4004092769440655,
+            0.6333333333333333,
+            0.456343792633015
+          ],
+          [
+            0.6333333333333333,
+            0.4004092769440655,
+            0.7351851851851852,
+            0.456343792633015
+          ]
+        ],
+        "areaRatio": 0.0473,
+        "centroid": [
+          0.6657407407407407,
+          0.42837653478854026
+        ]
+      },
+      {
+        "name": "阳台",
+        "boxes": [
+          [
+            0.44166666666666665,
+            0.6064120054570259,
+            0.4898148148148148,
+            0.6234652114597544
+          ],
+          [
+            0.44166666666666665,
+            0.6234652114597544,
+            0.4898148148148148,
+            0.6459754433833561
+          ],
+          [
+            0.4898148148148148,
+            0.6064120054570259,
+            0.5962962962962963,
+            0.6234652114597544
+          ],
+          [
+            0.4898148148148148,
+            0.6234652114597544,
+            0.5962962962962963,
+            0.6459754433833561
+          ]
+        ],
+        "areaRatio": 0.0372,
+        "centroid": [
+          0.5189814814814815,
+          0.626193724420191
+        ]
+      }
+    ],
+    "cellCoverageRatio": 0.9734
+  },
+  "scale": {
+    "buildingAreaSqm": 92.0,
+    "usableAreaPercent": 80.0
+  },
+  "heights": {
+    "ceilingHeightM": 2.8,
+    "slabThicknessM": 0.12,
+    "doorHeightM": 2.05,
+    "passHeightM": 2.2,
+    "windowSillHeightM": 0.9,
+    "windowHeadHeightM": 2.1,
+    "outerOpeningKind": "window",
+    "innerOpeningKind": "door"
+  },
+  "furnishings": [
+    {
+      "id": "fur-客厅-sofa",
+      "category": "sofa",
+      "room": "客厅",
+      "centerXRatio": 0.511827,
+      "centerYRatio": 0.583388,
+      "widthM": 2.2,
+      "depthM": 0.9,
+      "heightM": 0.8,
+      "yawDeg": 180.0
+    },
+    {
+      "id": "fur-客厅-tv-cabinet",
+      "category": "tv-cabinet",
+      "room": "客厅",
+      "centerXRatio": 0.456974,
+      "centerYRatio": 0.499616,
+      "widthM": 1.8,
+      "depthM": 0.4,
+      "heightM": 0.5,
+      "yawDeg": 90.0
+    },
+    {
+      "id": "fur-客厅-coffee-table",
+      "category": "coffee-table",
+      "room": "客厅",
+      "centerXRatio": 0.529546,
+      "centerYRatio": 0.416385,
+      "widthM": 1.2,
+      "depthM": 0.6,
+      "heightM": 0.42,
+      "yawDeg": 0.0
+    },
+    {
+      "id": "fur-主卧-bed",
+      "category": "bed",
+      "room": "主卧",
+      "centerXRatio": 0.327774,
+      "centerYRatio": 0.532496,
+      "widthM": 1.8,
+      "depthM": 2.0,
+      "heightM": 0.45,
+      "yawDeg": 0.0
+    },
+    {
+      "id": "fur-主卧-wardrobe",
+      "category": "wardrobe",
+      "room": "主卧",
+      "centerXRatio": 0.334152,
+      "centerYRatio": 0.63,
+      "widthM": 2.0,
+      "depthM": 0.6,
+      "heightM": 2.2,
+      "yawDeg": 180.0
+    },
+    {
+      "id": "fur-主卧-nightstand",
+      "category": "nightstand",
+      "room": "主卧",
+      "centerXRatio": 0.427316,
+      "centerYRatio": 0.634698,
+      "widthM": 0.45,
+      "depthM": 0.4,
+      "heightM": 0.55,
+      "yawDeg": 180.0
+    },
+    {
+      "id": "fur-次卧-bed",
+      "category": "bed",
+      "room": "次卧",
+      "centerXRatio": 0.681148,
+      "centerYRatio": 0.491585,
+      "widthM": 1.5,
+      "depthM": 2.0,
+      "heightM": 0.45,
+      "yawDeg": 90.0
+    },
+    {
+      "id": "fur-次卧-wardrobe",
+      "category": "wardrobe",
+      "room": "次卧",
+      "centerXRatio": 0.66584,
+      "centerYRatio": 0.590436,
+      "widthM": 1.6,
+      "depthM": 0.6,
+      "heightM": 2.2,
+      "yawDeg": 180.0
+    },
+    {
+      "id": "fur-次卧-nightstand",
+      "category": "nightstand",
+      "room": "次卧",
+      "centerXRatio": 0.747655,
+      "centerYRatio": 0.571193,
+      "widthM": 0.45,
+      "depthM": 0.4,
+      "heightM": 0.55,
+      "yawDeg": 270.0
+    },
+    {
+      "id": "fur-小孩房-bed",
+      "category": "bed",
+      "room": "小孩房",
+      "centerXRatio": 0.308639,
+      "centerYRatio": 0.336726,
+      "widthM": 1.2,
+      "depthM": 2.0,
+      "heightM": 0.45,
+      "yawDeg": 0.0
+    },
+    {
+      "id": "fur-小孩房-wardrobe",
+      "category": "wardrobe",
+      "room": "小孩房",
+      "centerXRatio": 0.419981,
+      "centerYRatio": 0.316051,
+      "widthM": 1.2,
+      "depthM": 0.6,
+      "heightM": 2.2,
+      "yawDeg": 270.0
+    },
+    {
+      "id": "fur-小孩房-desk",
+      "category": "desk",
+      "room": "小孩房",
+      "centerXRatio": 0.403398,
+      "centerYRatio": 0.384433,
+      "widthM": 1.2,
+      "depthM": 0.6,
+      "heightM": 0.75,
+      "yawDeg": 180.0
+    },
+    {
+      "id": "fur-餐厅-dining-table",
+      "category": "dining-table",
+      "room": "餐厅",
+      "centerXRatio": 0.535969,
+      "centerYRatio": 0.308533,
+      "widthM": 1.4,
+      "depthM": 0.8,
+      "heightM": 0.75,
+      "yawDeg": 0.0
+    },
+    {
+      "id": "fur-餐厅-sideboard",
+      "category": "sideboard",
+      "room": "餐厅",
+      "centerXRatio": 0.456974,
+      "centerYRatio": 0.428151,
+      "widthM": 1.2,
+      "depthM": 0.4,
+      "heightM": 0.85,
+      "yawDeg": 90.0
+    },
+    {
+      "id": "fur-厨房-kitchen-cabinet",
+      "category": "kitchen-cabinet",
+      "room": "厨房",
+      "centerXRatio": 0.511501,
+      "centerYRatio": 0.240788,
+      "widthM": 1.8,
+      "depthM": 0.6,
+      "heightM": 0.85,
+      "yawDeg": 90.0
+    },
+    {
+      "id": "fur-厨房-fridge",
+      "category": "fridge",
+      "room": "厨房",
+      "centerXRatio": 0.608458,
+      "centerYRatio": 0.214945,
+      "widthM": 0.7,
+      "depthM": 0.7,
+      "heightM": 1.85,
+      "yawDeg": 270.0
+    },
+    {
+      "id": "fur-卫生间-vanity",
+      "category": "vanity",
+      "room": "卫生间",
+      "centerXRatio": 0.42317,
+      "centerYRatio": 0.419204,
+      "widthM": 0.8,
+      "depthM": 0.5,
+      "heightM": 0.85,
+      "yawDeg": 270.0
+    },
+    {
+      "id": "fur-卫生间-shower",
+      "category": "shower",
+      "room": "卫生间",
+      "centerXRatio": 0.412965,
+      "centerYRatio": 0.460605,
+      "widthM": 0.9,
+      "depthM": 0.9,
+      "heightM": 2.0,
+      "yawDeg": 180.0
+    },
+    {
+      "id": "fur-卫生间-toilet",
+      "category": "toilet",
+      "room": "卫生间",
+      "centerXRatio": 0.283127,
+      "centerYRatio": 0.418735,
+      "widthM": 0.4,
+      "depthM": 0.7,
+      "heightM": 0.75,
+      "yawDeg": 0.0
+    },
+    {
+      "id": "fur-玄关-shoe-cabinet",
+      "category": "shoe-cabinet",
+      "room": "玄关",
+      "centerXRatio": 0.610009,
+      "centerYRatio": 0.423903,
+      "widthM": 1.0,
+      "depthM": 0.35,
+      "heightM": 1.2,
+      "yawDeg": 90.0
+    },
+    {
+      "id": "fur-玄关-bench",
+      "category": "bench",
+      "room": "玄关",
+      "centerXRatio": 0.721472,
+      "centerYRatio": 0.414506,
+      "widthM": 0.6,
+      "depthM": 0.35,
+      "heightM": 0.45,
+      "yawDeg": 270.0
+    },
+    {
+      "id": "fur-阳台-washer",
+      "category": "washer",
+      "room": "阳台",
+      "centerXRatio": 0.460801,
+      "centerYRatio": 0.622388,
+      "widthM": 0.6,
+      "depthM": 0.6,
+      "heightM": 0.85,
+      "yawDeg": 0.0
+    },
+    {
+      "id": "fur-阳台-storage-cabinet",
+      "category": "storage-cabinet",
+      "room": "阳台",
+      "centerXRatio": 0.580989,
+      "centerYRatio": 0.625207,
+      "widthM": 0.8,
+      "depthM": 0.4,
+      "heightM": 1.0,
+      "yawDeg": 270.0
+    }
+  ],
+  "materials": [
+    {
+      "surface": "floor",
+      "materialId": "mat-floor-oak"
+    },
+    {
+      "surface": "wall",
+      "materialId": "mat-wall-warm-white"
+    },
+    {
+      "surface": "ceiling",
+      "materialId": "mat-ceiling-white"
+    },
+    {
+      "surface": "floor",
+      "materialId": "mat-floor-tile-grey",
+      "room": "厨房"
+    },
+    {
+      "surface": "floor",
+      "materialId": "mat-floor-tile-grey",
+      "room": "卫生间"
+    },
+    {
+      "surface": "floor",
+      "materialId": "mat-floor-tile-grey",
+      "room": "阳台"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-fabric-grey",
+      "category": "bed"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "bench"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "coffee-table"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "desk"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "dining-table"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-appliance-white",
+      "category": "fridge"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "kitchen-cabinet"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "nightstand"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "shoe-cabinet"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-appliance-white",
+      "category": "shower"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "sideboard"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-fabric-grey",
+      "category": "sofa"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "storage-cabinet"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-appliance-white",
+      "category": "toilet"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "tv-cabinet"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "vanity"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-wood-walnut",
+      "category": "wardrobe"
+    },
+    {
+      "surface": "furnishing",
+      "materialId": "mat-appliance-white",
+      "category": "washer"
+    }
+  ],
+  "surfaceMaterials": [
+    {
+      "id": "mat-floor-oak",
+      "baseColorHex": "#C8A97E",
+      "roughnessRatio": 0.7,
+      "metallicRatio": 0.0
+    },
+    {
+      "id": "mat-floor-tile-grey",
+      "baseColorHex": "#CFD2D4",
+      "roughnessRatio": 0.35,
+      "metallicRatio": 0.0
+    },
+    {
+      "id": "mat-wall-warm-white",
+      "baseColorHex": "#EDE8E0",
+      "roughnessRatio": 0.9,
+      "metallicRatio": 0.0
+    },
+    {
+      "id": "mat-ceiling-white",
+      "baseColorHex": "#F7F5F2",
+      "roughnessRatio": 0.95,
+      "metallicRatio": 0.0
+    },
+    {
+      "id": "mat-fabric-grey",
+      "baseColorHex": "#8C8F94",
+      "roughnessRatio": 0.85,
+      "metallicRatio": 0.0
+    },
+    {
+      "id": "mat-wood-walnut",
+      "baseColorHex": "#6B4A2F",
+      "roughnessRatio": 0.55,
+      "metallicRatio": 0.0
+    },
+    {
+      "id": "mat-appliance-white",
+      "baseColorHex": "#F2F3F4",
+      "roughnessRatio": 0.3,
+      "metallicRatio": 0.1
+    }
+  ],
+  "cameras": [
+    {
+      "id": "cam-bird-overview",
+      "kind": "bird",
+      "eyeHeightM": 12.0,
+      "yawDeg": 0.0,
+      "pitchDeg": -90.0,
+      "fovDeg": 50.0
+    },
+    {
+      "id": "cam-room-客厅",
+      "kind": "room",
+      "room": "客厅",
+      "eyeHeightM": 1.55,
+      "yawDeg": 180.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    {
+      "id": "cam-room-次卧",
+      "kind": "room",
+      "room": "次卧",
+      "eyeHeightM": 1.55,
+      "yawDeg": 180.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    {
+      "id": "cam-room-餐厅",
+      "kind": "room",
+      "room": "餐厅",
+      "eyeHeightM": 1.55,
+      "yawDeg": 0.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    {
+      "id": "cam-room-厨房",
+      "kind": "room",
+      "room": "厨房",
+      "eyeHeightM": 1.55,
+      "yawDeg": 0.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    {
+      "id": "cam-room-卫生间",
+      "kind": "room",
+      "room": "卫生间",
+      "eyeHeightM": 1.55,
+      "yawDeg": 270.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    {
+      "id": "cam-room-玄关",
+      "kind": "room",
+      "room": "玄关",
+      "eyeHeightM": 1.55,
+      "yawDeg": 270.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    {
+      "id": "cam-room-阳台",
+      "kind": "room",
+      "room": "阳台",
+      "eyeHeightM": 1.55,
+      "yawDeg": 270.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    }
+  ]
+}
