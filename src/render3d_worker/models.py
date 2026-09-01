@@ -134,8 +134,21 @@ OpeningKind = Literal["door", "window", "pass"]
 class HeightRules(_Contract):
     """竖向那一维的全部数字，集中在一处，**没有一个散在代码里**。
 
-    这些是常识档位不是这户人家的实测值（层高、门高、窗台高）。集中在包里的理由：
-    换一户、换一个楼盘只换数据，代码不动；也让"这张图为什么是这个高度"答得出来。
+    **这一整段是 mock，不是这户人家的实测值**（用户裁决 2026-08-31 夜：*"高度的话，我觉得
+    我们可以按照常规住宅的高度做一个 mock，然后先用来做测试，后续的话我们要求上游给发过来"*）。
+    下面的默认值是**常规住宅档位**：户型图上量不到高度——那是立面的事，平面图一个字都不说，
+    所以在上游给出这户的实测高度之前，三维只能按常规档位起体，否则墙起不来、图出不来。
+
+    **上游什么时候必须给**（触发条件写死，不留悬空）：楼盘资料或业主自己报出这套房的层高时，
+    以它为准；那一步到位之前，本段一直是 mock。**用没用上默认值看得见**——包里不写这一段
+    就是吃默认，场景包的 `heights_source` 会写着 `mock-default`（见 :class:`ScenePackage`）。
+
+    集中在包里的理由：换一户、换一个楼盘只换数据、代码不动；也让"这张图为什么是这个高度"
+    答得出来。
+
+    单位口径**是净高不是层高**：`ceiling_height_m` 是地面完成面到天花完成面（三维里墙就起
+    这么高），层高还要加楼板与地面做法。上游给的若是层高，减掉 `slab_thickness_m` 与地面做法
+    再进这个字段——**换算在填包那一侧做，不在本仓做**（本仓不认识"层高"这个词）。
     """
 
     ceiling_height_m: float = 2.80
@@ -268,6 +281,14 @@ class ScenePackage(_Contract):
     cameras: list[CameraSpec] = Field(default_factory=list)
     bounds_min_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
     bounds_max_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    heights_source: Literal["upstream", "mock-default"] = "mock-default"
+    """竖向那些数字是上游给的，还是吃了 :class:`HeightRules` 的常规住宅档位。
+
+    **mock 与真值要在产出上分得开**（同报告线"draft 或已过期落点进正文、同页必须挂依据标注"
+    那条口径）：一张图是按这户的实测层高起的，还是按常规档位起的，看图的人有权知道。
+    判据＝上游填包时写没写 `heights` 这一段，不看值长什么样——值碰巧等于默认值不代表它是猜的。
+    """
+
     scale_anchor_source: Literal["outline", "plan-box"] = "outline"
     """尺子拿哪块面积当锚：外轮廓围合面积（对的那个），还是退回了外接框。
 

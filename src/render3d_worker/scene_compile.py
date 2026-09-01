@@ -218,6 +218,7 @@ def compile_scene_package(package: DesignPackage) -> ScenePackage:
 
     return ScenePackage(
         revision_id=package.revision_id,
+        heights_source=("upstream" if "heights" in package.model_fields_set else "mock-default"),
         scale_anchor_source=mesh.scale_anchor(plan).source,
         meshes=meshes,
         materials=materials,

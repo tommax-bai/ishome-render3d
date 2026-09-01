@@ -73,6 +73,8 @@ def _print_scene_self_check(scene: ScenePackage) -> None:
         f"  地板面积：{scene.floor_area_sqm:.2f} ㎡"
         f"（与输入套内面积之比 {scene.area_match_ratio:.3f}）"
     )
+    heights = "上游给的" if scene.heights_source == "upstream" else "常规住宅档位（mock）"
+    print(f"  高度：{heights}")
     built = sum(scene.opening_count_by_kind.values())
     print(
         f"  墙段：{scene.wall_segment_count}（跳过退化段 {scene.degenerate_wall_count}）"
