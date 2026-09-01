@@ -1458,43 +1458,43 @@
   "surfaceMaterials": [
     {
       "id": "mat-floor-oak",
-      "baseColorHex": "#C8A97E",
+      "baseColorHex": "#C9AC8A",
       "roughnessRatio": 0.7,
       "metallicRatio": 0.0
     },
     {
       "id": "mat-floor-tile-grey",
-      "baseColorHex": "#CFD2D4",
+      "baseColorHex": "#CDD1D4",
       "roughnessRatio": 0.35,
       "metallicRatio": 0.0
     },
     {
       "id": "mat-wall-warm-white",
-      "baseColorHex": "#EDE8E0",
+      "baseColorHex": "#EAE5DC",
       "roughnessRatio": 0.9,
       "metallicRatio": 0.0
     },
     {
       "id": "mat-ceiling-white",
-      "baseColorHex": "#F7F5F2",
+      "baseColorHex": "#F6F4F0",
       "roughnessRatio": 0.95,
       "metallicRatio": 0.0
     },
     {
       "id": "mat-fabric-grey",
-      "baseColorHex": "#8C8F94",
+      "baseColorHex": "#8E99A6",
       "roughnessRatio": 0.85,
       "metallicRatio": 0.0
     },
     {
       "id": "mat-wood-walnut",
-      "baseColorHex": "#6B4A2F",
+      "baseColorHex": "#9C7A58",
       "roughnessRatio": 0.55,
       "metallicRatio": 0.0
     },
     {
       "id": "mat-appliance-white",
-      "baseColorHex": "#F2F3F4",
+      "baseColorHex": "#E9EDEF",
       "roughnessRatio": 0.3,
       "metallicRatio": 0.1
     }

@@ -154,6 +154,33 @@ def perspective_matrix(
     return proj
 
 
+def orthographic_matrix(
+    half_width_m: float, half_height_m: float, near_m: float, far_m: float
+) -> Float64Array:
+    """正交投影矩阵（视空间 → 裁剪空间），画幅以视轴为中心、半宽半高按米给。
+
+    要它是因为**平行光没有位置只有方向**：从光源那一侧渲深度图时，透视投影会让阴影
+    随"光源摆多远"变形，而平行光本来就摆不出一个远近。正交投影下 ``w`` 恒为 1，
+    :func:`rasterize` 里那套透视校正插值退化成线性插值——正是正交该有的样子，
+    所以这条路不需要另写一个光栅器。
+
+    没有 ``aspect_ratio`` 参数：半宽半高是两个独立的米数（由要框住的东西定），
+    不是"一个张角配一个比例"。
+    """
+    if half_width_m <= 0.0 or half_height_m <= 0.0:
+        raise ValueError(f"正交画幅必须为正：half_width_m={half_width_m} {half_height_m=}")
+    if not 0.0 < near_m < far_m:
+        raise ValueError(f"裁剪面要满足 0 < near < far：near_m={near_m} far_m={far_m}")
+
+    proj = np.zeros((4, 4), dtype=np.float64)
+    proj[0, 0] = 1.0 / half_width_m
+    proj[1, 1] = 1.0 / half_height_m
+    proj[2, 2] = -2.0 / (far_m - near_m)
+    proj[2, 3] = -(far_m + near_m) / (far_m - near_m)
+    proj[3, 3] = 1.0
+    return proj
+
+
 def rasterize(
     triangles_m: npt.ArrayLike,
     tri_mesh_ids: npt.ArrayLike,
