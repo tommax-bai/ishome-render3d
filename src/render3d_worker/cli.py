@@ -28,6 +28,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from render3d_worker.base_render import BaseRenderError, render_base_views
+from render3d_worker.furnish_mock import MockFurnishingReport, build_mock_furnishings
 from render3d_worker.models import BaseRenderViews, DesignPackage, ScenePackage
 from render3d_worker.scene_compile import SceneCompileError, compile_scene_package
 
@@ -82,6 +83,17 @@ def _print_scene_self_check(scene: ScenePackage) -> None:
     )
 
 
+def _print_mock_furnishing_self_check(report: MockFurnishingReport) -> None:
+    """把 mock 家具的自证数打出来。**家具是 mock，不是这户人家的软装决策**——摆放依据
+    只是常规住宅档位（见 `furnish_mock.py` 里每个尺寸常量的 docstring），不是量出来的、
+    也不是设计出来的；只在显式加 `--mock-furnishing` 时才会走到这儿。"""
+    print(f"家具：mock 摆场，{len(report.placements)} 件（常规住宅档位，非实测/非软装设计）")
+    if report.unrecognized_rooms:
+        print(f"  认不出房型，未摆：{'、'.join(report.unrecognized_rooms)}")
+    if report.skipped_items:
+        print(f"  认得房型但摆不下，跳过：{'、'.join(report.skipped_items)}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="render3d",
@@ -93,6 +105,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--width-px", type=int, default=1024)
     parser.add_argument("--height-px", type=int, default=768)
     parser.add_argument("--scene-only", action="store_true", help="只编场景包，不渲图")
+    parser.add_argument(
+        "--mock-furnishing",
+        action="store_true",
+        help="上游没给家具时按常规档位摆一份确定性 mock（测试用，默认关，见 furnish_mock.py）",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -100,6 +117,18 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, ValidationError) as e:
         print(f"读输入包失败：{e}", file=sys.stderr)
         return EXIT_BAD_INPUT
+
+    if args.mock_furnishing:
+        if package.furnishings:
+            # mock 是整份摆场、不是补白——留着输入自带的那几件会和 mock 的挤在一起打架
+            print(
+                f"输入包自带 {len(package.furnishings)} 件家具，"
+                "--mock-furnishing 用 mock 摆场整体替换",
+                file=sys.stderr,
+            )
+        report = build_mock_furnishings(package)
+        package = package.model_copy(update={"furnishings": report.placements})
+        _print_mock_furnishing_self_check(report)
 
     try:
         scene = compile_scene_package(package)
