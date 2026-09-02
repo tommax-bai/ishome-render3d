@@ -667,7 +667,7 @@ def _point_segment_distance_xy(
     ab_len2 = np.einsum("ij,ij->i", ab, ab)
     ratio = np.einsum("ij,ij->i", point_xy - a_xy, ab) / np.where(ab_len2 > 0.0, ab_len2, 1.0)
     closest = a_xy + ab * np.clip(ratio, 0.0, 1.0)[:, None]
-    return np.linalg.norm(point_xy - closest, axis=1)
+    return np.asarray(np.linalg.norm(point_xy - closest, axis=1), dtype=np.float64)
 
 
 def _min_distance_to_triangles_xy(triangles_xy_m: Float64Array, point_xy: Float64Array) -> float:
@@ -756,7 +756,7 @@ def _room_fallback_direction_xy(
     norm = float(np.linalg.norm(direction))
     if norm < DEPTH_MIN_SPAN_M:
         return np.array([0.0, 1.0], dtype=np.float64)
-    return direction / norm
+    return np.asarray(direction / norm, dtype=np.float64)
 
 
 def _room_auto_forward_xy(
