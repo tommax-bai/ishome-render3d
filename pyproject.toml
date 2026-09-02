@@ -43,6 +43,8 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# _iteration/ 放真跑记录与当时用的一次性脚本（写完不改的证据），不是库代码，不按库的行宽查。
+extend-exclude = ["_iteration"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
