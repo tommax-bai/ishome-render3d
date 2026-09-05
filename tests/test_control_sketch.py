@@ -323,10 +323,14 @@ def test_门与窗的符号不同() -> None:
         "窗洞里十字之外出现了线——窗的符号该只是一个十字"
     )
 
-    door_frame = base_render._OpeningFrame("door", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
-    window_frame = base_render._OpeningFrame("window", 0, WINDOW_X_M, y_m, WINDOW_Z_M)
-    entry_frame = base_render._OpeningFrame("entry-door", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
-    passage_frame = base_render._OpeningFrame("passage", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
+    door_frame = base_render._OpeningFrame("door", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
+    window_frame = base_render._OpeningFrame("window", 0, WINDOW_X_M, NORTH_WALL_Y_M, WINDOW_Z_M)
+    entry_frame = base_render._OpeningFrame(
+        "entry-door", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M)
+    )
+    passage_frame = base_render._OpeningFrame(
+        "passage", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M)
+    )
     assert len(base_render._opening_symbol_segments(door_frame)) == 1
     assert len(base_render._opening_symbol_segments(entry_frame)) == 1
     assert len(base_render._opening_symbol_segments(window_frame)) == 2
@@ -341,6 +345,7 @@ def test_洞口形态从网格里读得出来() -> None:
     assert by_kind["door"].along_axis == 0
     assert by_kind["door"].along_m == DOOR_X_M
     assert by_kind["door"].z_m == (0.0, DOOR_TOP_M)
+    assert by_kind["door"].across_m == NORTH_WALL_Y_M
     assert by_kind["door"].across_center_m == WALL_CENTER_Y_M
     assert by_kind["window"].along_m == WINDOW_X_M
     assert by_kind["window"].z_m == WINDOW_Z_M

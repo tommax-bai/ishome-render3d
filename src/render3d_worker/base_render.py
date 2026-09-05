@@ -53,6 +53,11 @@
   上游没给种类（``unknown``）的洞在编场景包时已按档位猜成了门或窗，这儿画的就是猜出来
   那一种的符号（猜了几个、哪几个，场景包 ``guessed_opening_indices`` 说得出）。
   符号画在墙厚的中心平面上，按本机位的深度缓冲做遮挡判断——被墙挡住的洞口，符号也被挡住。
+- **符号方案**（``sketch_symbols``，CLI ``--sketch-symbols``；2026-09-05 晚加，来路＝真跑
+  ``_iteration/run-2026-09-05-opening-kind-realism/``：窗十字 2/3 被读成黑板或带格柜子、门斜线 1/3
+  被画成实体斜条）。上面那段是默认方案 ``diagonal-cross``；其余方案只换洞口内的符号，画的边、
+  编码、尺寸、遮挡判断全同，四路一个字节不动。每个方案的画法在 :data:`SKETCH_SYMBOL_SCHEMES`
+  条目里写死；哪个方案当默认要用户拍，默认值不随实验换（:data:`DEFAULT_SKETCH_SYMBOLS`）。
 - 洞口的**种类**从场景包的洞口表读（``ScenePackage.openings``，2026-09-05 起编场景包时带出，
   每个洞一行：最终种类与来源）；洞口的**框**从网格里读（:func:`_opening_frames`）：切出来的洞
   有 ``reveal:{kind}:{来源}:{墙线号}:{洞号}`` 套框网格，补出来的洞（洞落在两段墙的空隙里，
@@ -76,6 +81,7 @@ from __future__ import annotations
 import io
 import math
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -228,6 +234,56 @@ SKETCH_CONTIGUITY_TOLERANCE_RATIO: float = LINE_DEPTH_TOLERANCE_RATIO
 SKETCH_SYMBOL_DEPTH_TOLERANCE_RATIO: float = LINE_DEPTH_TOLERANCE_RATIO
 """门窗符号做遮挡判断时，符号上的点比深度缓冲远不超过这个比例仍算可见。符号画在墙厚的
 中心平面上，端点正落在洞口侧壁那张面上，与缓冲里的深度只差浮点误差；容差用同一个数。"""
+
+SketchSymbolScheme = Literal["diagonal-cross", "frame-sill", "glazing-hatch", "leaf-swing"]
+SKETCH_SYMBOL_SCHEMES: tuple[SketchSymbolScheme, ...] = (
+    "diagonal-cross",
+    "frame-sill",
+    "glazing-hatch",
+    "leaf-swing",
+)
+"""控制稿门窗符号方案闭集。所有方案：确定性、同编码（黑底白线）、门与窗的符号互不相同、
+过口不画符号、门不在地面上画门槛线。**外框**＝洞口边界在墙厚中心平面上的矩形（门三边、
+窗四边），**内框**＝外框向内缩 :data:`SKETCH_FRAME_INSET_M` 的矩形（窗才有，表示玻璃边）。
+
+- ``diagonal-cross``（默认）：门＝洞内一条左下到右上的斜线；窗＝洞内十字（竖梃 + 横梃）。
+- ``frame-sill``：窗＝外框 + 内框 + 窗台线（洞下沿再向下 :data:`SKETCH_SILL_DROP_M`、两端各
+  伸出 :data:`SKETCH_SILL_OVERHANG_M`，画在朝相机那一侧的墙面上），不画十字；门＝外框 +
+  门扇线（洞内一条通高竖线，离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_M`，
+  表示开着的门扇的可见边），不画斜线。
+- ``glazing-hatch``：窗＝外框 + 内框 + 三条 45° 斜向短划（玻璃反光；起点在内框宽 18%/34%/50%、
+  内框高 55% 处，长 :data:`SKETCH_HATCH_LENGTH_RATIO` × 内框短边，左下向右上），不画十字、
+  不画窗台线；门＝外框 + 门把手（离沿墙坐标大的那侧洞边 :data:`SKETCH_DOOR_HANDLE_EDGE_M`、
+  长 :data:`SKETCH_DOOR_HANDLE_LENGTH_M`、高 :data:`SKETCH_DOOR_HANDLE_HEIGHT_M` 的一条短横）。
+- ``leaf-swing``：门＝外框 + 一扇朝相机这一侧开到 :data:`SKETCH_DOOR_SWING_DEG` 的门扇（铰链在
+  沿墙坐标小的那侧洞边；画门扇的顶边、底边、自由竖边三条线，是三维里的线段、不在墙面上）；
+  窗＝外框 + 内框 + 窗台线 + 中竖梃（双扇平开窗的分扇线），不画横梃。
+"""
+
+DEFAULT_SKETCH_SYMBOLS: SketchSymbolScheme = "diagonal-cross"
+"""默认方案。换默认要用户拍（真跑对比在 ``_iteration/run-2026-09-05-sketch-symbols/``）。"""
+
+SKETCH_FRAME_INSET_M: float = 0.08
+"""内框向内缩的量：窗框型材可见宽 6～8 厘米的常规档位。"""
+
+SKETCH_SILL_DROP_M: float = 0.06
+SKETCH_SILL_OVERHANG_M: float = 0.04
+"""窗台线离洞下沿的距离与两端伸出洞宽的量：窗台板厚 5～6 厘米、两端各出 3～5 厘米的常规档位。"""
+
+SKETCH_DOOR_LEAF_OFFSET_M: float = 0.12
+"""``frame-sill`` 的门扇线离洞边的距离：门扇开到八成时从正面看到的门扇投影宽的量级。"""
+
+SKETCH_HATCH_LENGTH_RATIO: float = 0.30
+"""``glazing-hatch`` 每条短划的长度 ＝ 内框短边 × 它；三条起点按内框尺寸定比例，所以短划
+永远落在内框里（起点最远在宽 50%/高 55%，加 0.30 × 短边 × cos45° 仍不出框）。"""
+
+SKETCH_DOOR_HANDLE_HEIGHT_M: float = 1.00
+SKETCH_DOOR_HANDLE_LENGTH_M: float = 0.12
+SKETCH_DOOR_HANDLE_EDGE_M: float = 0.06
+"""门把手：离地 1 米、执手长 12 厘米、离门扇自由边 6 厘米的常规档位。"""
+
+SKETCH_DOOR_SWING_DEG: float = 45.0
+"""``leaf-swing`` 门扇开到的角度（从墙面量）：斜视机位下门扇既伸进房间、又看得出洞宽。"""
 
 DEPTH_BACKGROUND_U16: int = 0
 DEPTH_MIN_U16: int = 1
@@ -590,8 +646,12 @@ def render_base_views(
     camera_id: str,
     width_px: int = 1024,
     height_px: int = 768,
+    sketch_symbols: SketchSymbolScheme = DEFAULT_SKETCH_SYMBOLS,
 ) -> BaseRenderViews:
     """一份场景包 + 一个机位 → 五路图 + 遮罩索引表 + 自证数。
+
+    ``sketch_symbols`` 只管控制稿里门窗符号的画法（闭集 :data:`SKETCH_SYMBOL_SCHEMES`），
+    其余四路与它无关。
 
     零模型调用、无随机、无时间戳：**同一份场景包渲两次，五张 PNG 逐字节相同**
     （同 render2d 母版那条口径；测试直接断字节相等）。观感那一批（超采样、环境光遮蔽）
@@ -604,6 +664,10 @@ def render_base_views(
     """
     if width_px <= 0 or height_px <= 0:
         raise BaseRenderError(f"画幅必须为正：width_px={width_px} height_px={height_px}")
+    if sketch_symbols not in SKETCH_SYMBOL_SCHEMES:
+        raise BaseRenderError(
+            f"控制稿符号方案认不出：{sketch_symbols}；认得的：{SKETCH_SYMBOL_SCHEMES}"
+        )
     mesh_count = len(scene.meshes)
     if mesh_count + 1 > MASK_MAX_INDEX + 1:
         raise BaseRenderError(f"网格数超出 16 位遮罩索引上限：meshes={mesh_count}")
@@ -638,7 +702,9 @@ def render_base_views(
         depth_png=depth_png,
         line_png=_encode_line_png(buffers, screen),
         mask_png=mask_png,
-        sketch_png=_encode_sketch_png(scene, buffers, screen, view_matrix, proj_matrix, pose),
+        sketch_png=_encode_sketch_png(
+            scene, buffers, screen, view_matrix, proj_matrix, pose, sketch_symbols
+        ),
         width_px=width_px,
         height_px=height_px,
         camera_id=pose.camera_id,
@@ -1766,8 +1832,18 @@ class _OpeningFrame:
     """洞口宽度沿哪根世界轴：0 ＝ x、1 ＝ y。另一根轴就是墙厚方向。"""
 
     along_m: tuple[float, float]
-    across_center_m: float
+    across_m: tuple[float, float]
+    """墙厚方向上墙的两张面（洞壁沿墙厚的起讫）。符号大多画在两者的中点（墙厚中心平面），
+    窗台线画在朝相机那一面上。"""
+
     z_m: tuple[float, float]
+
+    @property
+    def across_center_m(self) -> float:
+        return (self.across_m[0] + self.across_m[1]) * 0.5
+
+
+_Segment = tuple[Float64Array, Float64Array]
 
 
 def _sketch_semantic_code_of_index(scene: ScenePackage) -> npt.NDArray[np.int8]:
@@ -1785,6 +1861,7 @@ def _encode_sketch_png(
     view_matrix: Float64Array,
     proj_matrix: Float64Array,
     pose: CameraPose,
+    sketch_symbols: SketchSymbolScheme,
 ) -> bytes:
     """控制稿路：黑底白线的 8 位灰度 PNG，与线稿同尺寸同编码，**从同一份 1 倍缓冲取**。
 
@@ -1831,7 +1908,7 @@ def _encode_sketch_png(
     canvas[:-1, :] |= mark_a
     canvas[1:, :] |= mark_b
 
-    _draw_opening_symbols(canvas, scene, buffers, view_matrix, proj_matrix, pose.near_clip_m)
+    _draw_opening_symbols(canvas, scene, buffers, view_matrix, proj_matrix, pose, sketch_symbols)
     sketch_u8 = np.where(canvas, SKETCH_FOREGROUND_U8, SKETCH_BACKGROUND_U8).astype(np.uint8)
     return _encode_png(Image.fromarray(sketch_u8, mode="L"))
 
@@ -1990,8 +2067,9 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
                         float(verts_m[:, along_axis].min()),
                         float(verts_m[:, along_axis].max()),
                     ),
-                    across_center_m=float(
-                        (verts_m[:, across_axis].min() + verts_m[:, across_axis].max()) * 0.5
+                    across_m=(
+                        float(verts_m[:, across_axis].min()),
+                        float(verts_m[:, across_axis].max()),
                     ),
                     z_m=(float(verts_m[:, 2].min()), float(verts_m[:, 2].max())),
                 )
@@ -2022,8 +2100,9 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
                     float(lintel_m[:, along_axis].min()),
                     float(lintel_m[:, along_axis].max()),
                 ),
-                across_center_m=float(
-                    (lintel_m[:, across_axis].min() + lintel_m[:, across_axis].max()) * 0.5
+                across_m=(
+                    float(lintel_m[:, across_axis].min()),
+                    float(lintel_m[:, across_axis].max()),
                 ),
                 z_m=(z_bottom_m, float(lintel_m[:, 2].min())),
             )
@@ -2031,30 +2110,162 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
     return frames
 
 
-def _opening_symbol_segments(frame: _OpeningFrame) -> list[tuple[Float64Array, Float64Array]]:
-    """一个洞口的符号线段（世界系，画在墙厚中心平面上）：门与入户门一条斜线、窗一个十字、
-    过口没有。认不出的种类炸，不静默画成空。"""
+def _opening_symbol_segments(
+    frame: _OpeningFrame,
+    scheme: SketchSymbolScheme = DEFAULT_SKETCH_SYMBOLS,
+    viewer_across_sign: float = 1.0,
+) -> list[_Segment]:
+    """一个洞口的符号线段（世界系）。画法按方案，全文见 :data:`SKETCH_SYMBOL_SCHEMES`。
+    过口任何方案都不画；认不出的种类或方案炸，不静默画成空。
 
-    def point(along_m: float, z_m: float) -> Float64Array:
-        xyz = np.zeros(3, dtype=np.float64)
-        xyz[frame.along_axis] = along_m
-        xyz[1 - frame.along_axis] = frame.across_center_m
-        xyz[2] = z_m
-        return xyz
-
-    (along0_m, along1_m), (z0_m, z1_m) = frame.along_m, frame.z_m
-    if frame.kind in ("door", "entry-door"):
-        return [(point(along0_m, z0_m), point(along1_m, z1_m))]
-    if frame.kind == "window":
-        mid_along_m = (along0_m + along1_m) * 0.5
-        mid_z_m = (z0_m + z1_m) * 0.5
-        return [
-            (point(mid_along_m, z0_m), point(mid_along_m, z1_m)),
-            (point(along0_m, mid_z_m), point(along1_m, mid_z_m)),
-        ]
+    ``viewer_across_sign``：相机在墙厚方向的哪一侧（+1 ＝ 沿墙厚轴坐标大的那侧）。只有窗台线
+    （画在朝相机那一面）与 ``leaf-swing`` 的门扇（朝相机开）用它；其余线段在墙厚中心平面上。
+    """
+    if scheme not in SKETCH_SYMBOL_SCHEMES:
+        raise BaseRenderError(f"控制稿符号方案认不出：{scheme}；认得的：{SKETCH_SYMBOL_SCHEMES}")
     if frame.kind == "passage":
         return []
+    if frame.kind == "window":
+        return _window_symbol_segments(frame, scheme, viewer_across_sign)
+    if frame.kind in ("door", "entry-door"):
+        return _door_symbol_segments(frame, scheme, viewer_across_sign)
     raise BaseRenderError(f"洞口种类 {frame.kind} 没有控制稿符号；认得的：{_OPENING_KINDS}")
+
+
+def _frame_point(frame: _OpeningFrame, along_m: float, z_m: float, across_m: float) -> Float64Array:
+    xyz = np.zeros(3, dtype=np.float64)
+    xyz[frame.along_axis] = along_m
+    xyz[1 - frame.along_axis] = across_m
+    xyz[2] = z_m
+    return xyz
+
+
+def _rect_segments(
+    frame: _OpeningFrame,
+    along_m: tuple[float, float],
+    z_m: tuple[float, float],
+    with_bottom: bool,
+) -> list[_Segment]:
+    """墙厚中心平面上的矩形：两根竖边 + 顶边，``with_bottom`` 才有底边（门的底边在地面上，
+    那是门槛线，不画）。矩形退化（宽或高不为正）就一条也不画。"""
+    (a0, a1), (z0, z1) = along_m, z_m
+    if a1 <= a0 or z1 <= z0:
+        return []
+    c = frame.across_center_m
+    segments: list[_Segment] = [
+        (_frame_point(frame, a0, z0, c), _frame_point(frame, a0, z1, c)),
+        (_frame_point(frame, a1, z0, c), _frame_point(frame, a1, z1, c)),
+        (_frame_point(frame, a0, z1, c), _frame_point(frame, a1, z1, c)),
+    ]
+    if with_bottom:
+        segments.append((_frame_point(frame, a0, z0, c), _frame_point(frame, a1, z0, c)))
+    return segments
+
+
+def _inner_rect_m(
+    frame: _OpeningFrame,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
+    inset = SKETCH_FRAME_INSET_M
+    return (a0 + inset, a1 - inset), (z0 + inset, z1 - inset)
+
+
+def _sill_segment(frame: _OpeningFrame, viewer_across_sign: float) -> _Segment:
+    """窗台线：洞下沿再向下一小段、两端各伸出洞宽一点，画在朝相机那一面的墙面上（画在墙厚
+    中心平面会被窗下墙自己挡住）。"""
+    (a0, a1), z0 = frame.along_m, frame.z_m[0]
+    face_m = frame.across_m[1] if viewer_across_sign >= 0.0 else frame.across_m[0]
+    z_m = z0 - SKETCH_SILL_DROP_M
+    return (
+        _frame_point(frame, a0 - SKETCH_SILL_OVERHANG_M, z_m, face_m),
+        _frame_point(frame, a1 + SKETCH_SILL_OVERHANG_M, z_m, face_m),
+    )
+
+
+def _window_symbol_segments(
+    frame: _OpeningFrame, scheme: SketchSymbolScheme, viewer_across_sign: float
+) -> list[_Segment]:
+    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
+    c = frame.across_center_m
+    if scheme == "diagonal-cross":
+        mid_along_m = (a0 + a1) * 0.5
+        mid_z_m = (z0 + z1) * 0.5
+        return [
+            (_frame_point(frame, mid_along_m, z0, c), _frame_point(frame, mid_along_m, z1, c)),
+            (_frame_point(frame, a0, mid_z_m, c), _frame_point(frame, a1, mid_z_m, c)),
+        ]
+    inner_along_m, inner_z_m = _inner_rect_m(frame)
+    segments = _rect_segments(frame, frame.along_m, frame.z_m, with_bottom=True)
+    segments += _rect_segments(frame, inner_along_m, inner_z_m, with_bottom=True)
+    if scheme == "frame-sill":
+        segments.append(_sill_segment(frame, viewer_across_sign))
+        return segments
+    if scheme == "glazing-hatch":
+        (g0, g1), (gz0, gz1) = inner_along_m, inner_z_m
+        width_m, height_m = g1 - g0, gz1 - gz0
+        if width_m <= 0.0 or height_m <= 0.0:
+            return segments
+        step_m = SKETCH_HATCH_LENGTH_RATIO * min(width_m, height_m) * math.cos(math.radians(45.0))
+        for along_ratio in (0.18, 0.34, 0.50):
+            start_along_m = g0 + width_m * along_ratio
+            start_z_m = gz0 + height_m * 0.55
+            segments.append(
+                (
+                    _frame_point(frame, start_along_m, start_z_m, c),
+                    _frame_point(frame, start_along_m + step_m, start_z_m + step_m, c),
+                )
+            )
+        return segments
+    if scheme == "leaf-swing":
+        segments.append(_sill_segment(frame, viewer_across_sign))
+        mid_along_m = (a0 + a1) * 0.5
+        segments.append(
+            (_frame_point(frame, mid_along_m, z0, c), _frame_point(frame, mid_along_m, z1, c))
+        )
+        return segments
+    raise BaseRenderError(f"控制稿符号方案认不出：{scheme}；认得的：{SKETCH_SYMBOL_SCHEMES}")
+
+
+def _door_symbol_segments(
+    frame: _OpeningFrame, scheme: SketchSymbolScheme, viewer_across_sign: float
+) -> list[_Segment]:
+    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
+    c = frame.across_center_m
+    if scheme == "diagonal-cross":
+        return [(_frame_point(frame, a0, z0, c), _frame_point(frame, a1, z1, c))]
+    segments = _rect_segments(frame, frame.along_m, frame.z_m, with_bottom=False)
+    if scheme == "frame-sill":
+        leaf_along_m = a0 + SKETCH_DOOR_LEAF_OFFSET_M
+        if leaf_along_m < a1:
+            segments.append(
+                (_frame_point(frame, leaf_along_m, z0, c), _frame_point(frame, leaf_along_m, z1, c))
+            )
+        return segments
+    if scheme == "glazing-hatch":
+        handle_z_m = z0 + SKETCH_DOOR_HANDLE_HEIGHT_M
+        handle_to_m = a1 - SKETCH_DOOR_HANDLE_EDGE_M
+        handle_from_m = max(a0, handle_to_m - SKETCH_DOOR_HANDLE_LENGTH_M)
+        if handle_from_m < handle_to_m and handle_z_m < z1:
+            segments.append(
+                (
+                    _frame_point(frame, handle_from_m, handle_z_m, c),
+                    _frame_point(frame, handle_to_m, handle_z_m, c),
+                )
+            )
+        return segments
+    if scheme == "leaf-swing":
+        width_m = a1 - a0
+        swing = math.radians(SKETCH_DOOR_SWING_DEG)
+        sign = 1.0 if viewer_across_sign >= 0.0 else -1.0
+        free_along_m = a0 + width_m * math.cos(swing)
+        free_across_m = c + sign * width_m * math.sin(swing)
+        hinge_bottom = _frame_point(frame, a0, z0, c)
+        hinge_top = _frame_point(frame, a0, z1, c)
+        free_bottom = _frame_point(frame, free_along_m, z0, free_across_m)
+        free_top = _frame_point(frame, free_along_m, z1, free_across_m)
+        segments += [(hinge_bottom, free_bottom), (hinge_top, free_top), (free_bottom, free_top)]
+        return segments
+    raise BaseRenderError(f"控制稿符号方案认不出：{scheme}；认得的：{SKETCH_SYMBOL_SCHEMES}")
 
 
 def _draw_opening_symbols(
@@ -2063,11 +2274,16 @@ def _draw_opening_symbols(
     buffers: RasterBuffers,
     view_matrix: Float64Array,
     proj_matrix: Float64Array,
-    near_clip_m: float,
+    pose: CameraPose,
+    scheme: SketchSymbolScheme,
 ) -> None:
     for frame in _opening_frames(scene):
-        for start_m, end_m in _opening_symbol_segments(frame):
-            _draw_segment(canvas, start_m, end_m, view_matrix, proj_matrix, buffers, near_clip_m)
+        eye_across_m = float(pose.eye_m[1 - frame.along_axis])
+        viewer_across_sign = 1.0 if eye_across_m >= frame.across_center_m else -1.0
+        for start_m, end_m in _opening_symbol_segments(frame, scheme, viewer_across_sign):
+            _draw_segment(
+                canvas, start_m, end_m, view_matrix, proj_matrix, buffers, pose.near_clip_m
+            )
 
 
 def _draw_segment(
@@ -2175,9 +2391,12 @@ def _encode_png(image: Image.Image) -> bytes:
 
 
 __all__ = [
+    "DEFAULT_SKETCH_SYMBOLS",
+    "SKETCH_SYMBOL_SCHEMES",
     "BaseRenderError",
     "CameraPose",
     "RoomViewCheck",
+    "SketchSymbolScheme",
     "render_base_views",
     "resolve_camera_pose",
 ]

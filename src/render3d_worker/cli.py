@@ -13,7 +13,8 @@
     {camera_id}/geometry.png    几何：材质分色 + 固定方向明暗
     {camera_id}/depth.png       深度：16 位，还原回米要用 near_m/far_m
     {camera_id}/line.png        线稿：几何事实边，保真度尺子的输入，不做图像滤波猜边
-    {camera_id}/sketch.png      控制稿：给线稿生图控制通道画的（画法见 base_render 模块 docstring）
+    {camera_id}/sketch.png      控制稿：给线稿生图控制通道画的（画法见 base_render 模块 docstring；
+                                门窗符号方案由 --sketch-symbols 选，默认 diagonal-cross）
     {camera_id}/mask.png        遮罩：索引图，0 是背景
     {camera_id}/mask-index.json 索引表：index → 网格 id / 语义 / 房间 / 像素数
 """
@@ -28,7 +29,12 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from render3d_worker.base_render import BaseRenderError, render_base_views
+from render3d_worker.base_render import (
+    DEFAULT_SKETCH_SYMBOLS,
+    SKETCH_SYMBOL_SCHEMES,
+    BaseRenderError,
+    render_base_views,
+)
 from render3d_worker.furnish_mock import MockFurnishingReport, build_mock_furnishings
 from render3d_worker.models import BaseRenderViews, DesignPackage, ScenePackage
 from render3d_worker.scene_compile import SceneCompileError, compile_scene_package
@@ -116,6 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--height-px", type=int, default=768)
     parser.add_argument("--scene-only", action="store_true", help="只编场景包，不渲图")
     parser.add_argument(
+        "--sketch-symbols",
+        choices=SKETCH_SYMBOL_SCHEMES,
+        default=DEFAULT_SKETCH_SYMBOLS,
+        help="控制稿门窗符号方案（画法见 base_render.SKETCH_SYMBOL_SCHEMES）；其余四路不受它影响",
+    )
+    parser.add_argument(
         "--mock-furnishing",
         action="store_true",
         help="上游没给家具时按常规档位摆一份确定性 mock（测试用，默认关，见 furnish_mock.py）",
@@ -164,7 +176,9 @@ def main(argv: list[str] | None = None) -> int:
     failed_camera_ids: list[str] = []
     for camera_id in camera_ids:
         try:
-            views = render_base_views(scene, camera_id, args.width_px, args.height_px)
+            views = render_base_views(
+                scene, camera_id, args.width_px, args.height_px, args.sketch_symbols
+            )
         except BaseRenderError as e:
             # 一台失败不拦着别的机位：每台机位各自独立，失败的那台不出图、最后一并报出来
             # 并以非零退出——响亮，但不把能出的图也扣下
