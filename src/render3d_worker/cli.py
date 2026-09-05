@@ -84,6 +84,11 @@ def _print_scene_self_check(scene: ScenePackage) -> None:
         f"  墙段：{scene.wall_segment_count}（跳过退化段 {scene.degenerate_wall_count}）"
         f"  洞：{scene.opening_count_by_kind} 共 {built} 个"
     )
+    guessed = "、".join(str(index) for index in scene.guessed_opening_indices) or "无"
+    print(
+        f"  按档位猜的洞（上游 kind=unknown，外墙＝窗/内墙＝门）："
+        f"{scene.guessed_opening_count} 个，下标 {guessed}"
+    )
 
 
 def _print_mock_furnishing_self_check(report: MockFurnishingReport) -> None:

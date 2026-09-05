@@ -325,10 +325,12 @@ def test_门与窗的符号不同() -> None:
 
     door_frame = base_render._OpeningFrame("door", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
     window_frame = base_render._OpeningFrame("window", 0, WINDOW_X_M, y_m, WINDOW_Z_M)
-    pass_frame = base_render._OpeningFrame("pass", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
+    entry_frame = base_render._OpeningFrame("entry-door", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
+    passage_frame = base_render._OpeningFrame("passage", 0, DOOR_X_M, y_m, (0.0, DOOR_TOP_M))
     assert len(base_render._opening_symbol_segments(door_frame)) == 1
+    assert len(base_render._opening_symbol_segments(entry_frame)) == 1
     assert len(base_render._opening_symbol_segments(window_frame)) == 2
-    assert base_render._opening_symbol_segments(pass_frame) == []
+    assert base_render._opening_symbol_segments(passage_frame) == []
 
 
 def test_洞口形态从网格里读得出来() -> None:

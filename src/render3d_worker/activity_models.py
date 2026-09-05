@@ -121,6 +121,10 @@ class SceneCompileReceipt(BaseModel):
     wall_segment_count: int
     degenerate_wall_count: int
     opening_count_by_kind: dict[str, int]
+    guessed_opening_count: int
+    guessed_opening_indices: list[int]
+    """按档位猜了种类的洞（上游 `kind=unknown`）有几个、是哪几个——同场景包里的那两个数。"""
+
     heights_source: str
     scale_anchor_source: str
     camera_ids: list[str]

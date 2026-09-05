@@ -189,8 +189,10 @@ async def test_scene_compile_写场景包并回键与自证数() -> None:
     assert receipt["area_match_ratio"] == scene.area_match_ratio > 0
     assert receipt["wall_segment_count"] == scene.wall_segment_count
     assert receipt["degenerate_wall_count"] == scene.degenerate_wall_count
-    # README：15 个洞（外墙 9 / 内墙 6）
+    # README：15 个洞（外墙 9 / 内墙 6）；这份包的洞没有 kind，全部按档位猜，猜了几个回执要说
     assert sum(receipt["opening_count_by_kind"].values()) == 15
+    assert receipt["guessed_opening_count"] == 15
+    assert receipt["guessed_opening_indices"] == list(range(15))
     assert receipt["heights_source"] == "mock-default", "minimal 包整段不写 heights，吃的是默认"
     assert receipt["scale_anchor_source"] == "outline"
     assert receipt["camera_ids"] == [BIRD_CAMERA_ID]

@@ -258,7 +258,7 @@ class _RoomFrame:
         )
 
 
-_DOORLIKE_KINDS: frozenset[OpeningKind] = frozenset({"door", "pass"})
+_DOORLIKE_KINDS: frozenset[OpeningKind] = frozenset({"door", "passage", "entry-door"})
 """留净空只为"人要走过去的洞"——窗不算，家具靠窗摆是室内设计常规做法。"""
 
 

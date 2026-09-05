@@ -161,6 +161,8 @@ class SceneCompiler:
             wall_segment_count=scene.wall_segment_count,
             degenerate_wall_count=scene.degenerate_wall_count,
             opening_count_by_kind=dict(scene.opening_count_by_kind),
+            guessed_opening_count=scene.guessed_opening_count,
+            guessed_opening_indices=list(scene.guessed_opening_indices),
             heights_source=scene.heights_source,
             scale_anchor_source=scene.scale_anchor_source,
             camera_ids=[camera.id for camera in scene.cameras],

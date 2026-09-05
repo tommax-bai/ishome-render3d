@@ -5,7 +5,7 @@
 1. **攒网格**——壳体与家具都交给 `mesh`，这一层不碰坐标换算，也不认识"墙该多厚"。
 2. **指派材质**——按 :class:`~render3d_worker.models.MaterialAssignment` 从细到粗匹配，
    一条都匹配不上就落到中性材质；**中性材质会如实进场景包的材质表**，不静默。
-3. **算自证数**——地板面积、面积吻合率、墙段数、洞数、三角形数。
+3. **算自证数**——地板面积、面积吻合率、墙段数、洞数（按最终种类）、按档位猜了几个洞、三角形数。
 
 **不设死阈值。** 面积对不上到什么程度算失败，要有真跑数据才定（《纪律·阈值有数据才定》）——
 今天只把 `area_match_ratio` 算出来带出去。真该炸的是"根本编不出来"那几种：几何为空、
@@ -197,7 +197,7 @@ def compile_scene_package(package: DesignPackage) -> ScenePackage:
             *mesh.build_shell(plan, package.scale, package.heights),
             *mesh.build_furnishings(package.furnishings, plan, package.scale, package.heights),
         ]
-        openings_by_kind = mesh.count_openings_by_kind(plan, package.scale, package.heights)
+        openings = mesh.opening_report(plan, package.scale, package.heights)
         target_area_sqm = mesh.usable_area_sqm(package.scale)
     except mesh.MeshBuildError as error:
         raise SceneCompileError(f"网格建不出来：{error}") from error
@@ -231,6 +231,11 @@ def compile_scene_package(package: DesignPackage) -> ScenePackage:
         area_match_ratio=round(floor_area_sqm / target_area_sqm, _REPORT_DECIMALS),
         wall_segment_count=sum(1 for block in meshes if block.semantic == "wall"),
         degenerate_wall_count=len(mesh.degenerate_wall_ids(plan, package.scale)),
-        opening_count_by_kind=openings_by_kind,
+        opening_count_by_kind=mesh.count_openings_by_kind(openings),
+        openings=openings,
+        guessed_opening_count=sum(1 for entry in openings if entry.kind_source == "guessed"),
+        guessed_opening_indices=[
+            entry.opening_index for entry in openings if entry.kind_source == "guessed"
+        ],
         triangle_count=sum(len(block.triangles) for block in meshes),
     )

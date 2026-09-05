@@ -45,17 +45,21 @@
 - **不画**：地面上房间之间的分界线（两块地板共面相接——没有墙的地方，地面上不许有线）、
   天花与墙的交线、天花分区线、同一面墙被切成几块之后的共面接缝（墙段/过梁/窗下墙之间，
   外轮廓与网格墙重合的段之间）。
-- **门与窗的符号不同**（判据＝同一张图上门和窗的符号不同）：**门**画到地面——门洞侧壁与
-  地面相交的地脚线画、地面上不画门槛线——洞口内画**一条从洞口左下角到右上角的斜线**
-  （门扇线）；**窗**离地有窗台线（窗下墙顶面与窗下墙立面的折边），洞口内画**一个十字**
-  （竖梃在洞口宽度中点通高、横梃在洞口高度中点通宽）。过口（``pass``）洞口内不画符号。
+- **符号按洞的最终种类画**（判据＝同一张图上门和窗的符号不同）：**门**（``door``，入户门
+  ``entry-door`` 同）画到地面——门洞侧壁与地面相交的地脚线画、地面上不画门槛线——洞口内画
+  **一条从洞口左下角到右上角的斜线**（门扇线）；**窗**（``window``）离地有窗台线（窗下墙顶面
+  与窗下墙立面的折边），洞口内画**一个十字**（竖梃在洞口宽度中点通高、横梃在洞口高度中点
+  通宽）；**过口**（``passage``）洞口内不画符号——它没有门扇、没有窗台，只有洞口轮廓。
+  上游没给种类（``unknown``）的洞在编场景包时已按档位猜成了门或窗，这儿画的就是猜出来
+  那一种的符号（猜了几个、哪几个，场景包 ``guessed_opening_indices`` 说得出）。
   符号画在墙厚的中心平面上，按本机位的深度缓冲做遮挡判断——被墙挡住的洞口，符号也被挡住。
-- 洞口的形态从场景包的网格里读（:func:`_opening_frames`）：切出来的洞有
-  ``reveal:{kind}:…`` 套框网格，种类直接读 id；补出来的洞（洞落在两段墙的空隙里，见 mesh
-  ``_layout_openings``）没有套框，只有 ``wall:fill:{i}:lintel`` 过梁块与（窗才有的）
-  ``wall:fill:{i}:sill`` 窗下墙块——有窗下墙按窗画、没有按门画（过口在这一形态下与门
-  分不开，按门画）。id 格式是 mesh 那一层写死的；场景包契约下一次改动那一批把洞口表带进
-  场景包，这段 id 解析随之退掉。
+- 洞口的**种类**从场景包的洞口表读（``ScenePackage.openings``，2026-09-05 起编场景包时带出，
+  每个洞一行：最终种类与来源）；洞口的**框**从网格里读（:func:`_opening_frames`）：切出来的洞
+  有 ``reveal:{kind}:{来源}:{墙线号}:{洞号}`` 套框网格，补出来的洞（洞落在两段墙的空隙里，
+  见 mesh ``_layout_openings``）没有套框，只有 ``wall:fill:{洞号}:lintel`` 过梁块与（窗才有的）
+  ``wall:fill:{洞号}:sill`` 窗下墙块，洞号回指洞口表。场景包没有洞口表时（2026-09-05 之前编的
+  老场景包）退回按网格 id 读：套框读 id 里的种类，补出来的洞有窗下墙按窗画、没有按门画——
+  这条退路分不开门与过口，所以只给老包用。
 
 线稿与控制稿用的是同一套几何量（法向、平面外推），差别只在**画不画的取舍**：线稿全画；
 控制稿先把相邻像素对分成"共面接缝 / 折边 / 遮挡边 / 轮廓"四种（:func:`_sketch_pair_marks`），
@@ -1749,7 +1753,8 @@ _SKETCH_SEMANTIC_CODE: dict[MeshSemantic, int] = {
 }
 """网格语义 → 控制稿取舍用的整数码，0 留给背景（没打到几何）。"""
 
-_OPENING_KINDS: tuple[str, ...] = ("door", "window", "pass")
+_OPENING_KINDS: tuple[str, ...] = ("door", "window", "passage", "entry-door")
+"""控制稿认得的洞口种类（同 models ``OpeningKind`` 去掉 ``unknown``：起了体的洞没有"不知道"）。"""
 
 
 @dataclass(frozen=True)
@@ -1928,12 +1933,38 @@ def _reveal_along_axis(mesh_id: str, verts_m: Float64Array, triangles: Float64Ar
     raise BaseRenderError(f"洞口套框没有竖直的洞壁面，定不出洞口方向：mesh_id={mesh_id}")
 
 
+def _opening_kind_of_index(scene: ScenePackage) -> dict[str, str]:
+    """洞口表：洞号（输入包里的下标，字符串形态同 id 里的写法）→ 最终种类。老包为空。"""
+    kinds: dict[str, str] = {}
+    for entry in scene.openings:
+        if entry.kind not in _OPENING_KINDS:
+            raise BaseRenderError(
+                f"洞口表里第 {entry.opening_index} 个洞的种类是 {entry.kind}：控制稿没有它的符号"
+            )
+        kinds[str(entry.opening_index)] = entry.kind
+    return kinds
+
+
+def _kind_from_table_or(scene_kinds: dict[str, str], opening_index: str, fallback: str) -> str:
+    """洞口表里有这个洞就用表里的种类；没有洞口表（老包）才用从网格 id 读出来的。
+
+    表里有别的洞、独缺这一个，是场景包自己前后不一致，炸——不替它挑一种。
+    """
+    if not scene_kinds:
+        return fallback
+    kind = scene_kinds.get(opening_index)
+    if kind is None:
+        raise BaseRenderError(f"场景包有洞口表，但第 {opening_index} 个洞不在表里：网格与表对不上")
+    return kind
+
+
 def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
-    """从场景包的网格里读出每个洞口的框与种类（来路与 id 格式见模块 docstring）。
+    """从场景包里读出每个洞口的框与种类（来路与 id 格式见模块 docstring）。
 
     次序写死：切出来的洞按套框网格在场景包里的次序，补出来的洞按过梁块在场景包里的次序、
     排在后面——次序进了符号的绘制序，绘制序进了像素（后画的覆盖先画的，虽然都是白）。
     """
+    scene_kinds = _opening_kind_of_index(scene)
     frames: list[_OpeningFrame] = []
     fills: dict[str, dict[str, Float64Array]] = {}
     for mesh in scene.meshes:
@@ -1942,11 +1973,12 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
             continue
         verts_m = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3)
         if parts[0] == "reveal" and len(parts) >= 2:
-            kind = parts[1]
-            if kind not in _OPENING_KINDS:
+            id_kind = parts[1]
+            if id_kind not in _OPENING_KINDS:
                 raise BaseRenderError(
                     f"洞口套框的 id 里种类认不出：mesh_id={mesh.id}；认得的：{_OPENING_KINDS}"
                 )
+            kind = _kind_from_table_or(scene_kinds, parts[-1], id_kind)
             index = np.asarray(mesh.triangles, dtype=np.int64).reshape(-1, 3)
             along_axis = _reveal_along_axis(mesh.id, verts_m, verts_m[index])
             across_axis = 1 - along_axis
@@ -1967,7 +1999,7 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
         elif len(parts) >= 4 and parts[0] == "wall" and parts[1] == "fill":
             fills.setdefault(parts[2], {})[parts[3]] = verts_m
 
-    for blocks in fills.values():
+    for opening_index, blocks in fills.items():
         lintel_m = blocks.get("lintel")
         if lintel_m is None:
             # 过梁块薄到没起体（洞顶就是天花）：这个洞从地面通到天花，没有框可挂符号，
@@ -1982,7 +2014,9 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
         z_bottom_m = float(sill_m[:, 2].max()) if sill_m is not None else 0.0
         frames.append(
             _OpeningFrame(
-                kind="window" if sill_m is not None else "door",
+                kind=_kind_from_table_or(
+                    scene_kinds, opening_index, "window" if sill_m is not None else "door"
+                ),
                 along_axis=along_axis,
                 along_m=(
                     float(lintel_m[:, along_axis].min()),
@@ -1998,7 +2032,8 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
 
 
 def _opening_symbol_segments(frame: _OpeningFrame) -> list[tuple[Float64Array, Float64Array]]:
-    """一个洞口的符号线段（世界系，画在墙厚中心平面上）：门一条斜线、窗一个十字、过口没有。"""
+    """一个洞口的符号线段（世界系，画在墙厚中心平面上）：门与入户门一条斜线、窗一个十字、
+    过口没有。认不出的种类炸，不静默画成空。"""
 
     def point(along_m: float, z_m: float) -> Float64Array:
         xyz = np.zeros(3, dtype=np.float64)
@@ -2008,7 +2043,7 @@ def _opening_symbol_segments(frame: _OpeningFrame) -> list[tuple[Float64Array, F
         return xyz
 
     (along0_m, along1_m), (z0_m, z1_m) = frame.along_m, frame.z_m
-    if frame.kind == "door":
+    if frame.kind in ("door", "entry-door"):
         return [(point(along0_m, z0_m), point(along1_m, z1_m))]
     if frame.kind == "window":
         mid_along_m = (along0_m + along1_m) * 0.5
@@ -2017,7 +2052,9 @@ def _opening_symbol_segments(frame: _OpeningFrame) -> list[tuple[Float64Array, F
             (point(mid_along_m, z0_m), point(mid_along_m, z1_m)),
             (point(along0_m, mid_z_m), point(along1_m, mid_z_m)),
         ]
-    return []
+    if frame.kind == "passage":
+        return []
+    raise BaseRenderError(f"洞口种类 {frame.kind} 没有控制稿符号；认得的：{_OPENING_KINDS}")
 
 
 def _draw_opening_symbols(

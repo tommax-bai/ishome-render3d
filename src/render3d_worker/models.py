@@ -37,6 +37,23 @@ class _Contract(BaseModel):
 PlanAxis = Literal["vertical", "horizontal"]
 
 
+class PlanWallBand(_Contract):
+    """墙上的一段实测墙带：同段内一个厚度，墨宽一变就换段（产出侧 2026-09-01 起给）。
+
+    `start_ratio`/`end_ratio` 沿墙方向，与 :class:`PlanWall` 的起讫同分母；`face_low_ratio`/
+    `face_high_ratio` 是墙带两面的位置（与 `position_ratio` 同分母），厚度＝两面之差。
+
+    **本仓今天只收不消费**：起体仍按 :attr:`PlanWall.thickness_ratio`（整条线一个厚度）。
+    收下它是因为几何那一族是产出侧的逐字对面（`extra=forbid`），产出侧写了这个字段、
+    这儿不认就读不进来。按段厚度起体的时点＝墙体按段起体那一批（要用户拍）。
+    """
+
+    start_ratio: float
+    end_ratio: float
+    face_low_ratio: float
+    face_high_ratio: float
+
+
 class PlanWall(_Contract):
     """一段墙：轴向、所在位置、起讫、墙厚，全部归一化到整图（0~1，左上角为原点）。
 
@@ -50,15 +67,37 @@ class PlanWall(_Contract):
     start_ratio: float
     end_ratio: float
     thickness_ratio: float
+    bands: list[PlanWallBand] = Field(default_factory=list)
+
+
+OpeningKind = Literal["door", "window", "passage", "entry-door", "unknown"]
+"""洞口类型闭集，**与产出侧逐字一致**（aipipe `models.OpeningKind`，2026-09-05）。
+
+`passage` 是没有门扇的过口；`entry-door` 是入户门（外轮廓上带门弧的洞，全户唯一）；
+`unknown` 是**推不出**，不是"大概是门"——三维遇到它才退到 :class:`HeightRules` 的档位猜法，
+并把"猜了"这件事带进场景包（:attr:`ScenePackage.guessed_opening_count`）。
+
+版本对照：2026-09-05 之前本仓的闭集是 `door | window | pass`，`pass` 改名 `passage`
+（跟产出侧的字），`entry-door` 与 `unknown` 是同一天新加的。`HeightRules.pass_height_m`
+这个字段名**没改**：它是上游填的那半的字段，值的含义（过口净高）不变，改名只会让填包那侧
+再对一次表。
+"""
+
+GuessedOpeningKind = Literal["door", "window", "passage"]
+"""档位猜法能猜出来的种类：只有这三种有各自的高度档位。`unknown` 不许作猜的结果
+（猜出一个"不知道"等于没猜），`entry-door` 也不许（入户门全户唯一，猜不出来）。"""
 
 
 class PlanOpening(_Contract):
     """墙线上的一个洞：坐标口径同 :class:`PlanWall`。
 
-    **产出侧这一层不分门与窗**，只分洞在外墙还是内墙。三维绕不开这件事——墙上挖多高的
-    洞取决于它是门还是窗，所以本仓按 :class:`HeightRules` 里写死的规则从
-    `is_on_outer_wall` 推出 :data:`OpeningKind`，**推法是确定性的、写在一处**，
-    产出侧补上门窗识别那一批之后改这一处即可（那时本字段升为上游直给）。
+    `kind` 是产出侧 2026-09-05 起给的洞口类型（由确定性代码从像素里推：门弧、跨洞平行线；
+    推不出即 `unknown` 并在 `kind_evidence` 里写为什么）。三维绕不开类型——墙上挖多高的洞
+    取决于它是门还是窗——所以本仓**先读 `kind`**，只有 `unknown` 才退到 :class:`HeightRules`
+    里的档位猜法（外墙＝窗、内墙＝门），推法写在 mesh ``resolve_opening_kind`` 一处。
+
+    **缺省是 `unknown` 不是 `door`**：没跑过类型推断的老产物读进来就是"不知道"，
+    走猜法并计数，而不是悄悄全当门。
     """
 
     axis: PlanAxis
@@ -68,6 +107,11 @@ class PlanOpening(_Contract):
     is_on_outer_wall: bool
     connects: list[str] = Field(default_factory=list)
     """这个洞两侧的房间名。三维用得上：门洞的两侧地面要连起来，遮罩才不会把一户切成孤岛。"""
+
+    kind: OpeningKind = "unknown"
+    kind_evidence: str = ""
+    """给出 `kind` 的依据（哪样证据、量到多少）；`unknown` 时写的是为什么推不出。
+    给人读的，不进规则。"""
 
 
 class RoomOutline(_Contract):
@@ -103,6 +147,8 @@ class FloorplanGeometry(_Contract):
     openings: list[PlanOpening] = Field(default_factory=list)
     rooms: list[RoomOutline] = Field(default_factory=list)
     cell_coverage_ratio: float = 0.0
+    opening_kind_coverage_ratio: float = 0.0
+    """产出侧的自证数：非 `unknown` 类型的洞占全部洞的比例。老产物没有这个数，读作 0。"""
 
 
 # ---------------------------------------------------------------------------
@@ -123,9 +169,6 @@ class PlanScale(_Contract):
 
     building_area_sqm: float
     usable_area_percent: float = 80.0
-
-
-OpeningKind = Literal["door", "window", "pass"]
 
 
 class HeightRules(_Contract):
@@ -154,10 +197,11 @@ class HeightRules(_Contract):
     pass_height_m: float = 2.20
     window_sill_height_m: float = 0.90
     window_head_height_m: float = 2.10
-    outer_opening_kind: OpeningKind = "window"
-    """外墙上的洞按什么算——产出侧不分门窗时的确定性推法（内墙洞按 `inner_opening_kind`）。"""
+    outer_opening_kind: GuessedOpeningKind = "window"
+    """产出侧给不出类型（`kind == "unknown"`）时，外墙上的洞按什么算；内墙洞按
+    `inner_opening_kind`。**这是退路不是主路**：产出侧给了 `kind` 的洞不经这两条。"""
 
-    inner_opening_kind: OpeningKind = "door"
+    inner_opening_kind: GuessedOpeningKind = "door"
 
 
 class FurnishingPlacement(_Contract):
@@ -247,6 +291,22 @@ class DesignPackage(_Contract):
 
 MeshSemantic = Literal["floor", "ceiling", "wall", "reveal", "furnishing"]
 
+OpeningKindSource = Literal["upstream", "guessed"]
+
+
+class SceneOpening(_Contract):
+    """场景包里一个洞的身份：输入里的第几个、最终按什么种类起的体、这个种类是谁定的。
+
+    `kind` 永远不是 `unknown`——起体必须有一个种类，上游没给就按档位猜，猜了记 `guessed`。
+    `placed` 为 False 的洞没落到任何一道墙上（同直线上一段墙都没有），没起体、不计入
+    `opening_count_by_kind`。
+    """
+
+    opening_index: int
+    kind: OpeningKind
+    kind_source: OpeningKindSource
+    placed: bool = True
+
 
 class Mesh(_Contract):
     """一块三角网格，米制右手系：x 向右、y 向里、z 向上。
@@ -310,6 +370,19 @@ class ScenePackage(_Contract):
     """
 
     opening_count_by_kind: dict[str, int] = Field(default_factory=dict)
+    """真做出来的洞按**最终**种类报数（上游给的与猜出来的合在一起数；猜了几个看下面两个字段）。"""
+
+    openings: list[SceneOpening] = Field(default_factory=list)
+    """每个洞的最终种类与来源，按输入次序。控制稿按它画门窗符号；老场景包没有这张表。"""
+
+    guessed_opening_count: int = 0
+    guessed_opening_indices: list[int] = Field(default_factory=list)
+    """按档位猜的洞有几个、是哪几个（输入包 `plan.openings` 里的下标）。
+
+    上游没给类型（`unknown`）的洞才会猜；猜了就要看得见——一张图上的门是上游认出来的
+    还是我们按内墙猜的，看图的人有权知道（口径同 `heights_source`）。
+    """
+
     triangle_count: int = 0
 
 

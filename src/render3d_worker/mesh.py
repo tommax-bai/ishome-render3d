@@ -38,10 +38,12 @@ from render3d_worker.models import (
     Mesh,
     MeshSemantic,
     OpeningKind,
+    OpeningKindSource,
     PlanAxis,
     PlanOpening,
     PlanScale,
     PlanWall,
+    SceneOpening,
 )
 
 UNASSIGNED_MATERIAL_ID = "material:unassigned"
@@ -63,8 +65,10 @@ _COORD_DECIMALS = 6
 """顶点坐标留到微米。再往下的位数是浮点残差不是几何，留着只会让两次编译的
 JSON 差在末位——确定性是这一层的红线。"""
 
-_KIND_ORDER: tuple[OpeningKind, ...] = ("door", "window", "pass")
-"""洞的种类在报数时的固定次序。次序写死是为了同一份输入数出来的字典逐字相同。"""
+_KIND_ORDER: tuple[OpeningKind, ...] = ("door", "window", "passage", "entry-door")
+"""洞的种类在报数时的固定次序（同产出侧闭集的次序）。次序写死是为了同一份输入数出来的
+字典逐字相同。`unknown` 不在里面：起了体的洞没有"不知道"这一种
+（见 :func:`resolve_opening_kind`）。"""
 
 
 class MeshBuildError(Exception):
@@ -366,23 +370,46 @@ def _axis_base_xy(
 # ---------------------------------------------------------------------------
 
 
-def opening_kind(opening: PlanOpening, heights: HeightRules) -> OpeningKind:
-    """这个洞算门、算窗还是算过口。**确定性推法，只写在这一处。**
+@dataclass(frozen=True)
+class ResolvedOpeningKind:
+    """一个洞最终按什么种类起体、这个种类是谁定的。`kind` 永远不是 `unknown`。"""
 
-    产出侧这一层只分洞在外墙还是内墙、不分门与窗（口径见 models.py
-    :class:`~render3d_worker.models.PlanOpening`），而三维绕不开这件事——挖多高的洞
-    取决于它是门还是窗。规则本身是数据（`HeightRules.outer_opening_kind` 与
-    `inner_opening_kind`），换法只换包。产出侧补上门窗识别那一批之后改这一处。
+    kind: OpeningKind
+    source: OpeningKindSource
+
+
+def resolve_opening_kind(opening: PlanOpening, heights: HeightRules) -> ResolvedOpeningKind:
+    """这个洞算门、窗、过口还是入户门。**先读上游，读不到才猜；判法只写在这一处。**
+
+    产出侧 2026-09-05 起给 `kind`（从像素里推的门弧、跨洞平行线；推不出写 `unknown`）。
+    给了就用它，来源记 `upstream`；只有 `unknown` 才退到档位猜法——外墙按
+    `HeightRules.outer_opening_kind`、内墙按 `inner_opening_kind`——来源记 `guessed`。
+    猜是退路不是主路：猜了几个、猜的是哪几个，随场景包带出去
+    （:attr:`~render3d_worker.models.ScenePackage.guessed_opening_indices`）。
+
+    `unknown` **不许默认成门**：上游说"推不出"，这儿按档位猜一个是为了能起体，
+    但猜出来的门与上游认出来的门在产物上必须分得开。
     """
-    return heights.outer_opening_kind if opening.is_on_outer_wall else heights.inner_opening_kind
+    if opening.kind != "unknown":
+        return ResolvedOpeningKind(opening.kind, "upstream")
+    guessed = heights.outer_opening_kind if opening.is_on_outer_wall else heights.inner_opening_kind
+    return ResolvedOpeningKind(guessed, "guessed")
+
+
+def opening_kind(opening: PlanOpening, heights: HeightRules) -> OpeningKind:
+    """只要最终种类、不问来源时用这个（家具 mock 留门前净空用）。"""
+    return resolve_opening_kind(opening, heights).kind
 
 
 def _opening_z_range(kind: OpeningKind, heights: HeightRules) -> tuple[float, float]:
-    if kind == "door":
+    """一种洞竖向占的那一段（米）。入户门按门起体；过口按过口净高、落地、无窗台。"""
+    if kind in ("door", "entry-door"):
         return (0.0, heights.door_height_m)
-    if kind == "pass":
+    if kind == "passage":
         return (0.0, heights.pass_height_m)
-    return (heights.window_sill_height_m, heights.window_head_height_m)
+    if kind == "window":
+        return (heights.window_sill_height_m, heights.window_head_height_m)
+    raise MeshBuildError(f"洞的种类是 {kind}：没有这一种的高度档位，起不了体")
 
 
 def _check_heights(heights: HeightRules) -> None:
@@ -421,6 +448,7 @@ class _Cut:
 
     opening_index: int
     kind: OpeningKind
+    kind_source: OpeningKindSource
     start_ratio: float
     end_ratio: float
     z_bottom_m: float
@@ -437,6 +465,7 @@ class _GapFill:
 
     opening_index: int
     kind: OpeningKind
+    kind_source: OpeningKindSource
     axis: PlanAxis
     start_ratio: float
     end_ratio: float
@@ -522,9 +551,19 @@ def _cuts_on_line(line: _WallLine, openings: list[PlanOpening], heights: HeightR
         end_ratio = min(high_ratio, max(opening.start_ratio, opening.end_ratio))
         if end_ratio <= start_ratio:
             continue
-        kind = opening_kind(opening, heights)
-        z_bottom_m, z_top_m = _opening_z_range(kind, heights)
-        found.append(_Cut(index, kind, start_ratio, end_ratio, z_bottom_m, z_top_m))
+        resolved = resolve_opening_kind(opening, heights)
+        z_bottom_m, z_top_m = _opening_z_range(resolved.kind, heights)
+        found.append(
+            _Cut(
+                index,
+                resolved.kind,
+                resolved.source,
+                start_ratio,
+                end_ratio,
+                z_bottom_m,
+                z_top_m,
+            )
+        )
     found.sort(key=lambda cut: (cut.start_ratio, cut.end_ratio, cut.opening_index))
     accepted: list[_Cut] = []
     for cut in found:
@@ -600,13 +639,14 @@ def _layout_openings(
         if anchor is None:
             unplaced.append(index)
             continue
-        kind = opening_kind(opening, heights)
-        z_bottom_m, z_top_m = _opening_z_range(kind, heights)
+        resolved = resolve_opening_kind(opening, heights)
+        z_bottom_m, z_top_m = _opening_z_range(resolved.kind, heights)
         start_ratio, end_ratio = sorted((opening.start_ratio, opening.end_ratio))
         fills.append(
             _GapFill(
                 opening_index=index,
-                kind=kind,
+                kind=resolved.kind,
+                kind_source=resolved.source,
                 axis=opening.axis,
                 start_ratio=start_ratio,
                 end_ratio=end_ratio,
@@ -620,35 +660,40 @@ def _layout_openings(
     return _OpeningLayout(lines, cuts_per_line, fills, unplaced)
 
 
-def built_opening_kinds(
+def opening_report(
     plan: FloorplanGeometry, scale: PlanScale, heights: HeightRules
-) -> list[OpeningKind]:
-    """**真做出来的**那些洞各是什么种类，按输入次序（切出来的和补出来的都算）。
+) -> list[SceneOpening]:
+    """每个洞的最终种类、种类来源、有没有真落到墙上——按输入次序，一个洞一行。
 
-    数的不是输入里有几个洞，是几个洞真落到了墙上。少掉的那些在
-    :attr:`_OpeningLayout.unplaced_opening_indices` 里，判读方式是一句减法：
-    `sum(opening_count_by_kind.values())` 对不上 `len(plan.openings)`，就是有洞落在了
-    没有墙的地方。**选"计数上少掉"而不是另出一个自证数**，理由有两条：这个数已经能把
-    事情说清楚（少几个就是漏几个），而再加一个字段要改 `models.py` 的契约，得两侧一起动。
-
-    一个洞同时落在外轮廓与网格墙上（重合的段）只数一次。
+    `placed` 为 False 的洞在 :attr:`_OpeningLayout.unplaced_opening_indices` 里
+    （同直线上一段墙都没有），没起体、不计入种类报数。一个洞同时落在外轮廓与网格墙上
+    （重合的段）只算一次。
     """
     ruler = _Ruler(plan, scale)
     layout = _layout_openings(plan, ruler, heights)
     placed = {cut.opening_index for cuts in layout.cuts_per_line for cut in cuts}
     placed.update(fill.opening_index for fill in layout.fills)
-    return [
-        opening_kind(opening, heights)
-        for index, opening in enumerate(plan.openings)
-        if index in placed
-    ]
+    report: list[SceneOpening] = []
+    for index, opening in enumerate(plan.openings):
+        resolved = resolve_opening_kind(opening, heights)
+        report.append(
+            SceneOpening(
+                opening_index=index,
+                kind=resolved.kind,
+                kind_source=resolved.source,
+                placed=index in placed,
+            )
+        )
+    return report
 
 
-def count_openings_by_kind(
-    plan: FloorplanGeometry, scale: PlanScale, heights: HeightRules
-) -> dict[str, int]:
-    """真做出来的洞按种类报数。次序按 :data:`_KIND_ORDER` 写死，一个都没有的种类不出现。"""
-    kinds = built_opening_kinds(plan, scale, heights)
+def count_openings_by_kind(openings: list[SceneOpening]) -> dict[str, int]:
+    """真做出来的洞按最终种类报数。次序按 :data:`_KIND_ORDER` 写死，一个都没有的种类不出现。
+
+    数的不是输入里有几个洞，是几个洞真落到了墙上：`sum(...)` 对不上 `len(plan.openings)`，
+    就是有洞落在了没有墙的地方（哪几个看 :func:`opening_report` 里 `placed` 为 False 的行）。
+    """
+    kinds = [entry.kind for entry in openings if entry.placed]
     return {kind: kinds.count(kind) for kind in _KIND_ORDER if kind in kinds}
 
 
