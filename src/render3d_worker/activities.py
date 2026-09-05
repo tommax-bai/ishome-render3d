@@ -32,7 +32,7 @@ import time
 from collections.abc import Callable, Coroutine
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from temporalio import activity
 
 from render3d_worker.activity_models import (
@@ -283,15 +283,13 @@ class BaseViewRenderer:
     def _put_views(self, root: KeyRoot, views: BaseRenderViews) -> RenderedView:
         """一台机位的各路写桶，返回键与自证数（耗时由调用方填）。任一路写失败即上抛。
 
-        第五路 `sketch.png` 与取景自证数 `room_view`：纯库这一版有就写、没有就 `None`
-        （它们在另一条分支上加进 :class:`BaseRenderViews`，本层不硬依赖）。
+        五路图逐路必写（第五路 `sketch.png` 自 2026-09-05 合流起是纯库的必填产物）；取景自证数
+        `room_view` 只有 `room` 机位才有，`bird` 机位为 `None`，原样带出。
         遮罩索引表与 CLI 写本地 `mask-index.json` 逐字同形（by_alias + 缩进 2）。
         """
         camera_id = views.camera_id
         mask_index = [entry.model_dump(by_alias=True) for entry in views.mask_index]
         mask_index_bytes = json.dumps(mask_index, ensure_ascii=False, indent=2).encode("utf-8")
-        sketch_png: bytes | None = getattr(views, "sketch_png", None)
-        room_view_model: BaseModel | None = getattr(views, "room_view", None)
         return RenderedView(
             camera_id=camera_id,
             geometry_key=self._store.put(
@@ -303,18 +301,14 @@ class BaseViewRenderer:
             mask_index_key=self._store.put(
                 root.view_key(camera_id, MASK_INDEX_FILE), mask_index_bytes
             ),
-            sketch_key=(
-                None
-                if sketch_png is None
-                else self._store.put(root.view_key(camera_id, SKETCH_FILE), sketch_png)
-            ),
+            sketch_key=self._store.put(root.view_key(camera_id, SKETCH_FILE), views.sketch_png),
             width_px=views.width_px,
             height_px=views.height_px,
             covered_pixel_ratio=views.covered_pixel_ratio,
             near_m=views.near_m,
             far_m=views.far_m,
             mask_entry_count=len(views.mask_index),
-            room_view=None if room_view_model is None else room_view_model.model_dump(),
+            room_view=None if views.room_view is None else views.room_view.model_dump(),
             elapsed_seconds=0.0,
         )
 

@@ -19,9 +19,6 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-RenderTier = Literal["preview", "final"]
-"""渲染两档：失效传播默认只重算 preview，final 由用户显式请求或交付节点触发。"""
-
 
 class _Contract(BaseModel):
     """契约基类：camelCase 别名对齐产出侧的序列化；`extra=forbid` 拒收多出来的字段。
@@ -317,40 +314,12 @@ class ScenePackage(_Contract):
 
 
 # ---------------------------------------------------------------------------
-# 四、两个 activity 的出入参：都吃对象键（CLI 那条路吃同一份契约的本地 JSON）
+# 四、底渲的产物：遮罩索引表、取景自证数、五路图（纯库与 CLI 的返回值）
 # ---------------------------------------------------------------------------
-
-
-class SceneCompileRequest(_Contract):
-    """scene-compile 输入：**activity 吃对象键，不吃本地路径**。
-
-    同解析那条 activity 的先例：包本体在私有桶里，activity 拿键去取。理由是编排里传
-    不动一份包（几何 + 家具 + 材质动辄几百 KB），也不该让 workflow 的历史里躺着业务数据。
-    CLI 那条路吃的是同一个 :class:`DesignPackage`，只是它直接读本地 JSON——**两条路
-    同一份契约、同一段代码**，差别只在数据从哪儿来。
-
-    `design_package_key` 的键模板今天**还没进 contracts 注册表**（那份表里只有报告册与
-    用户上传件两行）。补登记的时点写死＝本仓落桶那一批，与 `scene_package_key`、底渲五路
-    的键一起进表——在那之前 activity 是存根，键只在本模型里作为形态存在。
-    """
-
-    revision_id: str
-    design_package_key: str
-
-
-class BaseRenderRequest(_Contract):
-    """base-render 输入：三维底渲（几何/深度/线稿/遮罩/控制稿五路输出）。
-
-    五路输出是**给下一步当条件图的**（realism-pass 在 imagegen 那仓），不是给人看的成品图，
-    所以这一步既不需要 GPU 也不需要三维引擎：纯 numpy 软光栅，同一份场景包渲两次
-    逐字节相同（同 render2d 母版那条口径）。
-    """
-
-    scene_package_key: str
-    camera_id: str
-    render_tier: RenderTier = "preview"
-    width_px: int = 1024
-    height_px: int = 768
+#
+# 两个 activity 的请求/回执不在这里：那是编排与本仓之间的契约，归 activity_models
+# （import-linter 把两份锁在同一层、互不可见）。这一节曾放过一版带档位（preview/final）的
+# 请求模型，随用户裁决 2026-09-04（两档合一档）与 activity 实装（2026-09-05）删除。
 
 
 class MaskEntry(_Contract):

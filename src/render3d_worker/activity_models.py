@@ -19,7 +19,7 @@
                    出  scene_package_key, bucket, 自证数
     base-render    入  scenePackageKey, cameraIds（null＝全渲）, widthPx, heightPx
                    出  renders[{camera_id, geometry_key, depth_key, line_key, mask_key,
-                                mask_index_key, sketch_key|null, 自证数}], 自证数
+                                mask_index_key, sketch_key, 自证数}], 自证数
 """
 
 from __future__ import annotations
@@ -129,10 +129,10 @@ class SceneCompileReceipt(BaseModel):
 
 
 class RenderedView(BaseModel):
-    """一台机位的产物：各路的键 + 这台机位的自证数。
+    """一台机位的产物：五路图的键 + 遮罩索引表的键 + 这台机位的自证数。
 
-    `sketch_key` 为 `None` ＝ 纯库这一版没有回控制稿那一路（第五路在另一条分支上加；本层
-    "回了就写、没回就 None"，不硬依赖）。`room_view` 同理：纯库带了取景自证数就原样带出。
+    五路键都必有（第五路控制稿 `sketch_key` 自 2026-09-05 合流起与其余四路同列，不再可空）。
+    `room_view` 只有 `room` 机位才有：取景自证数原样带出，`bird` 机位为 `None`。
     """
 
     camera_id: str
@@ -141,7 +141,7 @@ class RenderedView(BaseModel):
     line_key: str
     mask_key: str
     mask_index_key: str
-    sketch_key: str | None
+    sketch_key: str
     width_px: int
     height_px: int
     covered_pixel_ratio: float

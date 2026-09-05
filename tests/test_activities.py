@@ -239,13 +239,10 @@ async def test_全链_minimal包一台bird机位全渲() -> None:
     assert 0.0 < view["near_m"] < view["far_m"]
     assert view["elapsed_seconds"] >= 0.0
 
-    # 第五路：纯库回了就写、没回就 None——两种形态都算对，不许出现第三种
+    # 第五路控制稿：合流后是纯库的必填产物，与其余四路一样必写、不许为 None
     sketch_key = view["sketch_key"]
-    if sketch_key is None:
-        assert _view_key(MINIMAL_REVISION, BIRD_CAMERA_ID, "sketch.png") not in store.objects
-    else:
-        assert sketch_key == _view_key(MINIMAL_REVISION, BIRD_CAMERA_ID, "sketch.png")
-        assert store.content_types[sketch_key] == "image/png"
+    assert sketch_key == _view_key(MINIMAL_REVISION, BIRD_CAMERA_ID, "sketch.png")
+    assert store.content_types[sketch_key] == "image/png"
     assert view["room_view"] is None or isinstance(view["room_view"], dict)
 
 
