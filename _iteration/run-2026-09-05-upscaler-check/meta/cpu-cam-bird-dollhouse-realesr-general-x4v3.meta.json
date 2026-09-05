@@ -1,0 +1,51 @@
+{
+  "model": "realesr-general-x4v3",
+  "model_info": {
+    "kind": "spandrel",
+    "weight_file": "realesr-general-x4v3.pth",
+    "weight_sha256": "8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292",
+    "architecture": "RealESRGAN Compact",
+    "tags": [
+      "64nf",
+      "32nc"
+    ],
+    "scale": 4,
+    "input_channels": 3,
+    "output_channels": 3,
+    "tiling": "ModelTiling.SUPPORTED",
+    "size_requirements": "SizeRequirements(minimum=0, multiple_of=1, square=False)",
+    "n_params": 1213296
+  },
+  "input": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-bird-dollhouse-seed1.png",
+  "input_size": [
+    1168,
+    880
+  ],
+  "device": "cpu",
+  "tile": 0,
+  "tile_pad": 32,
+  "load_seconds": 1.011,
+  "env": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "numpy": "2.5.2",
+    "pillow": "12.3.0",
+    "machine": "arm64",
+    "macos": "15.7.3",
+    "spandrel": "0.4.2"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "seconds": 9.988,
+      "output_size": [
+        4672,
+        3520
+      ],
+      "array_sha256": "d14a42e97fc8e174cf029a423afd78c61bddc8c25027ce7c0effd71e2fe96543",
+      "png_sha256": "5684ad9eb64dadbabb5fcf09c8f26de105ed5a1043ed7217b3d924b7a9ca0e6c",
+      "png_bytes": 9932955
+    }
+  ],
+  "deterministic_across_runs": true
+}

@@ -1,0 +1,65 @@
+{
+  "model": "realesrgan-x2plus",
+  "model_info": {
+    "kind": "spandrel",
+    "weight_file": "RealESRGAN_x2plus.pth",
+    "weight_sha256": "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb",
+    "architecture": "ESRGAN",
+    "tags": [
+      "64nf",
+      "23nb",
+      "unshuffle"
+    ],
+    "scale": 2,
+    "input_channels": 3,
+    "output_channels": 3,
+    "tiling": "ModelTiling.SUPPORTED",
+    "size_requirements": "SizeRequirements(minimum=4, multiple_of=4, square=False)",
+    "n_params": 16703171
+  },
+  "input": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-room-主卧-seed1.png",
+  "input_size": [
+    1168,
+    880
+  ],
+  "device": "mps",
+  "tile": 0,
+  "tile_pad": 32,
+  "load_seconds": 17.881,
+  "env": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "numpy": "2.5.2",
+    "pillow": "12.3.0",
+    "machine": "arm64",
+    "macos": "15.7.3",
+    "spandrel": "0.4.2"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "seconds": 10.681,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "2dd8c5ca127ba1f25e97bdd7cb8420dab8bd24ce554866aace817fb13469652a",
+      "png_sha256": "c7a6f86ea83dca0a60d91cf5c5736f428be02c5f6b95919b00063515f09babad",
+      "png_bytes": 3491719,
+      "mps_driver_allocated_mb": 4120
+    },
+    {
+      "run": 2,
+      "seconds": 8.176,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "2dd8c5ca127ba1f25e97bdd7cb8420dab8bd24ce554866aace817fb13469652a",
+      "png_sha256": "c7a6f86ea83dca0a60d91cf5c5736f428be02c5f6b95919b00063515f09babad",
+      "png_bytes": 3491719,
+      "mps_driver_allocated_mb": 4120
+    }
+  ],
+  "deterministic_across_runs": true
+}
