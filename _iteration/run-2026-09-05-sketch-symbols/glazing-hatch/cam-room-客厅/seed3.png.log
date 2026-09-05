@@ -1,0 +1,8 @@
+写实图已出：/Users/baitianxing/codes/ishome-render3d.wt-symbols/_iteration/run-2026-09-05-sketch-symbols/glazing-hatch/cam-room-客厅/seed3.png（风格 modern-minimal，视角 room，881790 字节）
+控制稿留档：/Users/baitianxing/codes/ishome-render3d.wt-symbols/_iteration/run-2026-09-05-sketch-symbols/glazing-hatch/cam-room-客厅/seed3.sketch.png；提示词留档：/Users/baitianxing/codes/ishome-render3d.wt-symbols/_iteration/run-2026-09-05-sketch-symbols/glazing-hatch/cam-room-客厅/seed3.prompt.txt
+backend_name=gateway-sketch seed=3
+elapsed_seconds=36.5 prompt_sha256=73bbb9d203a4a36139e40af32d615103f0999515f91cf62845d97d87425b827c
+fidelity_score=0.5474（结构边重合度，只能同输出形态横向比）
+fidelity_v3_at_origin=0.8248 fidelity_v3_registered=0.8394 registration=sx=1.000 sy=1.000 dx=+1 dy=+1（只记录不判）
+gate=只记录不判（没配 ISHOME_REALISM_MIN_FIDELITY_SCORE）
+exit=0 wall_seconds=40
