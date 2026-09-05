@@ -12,6 +12,9 @@ dependencies = [
   # 所以走纯 Python + numpy 软光栅，不引系统级渲染栈与 GPU 依赖。
   "numpy>=2.1",
   "pillow>=11",
+  # 私有对象存储：输入包从桶里取，场景包与底渲各路写回同一前缀。图不进编排 payload——
+  # 那是拿 Temporal 当文件传输通道用。只在 object_store 一个模块里用。
+  "oss2>=2.18",
 ]
 
 [project.scripts]
@@ -57,6 +60,11 @@ strict = true
 python_version = "3.12"
 files = ["src", "tests"]
 
+# oss2 不带 py.typed（阿里云 OSS SDK）；定向忽略，勿扩大范围
+[[tool.mypy.overrides]]
+module = ["oss2", "oss2.*"]
+ignore_missing_imports = true
+
 # ---------------------------------------------------------------------------
 # pytest
 # ---------------------------------------------------------------------------
@@ -84,11 +92,30 @@ type = "layers"
 # `mesh`（2D 几何 → 三维网格构建）与 `raster`（软光栅核心）同样互不可见：
 # 建网格不挑光栅口径，光栅只吃网格、不管它从哪张户型图长出来。
 # `models` 是最底层的纯契约，谁都可以看见它，它谁也看不见。
+# `activity_models`（两个 activity 的请求/回执）与它同层、互不可见：出入参是编排那一侧的契约，
+# 输入包/场景包是上游与纯库之间的契约，两份各归各——cli 不该看见前者，纯库也不该看见前者。
 layers = [
   "worker | cli",
   "activities",
   "scene_compile | base_render",
   "mesh | raster",
-  "models",
+  "models | activity_models",
 ]
 containers = ["render3d_worker"]
+
+[[tool.importlinter.contracts]]
+name = "出站边缘 object_store 不感知上层：收键与字节、回字节——写桶的那只手看不见桶里装的是什么"
+type = "forbidden"
+source_modules = ["render3d_worker.object_store"]
+forbidden_modules = [
+  "render3d_worker.models",
+  "render3d_worker.activity_models",
+  "render3d_worker.mesh",
+  "render3d_worker.raster",
+  "render3d_worker.scene_compile",
+  "render3d_worker.base_render",
+  "render3d_worker.activities",
+  "render3d_worker.worker",
+  "render3d_worker.cli",
+  "temporalio",
+]
