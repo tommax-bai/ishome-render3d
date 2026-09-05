@@ -1,0 +1,83 @@
+=== sdx4 probe tile256 retry 19:24:59
+/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/utils/deprecation_utils.py:23: FutureWarning: `torch_dtype` is deprecated and will be removed in version 1.0.0. Please use `dtype` instead.
+  deprecate("torch_dtype", "1.0.0", _TORCH_DTYPE_DEPRECATION_MESSAGE)
+Couldn't connect to the Hub: Cannot reach https://huggingface.co/api/models/stabilityai/stable-diffusion-x4-upscaler: offline mode is enabled. To disable it, please unset the `HF_HUB_OFFLINE` environment variable..
+Will try to load from local cache.
+Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  33%|███▎      | 2/6 [00:00<00:00, 16.68it/s]
+Loading weights:   0%|          | 0/372 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 372/372 [00:00<00:00, 5406.44it/s]
+Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 19.23it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 18.94it/s]
+/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/pipelines/stable_diffusion/pipeline_stable_diffusion_upscale.py:528: FutureWarning: `upcast_vae` is deprecated and will be removed in version 1.0.0. `upcast_vae` is deprecated. Please use `pipe.vae.to(torch.float32)`. For more details, please refer to: https://github.com/huggingface/diffusers/pull/12619#issue-3606633695.
+  deprecate(
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/upscale/sdx4_probe.py", line 86, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/upscale/sdx4_probe.py", line 56, in main
+    out = pipe(prompt="", image=tile, num_inference_steps=a.steps, generator=gen).images[0]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/pipelines/stable_diffusion/pipeline_stable_diffusion_upscale.py", line 789, in __call__
+    image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False)[0]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/utils/accelerate_utils.py", line 46, in wrapper
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/models/autoencoders/autoencoder_kl.py", line 235, in decode
+    decoded = self._decode(z).sample
+              ^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/models/autoencoders/autoencoder_kl.py", line 206, in _decode
+    dec = self.decoder(z)
+          ^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/models/autoencoders/vae.py", line 297, in forward
+    sample = self.mid_block(sample, latent_embeds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/models/unets/unet_2d_blocks.py", line 745, in forward
+    hidden_states = attn(hidden_states, temb=temb)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/models/attention_processor.py", line 607, in forward
+    return self.processor(
+           ^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/ctrl/.venv/lib/python3.12/site-packages/diffusers/models/attention_processor.py", line 2767, in __call__
+    hidden_states = F.scaled_dot_product_attention(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Invalid buffer size: 16.00 GiB
+       63.22 real         3.51 user         4.48 sys
+           406536192  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               18602  page reclaims
+              115135  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                2334  voluntary context switches
+               76994  involuntary context switches
+         38448787134  instructions retired
+         24107629730  cycles elapsed
+          4852682304  peak memory footprint
+=== sdx4 done 19:26:02

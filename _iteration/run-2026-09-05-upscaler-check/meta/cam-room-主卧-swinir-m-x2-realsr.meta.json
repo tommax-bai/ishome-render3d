@@ -1,0 +1,68 @@
+{
+  "model": "swinir-m-x2-realsr",
+  "model_info": {
+    "kind": "spandrel",
+    "weight_file": "003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN.pth",
+    "weight_sha256": "f397408977a3e07eb06afb7238d453a12ef35ebab7328a54241f307860dbe342",
+    "architecture": "SwinIR",
+    "tags": [
+      "medium",
+      "s64w8",
+      "64nf",
+      "180dim",
+      "1conv",
+      "1unshuf"
+    ],
+    "scale": 2,
+    "input_channels": 3,
+    "output_channels": 3,
+    "tiling": "ModelTiling.DISCOURAGED",
+    "size_requirements": "SizeRequirements(minimum=16, multiple_of=1, square=False)",
+    "n_params": 11678631
+  },
+  "input": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-room-主卧-seed1.png",
+  "input_size": [
+    1168,
+    880
+  ],
+  "device": "mps",
+  "tile": 256,
+  "tile_pad": 16,
+  "load_seconds": 1.664,
+  "env": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "numpy": "2.5.2",
+    "pillow": "12.3.0",
+    "machine": "arm64",
+    "macos": "15.7.3",
+    "spandrel": "0.4.2"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "seconds": 56.997,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "51ecd266b20a84452ba81e4dcd8594c22f2c97d3afb60e381d1655dac83f73af",
+      "png_sha256": "6f1afe24a9797e7a30d6f03873adf4a69619351f44983dbe0e24109d2bc2a7ac",
+      "png_bytes": 3586629,
+      "mps_driver_allocated_mb": 3187
+    },
+    {
+      "run": 2,
+      "seconds": 57.033,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "51ecd266b20a84452ba81e4dcd8594c22f2c97d3afb60e381d1655dac83f73af",
+      "png_sha256": "6f1afe24a9797e7a30d6f03873adf4a69619351f44983dbe0e24109d2bc2a7ac",
+      "png_bytes": 3586629,
+      "mps_driver_allocated_mb": 3187
+    }
+  ],
+  "deterministic_across_runs": true
+}

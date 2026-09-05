@@ -1,0 +1,12 @@
+== RealESRGAN_x2plus.pth  <- https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth
+http 200 size 67061725 time 10.157124s
+== RealESRGAN_x4plus.pth  <- https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
+http 200 size 67040989 time 9.766821s
+== realesr-general-x4v3.pth  <- https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth
+http 200 size 4885111 time 4.197150s
+== 003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN.pth  <- https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN.pth
+http 200 size 66974517 time 10.278337s
+f397408977a3e07eb06afb7238d453a12ef35ebab7328a54241f307860dbe342  003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN.pth
+8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292  realesr-general-x4v3.pth
+49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb  RealESRGAN_x2plus.pth
+4fa0d38905f75ac06eb49a7951b426670021be3018265fd191d2125df9d682f1  RealESRGAN_x4plus.pth

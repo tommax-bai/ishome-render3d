@@ -1,0 +1,50 @@
+{
+  "model": "lanczos-x2",
+  "model_info": {
+    "kind": "PIL.Image.resize LANCZOS",
+    "scale": 2
+  },
+  "input": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-bird-dollhouse-seed1.png",
+  "input_size": [
+    1168,
+    880
+  ],
+  "device": "cpu(PIL)",
+  "tile": 0,
+  "tile_pad": 32,
+  "load_seconds": 0.0,
+  "env": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "numpy": "2.5.2",
+    "pillow": "12.3.0",
+    "machine": "arm64",
+    "macos": "15.7.3",
+    "spandrel": "0.4.2"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "seconds": 0.593,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "0189c625eb5e6a883443bd9760740b461bdccb9ce94ba22a9c58ce0117883906",
+      "png_sha256": "8ccfaadc638bd1a43860f631a5918fe0cecb574cf1d85ef589121e1499dfc246",
+      "png_bytes": 1530570
+    },
+    {
+      "run": 2,
+      "seconds": 0.154,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "0189c625eb5e6a883443bd9760740b461bdccb9ce94ba22a9c58ce0117883906",
+      "png_sha256": "8ccfaadc638bd1a43860f631a5918fe0cecb574cf1d85ef589121e1499dfc246",
+      "png_bytes": 1530570
+    }
+  ],
+  "deterministic_across_runs": true
+}

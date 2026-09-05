@@ -1,0 +1,78 @@
+=== realesrgan-x2plus / cam-bird-dollhouse  18:53:40
+realesrgan-x2plus run1: (2336, 1760) 13.36s sha256[:12]=f95a83d5f974
+realesrgan-x2plus run2: (2336, 1760) 7.94s sha256[:12]=f95a83d5f974
+deterministic=True load=33.18s
+       95.68 real         5.18 user         7.00 sys
+           269385728  maximum resident set size
+=== realesrgan-x2plus / cam-room-主卧  18:55:16
+realesrgan-x2plus run1: (2336, 1760) 10.68s sha256[:12]=2dd8c5ca127b
+realesrgan-x2plus run2: (2336, 1760) 8.18s sha256[:12]=2dd8c5ca127b
+deterministic=True load=17.88s
+       78.31 real         4.89 user         5.68 sys
+           460439552  maximum resident set size
+=== swinir-m-x2-realsr / cam-bird-dollhouse  18:56:34
+     1007.90 real         5.24 user       167.53 sys
+          1051164672  maximum resident set size
+4 s 未出 run1（RSS 7.1 GB，CPU 13%，内存换页）
+=== realesr-general-x4v3 / cam-bird-dollhouse  19:13:32
+realesr-general-x4v3 run1: (4672, 3520) 3.64s sha256[:12]=aec758926fc0
+realesr-general-x4v3 run2: (4672, 3520) 1.58s sha256[:12]=aec758926fc0
+deterministic=True load=5.68s
+       22.46 real         6.45 user         1.97 sys
+          1239105536  maximum resident set size
+=== realesr-general-x4v3 / cam-room-主卧  19:13:54
+realesr-general-x4v3 run1: (4672, 3520) 1.53s sha256[:12]=aac9380fc3d1
+realesr-general-x4v3 run2: (4672, 3520) 1.29s sha256[:12]=aac9380fc3d1
+deterministic=True load=2.84s
+       13.37 real         6.24 user         1.40 sys
+          1205420032  maximum resident set size
+=== realesrgan-x4plus / cam-bird-dollhouse  19:14:07
+realesrgan-x4plus run1: (4672, 3520) 43.17s sha256[:12]=2a00431cc3ec
+realesrgan-x4plus run2: (4672, 3520) 89.08s sha256[:12]=2a00431cc3ec
+deterministic=True load=2.64s
+      145.92 real         6.36 user        15.90 sys
+           631226368  maximum resident set size
+=== realesrgan-x4plus / cam-room-主卧  19:16:33
+realesrgan-x4plus run1: (4672, 3520) 24.65s sha256[:12]=d7f1e0970490
+realesrgan-x4plus run2: (4672, 3520) 67.80s sha256[:12]=d7f1e0970490
+deterministic=True load=1.75s
+      102.52 real         5.44 user        12.91 sys
+           634732544  maximum resident set size
+=== done 19:18:16
+更正：上一行的 RSS 7.1 GB 是误读——ps rss 单位 KB，7088 KB = 7 MB（页面已换出）；time -l 记 max RSS 1.05 GB、sys 167 s、real 1007.9 s（换页）
+=== swinir-m-x2-realsr 分块 tile=256 pad=16 / cam-bird-dollhouse 19:18:53
+swinir-m-x2-realsr run1: (2336, 1760) 58.83s sha256[:12]=1ed63d7608dd
+swinir-m-x2-realsr run2: (2336, 1760) 56.35s sha256[:12]=1ed63d7608dd
+deterministic=True load=1.55s
+      119.10 real        24.93 user        14.78 sys
+           741195776  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              231109  page reclaims
+                9849  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                4104  voluntary context switches
+              293153  involuntary context switches
+        275531431733  instructions retired
+        111982077079  cycles elapsed
+          3904688448  peak memory footprint
+=== swinir-m-x2-realsr 分块 tile=256 pad=16 / cam-room-主卧 19:22:05
+swinir-m-x2-realsr run1: (2336, 1760) 57.00s sha256[:12]=51ecd266b20a
+swinir-m-x2-realsr run2: (2336, 1760) 57.03s sha256[:12]=51ecd266b20a
+deterministic=True load=1.66s
+      118.04 real        28.59 user        15.18 sys
+           680411136  maximum resident set size
+          3914862784  peak memory footprint
+=== CPU 对照 realesrgan-x2plus / cam-bird-dollhouse 19:30:04
+realesrgan-x2plus run1: (2336, 1760) 115.75s sha256[:12]=323700e9b65c
+deterministic=True load=1.13s
+=== CPU 对照 realesr-general-x4v3 / cam-bird-dollhouse 19:32:04
+realesr-general-x4v3 run1: (4672, 3520) 9.99s sha256[:12]=d14a42e97fc8
+deterministic=True load=1.01s
+=== CPU done 19:32:17

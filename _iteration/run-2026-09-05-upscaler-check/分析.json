@@ -1,0 +1,676 @@
+{
+  "samples": {
+    "cam-bird-dollhouse": {
+      "original": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-bird-dollhouse-seed1.png",
+      "line": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch/cam-bird-dollhouse/line.png",
+      "original_size": [
+        1168,
+        880
+      ],
+      "fidelity_original": 0.2109,
+      "crop_region_in_original": [
+        400,
+        430,
+        320,
+        240
+      ],
+      "candidates": {
+        "lanczos-x2": {
+          "status": "ok",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "cpu(PIL)",
+          "tile": 0,
+          "load_seconds": 0.0,
+          "seconds_run1": 0.593,
+          "seconds_run2": 0.154,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 1530570,
+          "array_sha256_run1": "0189c625eb5e6a883443bd9760740b461bdccb9ce94ba22a9c58ce0117883906",
+          "mps_driver_allocated_mb": null,
+          "model_info": {
+            "kind": "PIL.Image.resize LANCZOS",
+            "scale": 2
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 0.149,
+            "pct_pixels_maxch_diff_gt10": 0.03,
+            "pct_pixels_maxch_diff_gt30": 0.0,
+            "pct_pixels_identical": 87.95
+          },
+          "fidelity": 0.2115,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 1.01,
+            "pct_strong_edges_lost": 1.1,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 23940
+          }
+        },
+        "realesrgan-x2plus": {
+          "status": "ok",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 33.181,
+          "seconds_run1": 13.362,
+          "seconds_run2": 7.939,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 3533563,
+          "array_sha256_run1": "f95a83d5f974c592ab40630b1ac14b21cb73792c0869cd92fcebb7ab54e8421b",
+          "mps_driver_allocated_mb": 4120,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "RealESRGAN_x2plus.pth",
+            "weight_sha256": "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb",
+            "architecture": "ESRGAN",
+            "tags": [
+              "64nf",
+              "23nb",
+              "unshuffle"
+            ],
+            "scale": 2,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.SUPPORTED",
+            "size_requirements": "SizeRequirements(minimum=4, multiple_of=4, square=False)",
+            "n_params": 16703171
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 2.193,
+            "pct_pixels_maxch_diff_gt10": 1.98,
+            "pct_pixels_maxch_diff_gt30": 0.17,
+            "pct_pixels_identical": 1.74
+          },
+          "fidelity": 0.2528,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 3.2,
+            "pct_strong_edges_lost": 2.12,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 23654
+          }
+        },
+        "swinir-m-x2-realsr": {
+          "status": "ok",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 256,
+          "load_seconds": 1.554,
+          "seconds_run1": 58.834,
+          "seconds_run2": 56.354,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 3311286,
+          "array_sha256_run1": "1ed63d7608dd16db40a057c7d90d4abca82ffc1f8e6b96581d6b29d00033fc1d",
+          "mps_driver_allocated_mb": 3187,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN.pth",
+            "weight_sha256": "f397408977a3e07eb06afb7238d453a12ef35ebab7328a54241f307860dbe342",
+            "architecture": "SwinIR",
+            "tags": [
+              "medium",
+              "s64w8",
+              "64nf",
+              "180dim",
+              "1conv",
+              "1unshuf"
+            ],
+            "scale": 2,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.DISCOURAGED",
+            "size_requirements": "SizeRequirements(minimum=16, multiple_of=1, square=False)",
+            "n_params": 11678631
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.157,
+            "pct_pixels_maxch_diff_gt10": 1.26,
+            "pct_pixels_maxch_diff_gt30": 0.02,
+            "pct_pixels_identical": 8.76
+          },
+          "fidelity": 0.248,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 2.91,
+            "pct_strong_edges_lost": 2.71,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 25705
+          }
+        },
+        "realesrgan-x4plus": {
+          "status": "ok",
+          "output_size": [
+            4672,
+            3520
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 2.638,
+          "seconds_run1": 43.174,
+          "seconds_run2": 89.078,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 12527148,
+          "array_sha256_run1": "2a00431cc3ec091e61085b85de0394f063b1b62a4d564ca9cd1e06fb50244ee1",
+          "mps_driver_allocated_mb": 14290,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "RealESRGAN_x4plus.pth",
+            "weight_sha256": "4fa0d38905f75ac06eb49a7951b426670021be3018265fd191d2125df9d682f1",
+            "architecture": "ESRGAN",
+            "tags": [
+              "64nf",
+              "23nb"
+            ],
+            "scale": 4,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.SUPPORTED",
+            "size_requirements": "SizeRequirements(minimum=2, multiple_of=1, square=False)",
+            "n_params": 16697987
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 2.583,
+            "pct_pixels_maxch_diff_gt10": 1.7,
+            "pct_pixels_maxch_diff_gt30": 0.07,
+            "pct_pixels_identical": 0.74
+          },
+          "fidelity": 0.2155,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 2.87,
+            "pct_strong_edges_lost": 4.07,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 23029
+          }
+        },
+        "realesrgan-x4plus→x2(LANCZOS)": {
+          "status": "ok",
+          "derived_from": "realesrgan-x4plus",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 2.638,
+          "seconds_run1": 43.324,
+          "seconds_run2": 89.228,
+          "resize_seconds": 0.15,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 2.573,
+            "pct_pixels_maxch_diff_gt10": 1.72,
+            "pct_pixels_maxch_diff_gt30": 0.08,
+            "pct_pixels_identical": 0.74
+          },
+          "fidelity": 0.2256,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 3.08,
+            "pct_strong_edges_lost": 3.75,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 23259
+          }
+        },
+        "realesr-general-x4v3": {
+          "status": "ok",
+          "output_size": [
+            4672,
+            3520
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 5.677,
+          "seconds_run1": 3.638,
+          "seconds_run2": 1.576,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 9932874,
+          "array_sha256_run1": "aec758926fc0f20e93913c509d7594f2b857a6d316e6c8cd6f7bac8f85f421e2",
+          "mps_driver_allocated_mb": 1034,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "realesr-general-x4v3.pth",
+            "weight_sha256": "8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292",
+            "architecture": "RealESRGAN Compact",
+            "tags": [
+              "64nf",
+              "32nc"
+            ],
+            "scale": 4,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.SUPPORTED",
+            "size_requirements": "SizeRequirements(minimum=0, multiple_of=1, square=False)",
+            "n_params": 1213296
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 2.339,
+            "pct_pixels_maxch_diff_gt10": 3.25,
+            "pct_pixels_maxch_diff_gt30": 0.61,
+            "pct_pixels_identical": 1.59
+          },
+          "fidelity": 0.2112,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 4.25,
+            "pct_strong_edges_lost": 4.76,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 23832
+          }
+        },
+        "realesr-general-x4v3→x2(LANCZOS)": {
+          "status": "ok",
+          "derived_from": "realesr-general-x4v3",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 5.677,
+          "seconds_run1": 3.805,
+          "seconds_run2": 1.743,
+          "resize_seconds": 0.167,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 2.324,
+            "pct_pixels_maxch_diff_gt10": 3.24,
+            "pct_pixels_maxch_diff_gt30": 0.6,
+            "pct_pixels_identical": 1.59
+          },
+          "fidelity": 0.22,
+          "edge_change": {
+            "threshold_from_original": 27.17,
+            "pct_strong_edges_new": 4.39,
+            "pct_strong_edges_lost": 4.53,
+            "n_strong_edges_orig": 24053,
+            "n_strong_edges_cand": 23916
+          }
+        }
+      }
+    },
+    "cam-room-主卧": {
+      "original": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-room-主卧-seed1.png",
+      "line": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch/cam-room-主卧/line.png",
+      "original_size": [
+        1168,
+        880
+      ],
+      "fidelity_original": 0.2634,
+      "crop_region_in_original": [
+        100,
+        250,
+        320,
+        240
+      ],
+      "candidates": {
+        "lanczos-x2": {
+          "status": "ok",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "cpu(PIL)",
+          "tile": 0,
+          "load_seconds": 0.0,
+          "seconds_run1": 0.986,
+          "seconds_run2": 0.502,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 1649599,
+          "array_sha256_run1": "9a91243edd8cf03f68e6b22a7e609bd4c61121ed3df2d2f103e144dbf75a97e2",
+          "mps_driver_allocated_mb": null,
+          "model_info": {
+            "kind": "PIL.Image.resize LANCZOS",
+            "scale": 2
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 0.133,
+            "pct_pixels_maxch_diff_gt10": 0.02,
+            "pct_pixels_maxch_diff_gt30": 0.0,
+            "pct_pixels_identical": 85.21
+          },
+          "fidelity": 0.2674,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 0.83,
+            "pct_strong_edges_lost": 0.77,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 42516
+          }
+        },
+        "realesrgan-x2plus": {
+          "status": "ok",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 17.881,
+          "seconds_run1": 10.681,
+          "seconds_run2": 8.176,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 3491719,
+          "array_sha256_run1": "2dd8c5ca127ba1f25e97bdd7cb8420dab8bd24ce554866aace817fb13469652a",
+          "mps_driver_allocated_mb": 4120,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "RealESRGAN_x2plus.pth",
+            "weight_sha256": "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb",
+            "architecture": "ESRGAN",
+            "tags": [
+              "64nf",
+              "23nb",
+              "unshuffle"
+            ],
+            "scale": 2,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.SUPPORTED",
+            "size_requirements": "SizeRequirements(minimum=4, multiple_of=4, square=False)",
+            "n_params": 16703171
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.797,
+            "pct_pixels_maxch_diff_gt10": 1.39,
+            "pct_pixels_maxch_diff_gt30": 0.1,
+            "pct_pixels_identical": 0.46
+          },
+          "fidelity": 0.2628,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 3.38,
+            "pct_strong_edges_lost": 2.9,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 35129
+          }
+        },
+        "swinir-m-x2-realsr": {
+          "status": "ok",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 256,
+          "load_seconds": 1.664,
+          "seconds_run1": 56.997,
+          "seconds_run2": 57.033,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 3586629,
+          "array_sha256_run1": "51ecd266b20a84452ba81e4dcd8594c22f2c97d3afb60e381d1655dac83f73af",
+          "mps_driver_allocated_mb": 3187,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "003_realSR_BSRGAN_DFO_s64w8_SwinIR-M_x2_GAN.pth",
+            "weight_sha256": "f397408977a3e07eb06afb7238d453a12ef35ebab7328a54241f307860dbe342",
+            "architecture": "SwinIR",
+            "tags": [
+              "medium",
+              "s64w8",
+              "64nf",
+              "180dim",
+              "1conv",
+              "1unshuf"
+            ],
+            "scale": 2,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.DISCOURAGED",
+            "size_requirements": "SizeRequirements(minimum=16, multiple_of=1, square=False)",
+            "n_params": 11678631
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.309,
+            "pct_pixels_maxch_diff_gt10": 1.21,
+            "pct_pixels_maxch_diff_gt30": 0.06,
+            "pct_pixels_identical": 2.41
+          },
+          "fidelity": 0.2798,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 3.56,
+            "pct_strong_edges_lost": 2.33,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 46312
+          }
+        },
+        "realesrgan-x4plus": {
+          "status": "ok",
+          "output_size": [
+            4672,
+            3520
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 1.747,
+          "seconds_run1": 24.65,
+          "seconds_run2": 67.804,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 13687135,
+          "array_sha256_run1": "d7f1e097049079954e1eb8725a22f8db637e29723f73479f10d5fbc863e8b5bd",
+          "mps_driver_allocated_mb": 14290,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "RealESRGAN_x4plus.pth",
+            "weight_sha256": "4fa0d38905f75ac06eb49a7951b426670021be3018265fd191d2125df9d682f1",
+            "architecture": "ESRGAN",
+            "tags": [
+              "64nf",
+              "23nb"
+            ],
+            "scale": 4,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.SUPPORTED",
+            "size_requirements": "SizeRequirements(minimum=2, multiple_of=1, square=False)",
+            "n_params": 16697987
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.559,
+            "pct_pixels_maxch_diff_gt10": 1.64,
+            "pct_pixels_maxch_diff_gt30": 0.18,
+            "pct_pixels_identical": 1.07
+          },
+          "fidelity": 0.2734,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 2.94,
+            "pct_strong_edges_lost": 4.6,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 34830
+          }
+        },
+        "realesrgan-x4plus→x2(LANCZOS)": {
+          "status": "ok",
+          "derived_from": "realesrgan-x4plus",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 1.747,
+          "seconds_run1": 24.807,
+          "seconds_run2": 67.961,
+          "resize_seconds": 0.157,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.565,
+            "pct_pixels_maxch_diff_gt10": 1.64,
+            "pct_pixels_maxch_diff_gt30": 0.19,
+            "pct_pixels_identical": 1.12
+          },
+          "fidelity": 0.2747,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 3.0,
+            "pct_strong_edges_lost": 4.36,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 35339
+          }
+        },
+        "realesr-general-x4v3": {
+          "status": "ok",
+          "output_size": [
+            4672,
+            3520
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 2.842,
+          "seconds_run1": 1.535,
+          "seconds_run2": 1.289,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "png_bytes": 10401578,
+          "array_sha256_run1": "aac9380fc3d1bc56e863780f2c541119fa92017ab4039e9f24f8158ef7d3ad3d",
+          "mps_driver_allocated_mb": 1034,
+          "model_info": {
+            "kind": "spandrel",
+            "weight_file": "realesr-general-x4v3.pth",
+            "weight_sha256": "8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292",
+            "architecture": "RealESRGAN Compact",
+            "tags": [
+              "64nf",
+              "32nc"
+            ],
+            "scale": 4,
+            "input_channels": 3,
+            "output_channels": 3,
+            "tiling": "ModelTiling.SUPPORTED",
+            "size_requirements": "SizeRequirements(minimum=0, multiple_of=1, square=False)",
+            "n_params": 1213296
+          },
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.344,
+            "pct_pixels_maxch_diff_gt10": 1.97,
+            "pct_pixels_maxch_diff_gt30": 0.29,
+            "pct_pixels_identical": 4.57
+          },
+          "fidelity": 0.2606,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 2.66,
+            "pct_strong_edges_lost": 5.21,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 35121
+          }
+        },
+        "realesr-general-x4v3→x2(LANCZOS)": {
+          "status": "ok",
+          "derived_from": "realesr-general-x4v3",
+          "output_size": [
+            2336,
+            1760
+          ],
+          "device": "mps",
+          "tile": 0,
+          "load_seconds": 2.842,
+          "seconds_run1": 1.697,
+          "seconds_run2": 1.451,
+          "resize_seconds": 0.162,
+          "deterministic_meta": true,
+          "deterministic_recheck": true,
+          "vs_original_downscaled": {
+            "compare_size": [
+              1168,
+              880
+            ],
+            "mean_abs_diff": 1.304,
+            "pct_pixels_maxch_diff_gt10": 1.97,
+            "pct_pixels_maxch_diff_gt30": 0.29,
+            "pct_pixels_identical": 5.4
+          },
+          "fidelity": 0.2657,
+          "edge_change": {
+            "threshold_from_original": 18.44,
+            "pct_strong_edges_new": 2.74,
+            "pct_strong_edges_lost": 5.05,
+            "n_strong_edges_orig": 42514,
+            "n_strong_edges_cand": 35483
+          }
+        }
+      }
+    }
+  },
+  "notes": {
+    "compare": "放大图与原图各自 LANCZOS 缩到 1168×880，RGB 三通道取最大差",
+    "fidelity": "保真度量.py fidelity_score 对 line.png；尺子先缩到 1280×960 再量",
+    "edge_change": "补充量（本文件自加）：线稿尺寸下 Sobel+NMS 脊线，阈值 T=原图脊线第 90 百分位（绝对值两图共用），新增=放大图≥T 且原图 2 px 内无 ≥T/4 脊线；丢失反之",
+    "overlay": "线稿 BILINEAR 缩放到结果尺寸，线像素按 55% 红混入（不是实心盖住，方便看红线下面模型自己的边）"
+  }
+}

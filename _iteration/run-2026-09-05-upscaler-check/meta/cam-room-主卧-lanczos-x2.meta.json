@@ -1,0 +1,50 @@
+{
+  "model": "lanczos-x2",
+  "model_info": {
+    "kind": "PIL.Image.resize LANCZOS",
+    "scale": 2
+  },
+  "input": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-05-control-sketch-realism/cam-room-主卧-seed1.png",
+  "input_size": [
+    1168,
+    880
+  ],
+  "device": "cpu(PIL)",
+  "tile": 0,
+  "tile_pad": 32,
+  "load_seconds": 0.0,
+  "env": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "numpy": "2.5.2",
+    "pillow": "12.3.0",
+    "machine": "arm64",
+    "macos": "15.7.3",
+    "spandrel": "0.4.2"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "seconds": 0.986,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "9a91243edd8cf03f68e6b22a7e609bd4c61121ed3df2d2f103e144dbf75a97e2",
+      "png_sha256": "19cb86307fd8b0fdcfc6a4866c80546cf14698b2983526414e801278e065e687",
+      "png_bytes": 1649599
+    },
+    {
+      "run": 2,
+      "seconds": 0.502,
+      "output_size": [
+        2336,
+        1760
+      ],
+      "array_sha256": "9a91243edd8cf03f68e6b22a7e609bd4c61121ed3df2d2f103e144dbf75a97e2",
+      "png_sha256": "19cb86307fd8b0fdcfc6a4866c80546cf14698b2983526414e801278e065e687",
+      "png_bytes": 1649599
+    }
+  ],
+  "deterministic_across_runs": true
+}
