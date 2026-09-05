@@ -1,34 +1,70 @@
-"""底渲（activity ``base-render``）：一份场景包 + 一个机位 → 几何/深度/线稿/遮罩四路图。
+"""底渲（activity ``base-render``）：一份场景包 + 一个机位 → 几何/深度/线稿/遮罩/控制稿五路图。
 
-**四路是给下一步当条件图的，不是给人看的成品图**——写实化（``realism-pass``）在 imagegen
-那个仓走生成模型。所以这一步既不需要 GPU 也不需要三维引擎：四路全是几何缓冲，纯 numpy
-软光栅就出得来（光栅本身在 :mod:`render3d_worker.raster`，本模块只管"编码成哪四张图"）。
+**五路是给下一步当条件图的，不是给人看的成品图**——写实化（``realism-pass``）在 imagegen
+那个仓走生成模型。所以这一步既不需要 GPU 也不需要三维引擎：五路全是几何缓冲，纯 numpy
+软光栅就出得来（光栅本身在 :mod:`render3d_worker.raster`，本模块只管"编码成哪几张图"）。
 
-四路分**三路数据、一路观感**，这是本模块最要紧的一条分界：
+五路分**三路数据、一路观感、一路控制**，这是本模块最要紧的一条分界：
 
-===== ================== ================== =============================================
-路    图像形态            背景（没打到几何）  下游怎么读它
-===== ================== ================== =============================================
-深度  16 位灰度 PNG       0                  **当数据读**：值是米（1..65535 归一化，两端随包带出）
-遮罩  16 位灰度索引 PNG   0                  **当数据读**：索引 ≡ 网格下标 +1，回指网格身份
-线稿  8 位灰度 PNG        0（黑底白线）      **当数据读**：像素要么是几何事实边、要么不是
-几何  8 位 RGB PNG        柔和中性底          **当图看**：给写实化当色彩/形体参考，也给人调试看
-===== ================== ================== =============================================
+====== ================== ================== =============================================
+路     图像形态            背景（没打到几何）  下游怎么读它
+====== ================== ================== =============================================
+深度   16 位灰度 PNG       0                  **当数据读**：值是米（1..65535 归一化，两端随包带出）
+遮罩   16 位灰度索引 PNG   0                  **当数据读**：索引 ≡ 网格下标 +1，回指网格身份
+线稿   8 位灰度 PNG        0（黑底白线）      **当数据读**：像素要么是几何事实边、要么不是
+几何   8 位 RGB PNG        柔和中性底          **当图看**：给写实化当色彩/形体参考，也给人调试看
+控制稿 8 位灰度 PNG        0（黑底白线）      **当控制条件送**：线稿生图通道锁什么，就画什么
+====== ================== ================== =============================================
 
 **三路数据图一律"没有东西 ＝ 0"**，且**一律不做任何观感处理**——不抗锯齿、不降采样、
 不加环境光遮蔽。理由是这三路的每个像素都要经得起被当成一个量去读：深度边缘上一平均，
 就造出一个现实中不存在的深度；遮罩索引一平均，指到的是一块不存在的网格；线稿糊一下，
 "这是不是一条真边"就答不出来了。**"这个像素有没有东西"由这三路答**，三路互相自查
-（测试即断这条一致性）。
+（测试即断这条一致性）。控制稿同样黑底、同样不做观感处理，只是它答的不是"有没有东西"，
+是"控制通道该锁住什么"。
 
 几何那一路**退出"背景＝0"这条约定**（观感提档 2026-09-01）：纯黑底把每一条轮廓都变成
-最高对比的硬边，人眼看着扎、写实化那一步也没有必要吃这个对比。它是四路里唯一
+最高对比的硬边，人眼看着扎、写实化那一步也没有必要吃这个对比。它是五路里唯一
 "给人和给生成模型看"的一路，所以抗锯齿、环境光遮蔽、调色都只落在它身上
 （见 :data:`GEOMETRY_SUPERSAMPLE_FACTOR` 起的那一节常量）。
 
-失败要响亮：相机 id 找不到、``room`` 机位指的房间没有地板、网格引用的材质不在场景包里，
-一律抛 :class:`BaseRenderError`，**不退化成默认相机、不编一个兜底颜色**——退化只会让一张
-看着正常、其实渲错了机位的图流到下游（《纪律·拿不到就说没有，不许填猜的值》）。
+**线稿与控制稿的分工**（2026-09-05，来路＝中控仓《评审/失效清单-控制图通路-2026-09-04》）。
+线稿是**几何事实边**：每一条网格边界、每一处深度断开都画，它是保真度尺子的输入，
+一个像素都不按"该不该给模型看"取舍，**一个字节都不动**。控制稿是**给控制通道画的**：
+线稿生图那一类通道的性质是"线稿里画什么，出图就锁什么；画错什么，锁错什么"，失效清单里
+构件级四条（地面分界线被画成台阶 B1、天花交线被画成灯槽 B2、透视里的天花斜线被读成斜顶 B3、
+门窗不分 B4）来源全是线稿画了不该画的边、没画该画的区别。所以控制稿按下面的画法另出一路。
+
+控制稿画法（:func:`_encode_sketch_png`；这是给控制通道画的，不是给人看的）：
+
+- **画**：墙与地面的交线（地脚线）、墙与墙的竖直交线、洞口轮廓（洞口侧壁与墙面的折边、
+  过梁底面与墙面的折边、门洞侧壁与地面的交线）、遮挡轮廓（近处几何盖住远处几何的边，
+  透过门洞看到的远处轮廓也在内）、揭顶视角下的墙顶与墙厚（墙顶面与墙侧面的折边、墙顶面
+  盖住地板的遮挡边）、家具体块的可见边（上游给了家具体块才有；今天上游不给，家具为空时
+  自然一条都不画）。
+- **不画**：地面上房间之间的分界线（两块地板共面相接——没有墙的地方，地面上不许有线）、
+  天花与墙的交线、天花分区线、同一面墙被切成几块之后的共面接缝（墙段/过梁/窗下墙之间，
+  外轮廓与网格墙重合的段之间）。
+- **门与窗的符号不同**（判据＝同一张图上门和窗的符号不同）：**门**画到地面——门洞侧壁与
+  地面相交的地脚线画、地面上不画门槛线——洞口内画**一条从洞口左下角到右上角的斜线**
+  （门扇线）；**窗**离地有窗台线（窗下墙顶面与窗下墙立面的折边），洞口内画**一个十字**
+  （竖梃在洞口宽度中点通高、横梃在洞口高度中点通宽）。过口（``pass``）洞口内不画符号。
+  符号画在墙厚的中心平面上，按本机位的深度缓冲做遮挡判断——被墙挡住的洞口，符号也被挡住。
+- 洞口的形态从场景包的网格里读（:func:`_opening_frames`）：切出来的洞有
+  ``reveal:{kind}:…`` 套框网格，种类直接读 id；补出来的洞（洞落在两段墙的空隙里，见 mesh
+  ``_layout_openings``）没有套框，只有 ``wall:fill:{i}:lintel`` 过梁块与（窗才有的）
+  ``wall:fill:{i}:sill`` 窗下墙块——有窗下墙按窗画、没有按门画（过口在这一形态下与门
+  分不开，按门画）。id 格式是 mesh 那一层写死的；场景包契约下一次改动那一批把洞口表带进
+  场景包，这段 id 解析随之退掉。
+
+线稿与控制稿用的是同一套几何量（法向、平面外推），差别只在**画不画的取舍**：线稿全画；
+控制稿先把相邻像素对分成"共面接缝 / 折边 / 遮挡边 / 轮廓"四种（:func:`_sketch_pair_marks`），
+再按两侧网格的语义（地板/天花/墙/洞壁/家具）取舍。
+
+失败要响亮：相机 id 找不到、``room`` 机位指的房间没有地板、自动取景找不到一个达标的位姿、
+网格引用的材质不在场景包里，一律抛 :class:`BaseRenderError`，**不退化成默认相机、不编一个
+兜底颜色、不出一张对着墙的图**——退化只会让一张看着正常、其实渲错了机位的图流到下游
+（《纪律·拿不到就说没有，不许填猜的值》）。
 """
 
 from __future__ import annotations
@@ -47,6 +83,7 @@ from render3d_worker.models import (
     CameraSpec,
     MaskEntry,
     MeshSemantic,
+    RoomViewCheck,
     ScenePackage,
 )
 from render3d_worker.raster import (
@@ -99,10 +136,51 @@ ROOM_EYE_WALL_MARGIN_M: float = 0.35
 站会让近裁剪面（:data:`NEAR_CLIP_M` 5 厘米）咬穿墙面；0.35 米是室内摄影"背几乎靠墙但不贴
 墙"的量级，也留够近裁剪面十倍以上的冗余。"""
 
-ROOM_AUTO_DIRECTION_MIN_M: float = 0.05
-"""家具重心与地板质心的偏移小于它，就当**没有方向可言**（没有家具，或家具本身摆在正中央），
-改用形状本身的兜底方向（:func:`_room_fallback_direction_xy`），不把一个几乎为零的向量硬
-归一化成一个由浮点噪声决定的朝向。"""
+ROOM_VIEW_RETREAT_DIRECTION_COUNT: int = 16
+"""自动取景时从起点往几个方向退（等分 360°，22.5° 一档）。户型是正交的：8 档只有轴向与对角，
+退到的位置只有墙的正中和墙角；16 档多出"略偏轴"那一档，退得到墙角旁边、避得开正对门洞的
+位置。再加密到 32 档，退到的位置与 16 档相差不到一个避墙距离，只是多花一倍时间。"""
+
+ROOM_VIEW_YAW_COUNT: int = 16
+"""每个候选位置试几个水平朝向（等分 360°，22.5° 一档）。只保留朝着起点那一侧的（视线与
+"位置→起点"的夹角不超过 90°）：背对房间主体看出去，画面必然是一堵墙，不必渲一遍来证明。"""
+
+ROOM_VIEW_EVAL_HEIGHT_PX: int = 96
+"""候选评估用的光栅高度（宽按最终画幅的宽高比算）。实测本仓软光栅的耗时由三角形数决定、
+与画幅几乎无关（真户型 2368 个三角形：96×72 0.067 秒，256×192 0.077 秒）；96 高已经把
+占比量到 1% 以内（一格 ≈ 1/12288），再高只是白花。"""
+
+ROOM_VIEW_MIN_TARGET_FLOOR_RATIO: float = 0.04
+"""目标房间的地板至少占画面多少才算"拍到了这间房、不是对着墙"。
+
+**取值理由＝真户型 7 台室内机位实测下能分开好坏的最小值**（2026-09-05，老规则的位姿按
+本评估器量，全表在 ``_iteration/run-2026-09-05-control-sketch/run.md``）。失效清单 D1 判为
+"整幅是墙面"的两台在这个量上是 0.000（卫生间）与 0.031（厨房）；判为可用的四台是 0.046
+（书房）、0.056（阳台）、0.145（主卧）、0.211（客厅）。0.04 落在 0.031 与 0.046 之间。
+这不是"好图"的门槛，是"不是墙面图"的门槛。数这么小是因为室内机位固定平视
+（:data:`ROOM_PITCH_DEG`）、眼高 1.55 m：竖直半张角 32.5°（65° 张角）之内地板只从 2.43 m
+以外才进画面，小房间里能进画面的地板本来就只有一条。"""
+
+ROOM_VIEW_MIN_DOMINANCE_RATIO: float = 0.5
+"""目标房间在"有房间归属的像素"（各房间的地板 + 天花）里至少占多少才算画面主体。
+
+**取值理由＝真户型 7 台室内机位实测下能分开好坏的最小值**（同上表）。老规则下次卧那台
+站在整间房的质心上——上游把两处不相连的地板都标成"次卧"，质心落在它们之间、其实站在
+客厅里——它在这个量上是 0.053；判为可用的机位最低是阳台 0.546，其余 0.706～0.996。
+0.5 是"目标房间不少于其他房间之和"这句话的直译，落在两组之间。
+
+这个量**分不出失效清单 D2**（客厅看穿三间房）：客厅老机位在这个量上是 0.957——遮罩里
+墙不归任何房间，透过门洞看到的是隔壁的墙，遮罩数不到它。按"击中点落不落在目标房间地板
+足迹里"另量了一遍（含墙），客厅老机位 0.91、主卧 0.99、书房 0.93、阳台 0.66，同样分不开
+（数在 run.md）。D2 今天没有能用的判据，留给用户定。"""
+
+_ROOM_VIEW_EYE_DEDUPE_M: float = 0.01
+"""两个候选位置相距不到 1 厘米就当同一个位置（小房间里往几个方向退会退到同一处）。
+1 厘米远小于任何取景意义上的差别，只是去重复。"""
+
+_ROOM_FLOOR_TOUCH_TOLERANCE_M: float = 1e-3
+"""两块地板矩形的边相距不到 1 毫米就算相接（同一间房的连通判据）。网格顶点留到微米
+（mesh ``_COORD_DECIMALS``），相接的块共享的是同一个坐标，1 毫米只是留给浮点的余量。"""
 
 ROOM_EYE_FURNISHING_MARGIN_M: float = 0.40
 """室内机位退景时离任何家具至少留这么多距离（米）。**只按地板边界退是不够的**——真跑
@@ -127,6 +205,25 @@ LINE_DEPTH_TOLERANCE_RATIO: float = 0.02
 百分点，定低了满屏假线、定高了近处的边丢掉，怎么定都不对。本仓所有几何都是三角面（平面），
 所以"同一张面继续下去应该是多深"是**能精确算出来**的——连续面上残差恒为 0，只有真跨过
 遮挡边界或折角才跳起来。2% 只是留给浮点误差的余量，不是靠调它来分边缘。"""
+
+SKETCH_BACKGROUND_U8: int = LINE_BACKGROUND_U8
+SKETCH_FOREGROUND_U8: int = LINE_FOREGROUND_U8
+"""控制稿与线稿同编码：黑底白线、单通道 0/255、同尺寸。下游把两路当同一种输入送。"""
+
+SKETCH_SAME_PLANE_COS: float = 0.999
+"""相邻两个像素的法向夹角余弦不小于它就当同一张平面。本仓的几何全是平面（墙块、地板、
+天花、家具体块），相邻两张面要么共面（余弦 1，只差浮点误差）、要么以直角相接（余弦 0）；
+0.999（约 2.6°）离两头都远，**不是靠调它来分边**。"""
+
+SKETCH_CONTIGUITY_TOLERANCE_RATIO: float = LINE_DEPTH_TOLERANCE_RATIO
+"""判两个相邻像素是"相接的两张面"还是"一前一后的两张面"：任一侧的平面外推到另一侧的
+视线上、预测深度与实测差在这个比例内，就是相接。理由：相接的两张面共享一条交线，交线上
+的点同时落在两张平面上，所以**至少有一个方向外推得准**；遮挡边两个方向都外推不准。
+容差与线稿那一路同一个数、同一个理由——留给浮点误差的余量，不是靠它分边。"""
+
+SKETCH_SYMBOL_DEPTH_TOLERANCE_RATIO: float = LINE_DEPTH_TOLERANCE_RATIO
+"""门窗符号做遮挡判断时，符号上的点比深度缓冲远不超过这个比例仍算可见。符号画在墙厚的
+中心平面上，端点正落在洞口侧壁那张面上，与缓冲里的深度只差浮点误差；容差用同一个数。"""
 
 DEPTH_BACKGROUND_U16: int = 0
 DEPTH_MIN_U16: int = 1
@@ -314,6 +411,31 @@ class CameraPose:
     fov_deg: float
     near_clip_m: float
     far_clip_m: float
+    room_view: RoomViewCheck | None = None
+    """``room`` 机位的取景自证数（自动取景时是选中那个候选的评估结果；上游显式给 yaw 时
+    只量不判）。``bird`` 机位为 ``None``。"""
+
+
+@dataclass(frozen=True, eq=False)
+class _RoomViewJob:
+    """一间房自动取景要的全部不变量：摊平的三角形、每块网格归不归目标房间、张角、画幅。
+    攒一次，每个候选位姿只换视图矩阵——候选有上百个，这些东西不该算上百遍。"""
+
+    triangles_m: Float64Array
+    tri_mesh_ids: npt.NDArray[np.int32]
+    target_floor_of_index: npt.NDArray[np.bool_]
+    """(1 + 网格数,) 这个遮罩索引是不是目标房间的地板。0 号（背景）恒为 False。"""
+
+    target_room_of_index: npt.NDArray[np.bool_]
+    other_room_of_index: npt.NDArray[np.bool_]
+    """(1 + 网格数,) 这个遮罩索引归目标房间 / 归别的房间。墙不归任何房间，两边都是 False。"""
+
+    fov_deg: float
+    aspect_ratio: float
+    near_clip_m: float
+    far_clip_m: float
+    width_px: int
+    height_px: int
 
 
 @dataclass(frozen=True, eq=False)
@@ -381,15 +503,26 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
 
     - ``bird``：注视整户包围盒中心，方向用相机自带的 ``yaw_deg``/``pitch_deg``，**距离自动算**
       ——把包围盒外接球塞进视锥里较窄的那个方向（竖直与水平张角取小者），再退 6% 留边。
-    - ``room``：**退到房间边缘、朝房间内部看**（观感提档 2026-09-01，取代"站在地板质心上"
-      那版——质心正是屋子正中，四面都是墙，站那儿只会看见一堵墙加半个柜子）。水平朝向
-      ``forward_xy`` 分两种来路：``camera.yaw_deg`` 若是上游显式给出的（``model_fields_set``
-      里有它，哪怕值恰好是默认的 0），就按它平视，**不被下面的自动取景盖过**；没给才自动指向
-      该房间家具的面积加权质心（见 :func:`_room_auto_forward_xy`）。机位本身**总是**沿
-      ``-forward_xy``（镜头背后那个方向）从地板质心退，退到离墙 :data:`ROOM_EYE_WALL_MARGIN_M`
-      **且**离任何家具 :data:`ROOM_EYE_FURNISHING_MARGIN_M` 的最远处（:func:`_room_eye_xy_m`）
-      ——这一步与 yaw 是不是自动无关：不管朝哪儿看，镜头背后都该有房间的进深，不是贴着墙
-      或者贴着柜子站。俯仰仍固定用 :data:`ROOM_PITCH_DEG`。
+    - ``room``：**室内机位不许对墙**（2026-09-05，来路＝失效清单 D1/D2：老规则"退到房间
+      边缘朝屋里看"在小房间里退到贴着墙、整幅是墙面；客厅那台看穿三间房、主体不是客厅）。
+      分两条路：
+
+      * ``camera.yaw_deg`` 是上游显式给出的（``model_fields_set`` 里有它，哪怕值恰好是默认
+        的 0）：按它平视，机位沿 ``-forward_xy``（镜头背后）从地板质心退到离墙
+        :data:`ROOM_EYE_WALL_MARGIN_M` **且**离任何家具 :data:`ROOM_EYE_FURNISHING_MARGIN_M`
+        的最远处（:func:`_room_eye_xy_m`）——上游给了就听上游的，**不做候选评估、不判**，
+        只把取景自证数量出来随位姿带出（``room_view.passed`` 可以是 False）。
+      * 没给：**确定性的候选评估**（:func:`_room_view_candidate_poses` 起那一节）。从这间房
+        最大那块连通地板的质心出发，往 :data:`ROOM_VIEW_RETREAT_DIRECTION_COUNT` 个方向各退到
+        能退的最远处得到候选位置，每个位置配 :data:`ROOM_VIEW_YAW_COUNT` 档朝向里朝着起点
+        那一侧的；每个候选用本仓自己的低分辨率深度/遮罩光栅评估三个数——最近深度、目标房间
+        地板占比、目标房间在有房间归属的像素里的占比；三条判据（最近深度 ≥ 避墙距离、地板
+        占比 ≥ :data:`ROOM_VIEW_MIN_TARGET_FLOOR_RATIO`、主体占比 ≥
+        :data:`ROOM_VIEW_MIN_DOMINANCE_RATIO`）全过的里面取"地板占比 × 主体占比"最大的，
+        同分取候选次序靠前的。**一个都不达标就抛错**，报"房间 X 无法取景"与最接近的那个候选
+        的数，不出一张墙面图。
+
+      俯仰两条路都固定用 :data:`ROOM_PITCH_DEG`。
 
     包围盒**按网格顶点现算**，不读 ``bounds_min_m``/``bounds_max_m``：那两个字段是场景包的
     自证数（编包那一侧填的），取景必须框住真正会被画出来的东西，两者万一不一致，以画得出来
@@ -399,9 +532,11 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
     if aspect_ratio <= 0.0:
         raise BaseRenderError(f"宽高比必须为正：aspect_ratio={aspect_ratio}")
     camera = _find_camera(scene, camera_id)
-    min_xyz_m, max_xyz_m = _scene_bounds_m(scene, _rendered_mesh_indices(scene, camera.kind))
+    mesh_indices = _rendered_mesh_indices(scene, camera.kind)
+    min_xyz_m, max_xyz_m = _scene_bounds_m(scene, mesh_indices)
     diagonal_m = float(np.linalg.norm(max_xyz_m - min_xyz_m))
     far_clip_m = max(FAR_CLIP_MIN_M, diagonal_m * FAR_CLIP_DIAGONAL_RATIO)
+    room_view: RoomViewCheck | None = None
 
     if camera.kind == "bird":
         center_m = (min_xyz_m + max_xyz_m) * 0.5
@@ -419,13 +554,18 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
         centroid_xy_m, floor_z_m = _room_floor_anchor_m(scene, camera.room)
         centroid_xy = np.asarray(centroid_xy_m, dtype=np.float64)
         floor_triangles_xy = _room_floor_triangles_xy_m(scene, camera.room)
+        job = _room_view_job(
+            scene, camera.room, mesh_indices, camera.fov_deg, aspect_ratio, far_clip_m
+        )
+        eye_z_m = floor_z_m + camera.eye_height_m
         if "yaw_deg" in camera.model_fields_set:
             forward_xy = _yaw_pitch_direction(camera.yaw_deg, ROOM_PITCH_DEG)[:2]
+            eye_xy = _room_eye_xy_m(scene, camera.room, floor_triangles_xy, centroid_xy, forward_xy)
+            room_view = _room_view_check(job, eye_xy, eye_z_m, camera.yaw_deg, candidate_count=1)
         else:
-            forward_xy = _room_auto_forward_xy(scene, camera.room, floor_triangles_xy, centroid_xy)
-        eye_xy = _room_eye_xy_m(scene, camera.room, floor_triangles_xy, centroid_xy, forward_xy)
-        eye_m = np.array([eye_xy[0], eye_xy[1], floor_z_m + camera.eye_height_m], dtype=np.float64)
-        forward = np.array([forward_xy[0], forward_xy[1], 0.0], dtype=np.float64)
+            room_view = _room_view_pick(scene, camera.room, job, floor_triangles_xy, eye_z_m)
+        eye_m = np.asarray(room_view.eye_m, dtype=np.float64)
+        forward = _yaw_pitch_direction(room_view.yaw_deg, ROOM_PITCH_DEG)
         target_m = eye_m + forward * ROOM_TARGET_DISTANCE_M
 
     return CameraPose(
@@ -437,6 +577,7 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
         fov_deg=camera.fov_deg,
         near_clip_m=NEAR_CLIP_M,
         far_clip_m=far_clip_m,
+        room_view=room_view,
     )
 
 
@@ -446,16 +587,16 @@ def render_base_views(
     width_px: int = 1024,
     height_px: int = 768,
 ) -> BaseRenderViews:
-    """一份场景包 + 一个机位 → 四路图 + 遮罩索引表 + 自证数。
+    """一份场景包 + 一个机位 → 五路图 + 遮罩索引表 + 自证数。
 
-    零模型调用、无随机、无时间戳：**同一份场景包渲两次，四张 PNG 逐字节相同**
+    零模型调用、无随机、无时间戳：**同一份场景包渲两次，五张 PNG 逐字节相同**
     （同 render2d 母版那条口径；测试直接断字节相等）。观感那一批（超采样、环境光遮蔽）
     照样一个随机数都没有——采样核是写死的常量数组，转角是写死的 4×4 铺块。
 
-    光栅走**两遍**：1 倍那一遍出深度/遮罩/线稿三路（它们是被当数据读的，见模块 docstring），
-    :data:`GEOMETRY_SUPERSAMPLE_FACTOR` 倍那一遍只出几何路。分两遍而不是"渲一遍高的再
-    降采样给大家用"，是为了让三路数据图与观感提档之间**结构上没有接口**——观感这一节
-    再怎么改，那三路走的还是原来那一次光栅的原始缓冲。
+    光栅走**两遍**：1 倍那一遍出深度/遮罩/线稿/控制稿四路（前三路是被当数据读的，控制稿
+    是从同一份缓冲按另一套取舍画的，见模块 docstring），:data:`GEOMETRY_SUPERSAMPLE_FACTOR`
+    倍那一遍只出几何路。分两遍而不是"渲一遍高的再降采样给大家用"，是为了让数据图与观感
+    提档之间**结构上没有接口**——观感这一节再怎么改，那几路走的还是原来那一次光栅的原始缓冲。
     """
     if width_px <= 0 or height_px <= 0:
         raise BaseRenderError(f"画幅必须为正：width_px={width_px} height_px={height_px}")
@@ -493,6 +634,7 @@ def render_base_views(
         depth_png=depth_png,
         line_png=_encode_line_png(buffers, screen),
         mask_png=mask_png,
+        sketch_png=_encode_sketch_png(scene, buffers, screen, view_matrix, proj_matrix, pose),
         width_px=width_px,
         height_px=height_px,
         camera_id=pose.camera_id,
@@ -500,6 +642,7 @@ def render_base_views(
         covered_pixel_ratio=buffers.covered_pixel_ratio,
         near_m=near_m,
         far_m=far_m,
+        room_view=pose.room_view,
     )
 
 
@@ -580,32 +723,6 @@ def _room_floor_anchor_m(scene: ScenePackage, room: str) -> tuple[tuple[float, f
         raise BaseRenderError(f"这间房没有地板，站不进去：room={room}；有地板的房间：{known}")
     anchor = weighted_sum / total_area_m2
     return (float(anchor[0]), float(anchor[1])), float(anchor[2])
-
-
-def _room_content_anchor_xy_m(scene: ScenePackage, room: str) -> Float64Array | None:
-    """该房间家具的**面积加权**质心 (x, y)；房间里一件家具都没有就是 ``None``。
-
-    权重取三角形自身面积，跟 :func:`_room_floor_anchor_m` 同一个理由：一张大茶几比十个
-    小拉手更能代表"这间房主要在看什么"，跟拉手切了几个三角形无关。侧面（柜门、抽屉的
-    立面）也一起算进去，不只算水平投影——这里求的是"这堆几何的质量分布在哪儿"，不是
-    "占地面积"，一人高的衣柜本该比同样占地的矮凳把镜头往它那边多拉一点。
-    """
-    weighted_sum = np.zeros(2, dtype=np.float64)
-    total_area_m2 = 0.0
-    for mesh in scene.meshes:
-        if mesh.semantic != "furnishing" or mesh.room != room or not mesh.triangles:
-            continue
-        verts = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3)
-        index = np.asarray(mesh.triangles, dtype=np.int64).reshape(-1, 3)
-        tris = verts[index]
-        cross = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
-        areas_m2 = 0.5 * np.linalg.norm(cross, axis=1)
-        centroids_xy = tris[:, :, :2].mean(axis=1)
-        weighted_sum += (centroids_xy * areas_m2[:, None]).sum(axis=0)
-        total_area_m2 += float(areas_m2.sum())
-    if total_area_m2 <= 0.0:
-        return None
-    return weighted_sum / total_area_m2
 
 
 def _room_floor_triangles_xy_m(scene: ScenePackage, room: str) -> Float64Array:
@@ -741,42 +858,6 @@ def _room_retreat_distance_m(
     return farthest_m
 
 
-def _room_fallback_direction_xy(
-    triangles_xy_m: Float64Array, centroid_xy_m: Float64Array
-) -> Float64Array:
-    """没有家具可看时的兜底朝向：地板离质心最远的那个顶点方向。
-
-    形状本身已经给出唯一确定的答案，不用另编一个默认方向（同《纪律·拿不到就说没有，
-    不许填猜的值》的精神）：退到这个方向的边缘上、看回去，房间纵深最深的那一段正对镜头，
-    比随手定一个 +y 更不容易一睁眼就对着一堵近墙。"""
-    vertices_xy = triangles_xy_m.reshape(-1, 2)
-    offsets = vertices_xy - centroid_xy_m
-    farthest_index = int(np.argmax(np.einsum("ij,ij->i", offsets, offsets)))
-    direction = offsets[farthest_index]
-    norm = float(np.linalg.norm(direction))
-    if norm < DEPTH_MIN_SPAN_M:
-        return np.array([0.0, 1.0], dtype=np.float64)
-    return np.asarray(direction / norm, dtype=np.float64)
-
-
-def _room_auto_forward_xy(
-    scene: ScenePackage,
-    room: str,
-    floor_triangles_xy_m: Float64Array,
-    centroid_xy_m: Float64Array,
-) -> Float64Array:
-    """``camera.yaw_deg`` 没有显式给出时的水平朝向：指向该房间家具的面积加权质心；
-    没有家具（或家具质心恰好落在地板质心上，见 :data:`ROOM_AUTO_DIRECTION_MIN_M`）
-    就退回形状本身的兜底方向（:func:`_room_fallback_direction_xy`）。"""
-    content_xy_m = _room_content_anchor_xy_m(scene, room)
-    if content_xy_m is not None:
-        offset = content_xy_m - centroid_xy_m
-        norm = float(np.linalg.norm(offset))
-        if norm >= ROOM_AUTO_DIRECTION_MIN_M:
-            return offset / norm
-    return _room_fallback_direction_xy(floor_triangles_xy_m, centroid_xy_m)
-
-
 def _room_eye_xy_m(
     scene: ScenePackage,
     room: str,
@@ -799,6 +880,263 @@ def _room_eye_xy_m(
         floor_triangles_xy_m, furnishing_triangles_xy_m, centroid_xy_m, retreat_xy
     )
     return centroid_xy_m + retreat_xy * eye_distance_m
+
+
+# ---------------------------------------------------------------------------
+# 室内机位的候选评估：不许对墙
+# ---------------------------------------------------------------------------
+
+
+def _room_view_job(
+    scene: ScenePackage,
+    room: str,
+    mesh_indices: list[int],
+    fov_deg: float,
+    aspect_ratio: float,
+    far_clip_m: float,
+) -> _RoomViewJob:
+    """攒一间房取景评估的不变量。画幅按 :data:`ROOM_VIEW_EVAL_HEIGHT_PX` 与最终宽高比定——
+    评估用的张角与宽高比必须和最终那张图一样，否则量的是另一台相机的画面。"""
+    triangles_m, tri_mesh_ids = _flatten_meshes(scene, mesh_indices)
+    count = len(scene.meshes) + 1
+    target_floor = np.zeros(count, dtype=np.bool_)
+    target_room = np.zeros(count, dtype=np.bool_)
+    other_room = np.zeros(count, dtype=np.bool_)
+    for mesh_index, mesh in enumerate(scene.meshes):
+        if mesh.room is None or mesh.semantic not in ("floor", "ceiling"):
+            continue
+        if mesh.room == room:
+            target_room[mesh_index + 1] = True
+            target_floor[mesh_index + 1] = mesh.semantic == "floor"
+        else:
+            other_room[mesh_index + 1] = True
+    height_px = ROOM_VIEW_EVAL_HEIGHT_PX
+    width_px = max(1, int(round(height_px * aspect_ratio)))
+    return _RoomViewJob(
+        triangles_m=triangles_m,
+        tri_mesh_ids=tri_mesh_ids,
+        target_floor_of_index=target_floor,
+        target_room_of_index=target_room,
+        other_room_of_index=other_room,
+        fov_deg=fov_deg,
+        aspect_ratio=aspect_ratio,
+        near_clip_m=NEAR_CLIP_M,
+        far_clip_m=far_clip_m,
+        width_px=width_px,
+        height_px=height_px,
+    )
+
+
+def _room_view_passes(
+    min_depth_m: float, target_floor_ratio: float, dominance_ratio: float
+) -> bool:
+    """三条取景判据，只写在这一处：不贴墙、拍到了地板、画面主体是这间房。"""
+    return (
+        min_depth_m >= ROOM_EYE_WALL_MARGIN_M
+        and target_floor_ratio >= ROOM_VIEW_MIN_TARGET_FLOOR_RATIO
+        and dominance_ratio >= ROOM_VIEW_MIN_DOMINANCE_RATIO
+    )
+
+
+def _room_view_check(
+    job: _RoomViewJob,
+    eye_xy_m: Float64Array,
+    eye_z_m: float,
+    yaw_deg: float,
+    candidate_count: int,
+) -> RoomViewCheck:
+    """按本仓自己的深度/遮罩光栅量一个位姿：最近深度、目标房间地板占比、主体占比。
+
+    量的就是最终那台相机会画的东西（同一批三角形、同一个张角与宽高比），只是画幅小——
+    所以"评估说主体是这间房"与"最终图上主体是这间房"是同一件事，差的只是采样粒度。
+    """
+    eye_m = np.array([eye_xy_m[0], eye_xy_m[1], eye_z_m], dtype=np.float64)
+    forward = _yaw_pitch_direction(yaw_deg, ROOM_PITCH_DEG)
+    view_matrix = look_at_matrix(eye_m, eye_m + forward * ROOM_TARGET_DISTANCE_M)
+    proj_matrix = perspective_matrix(job.fov_deg, job.aspect_ratio, job.near_clip_m, job.far_clip_m)
+    buffers = rasterize(
+        job.triangles_m,
+        job.tri_mesh_ids,
+        view_matrix,
+        proj_matrix,
+        job.width_px,
+        job.height_px,
+        job.near_clip_m,
+    )
+    total_px = float(job.width_px * job.height_px)
+    hit = buffers.hit_mask
+    hit_px = int(np.count_nonzero(hit))
+    min_depth_m = float(buffers.depth_m[hit].min()) if hit_px > 0 else math.inf
+    index = buffers.id_buffer + 1
+    target_floor_ratio = float(np.count_nonzero(job.target_floor_of_index[index])) / total_px
+    target_room_ratio = float(np.count_nonzero(job.target_room_of_index[index])) / total_px
+    other_room_ratio = float(np.count_nonzero(job.other_room_of_index[index])) / total_px
+    attributed = target_room_ratio + other_room_ratio
+    dominance_ratio = target_room_ratio / attributed if attributed > 0.0 else 0.0
+    return RoomViewCheck(
+        eye_m=(float(eye_m[0]), float(eye_m[1]), float(eye_m[2])),
+        yaw_deg=float(yaw_deg),
+        min_depth_m=min_depth_m,
+        target_floor_ratio=target_floor_ratio,
+        target_room_ratio=target_room_ratio,
+        other_room_ratio=other_room_ratio,
+        dominance_ratio=dominance_ratio,
+        candidate_count=candidate_count,
+        passed=_room_view_passes(min_depth_m, target_floor_ratio, dominance_ratio),
+    )
+
+
+def _room_floor_boxes_m(scene: ScenePackage, room: str) -> list[tuple[float, float, float, float]]:
+    """该房间每块地板网格的平面包围矩形 ``(x0, x1, y0, y1)``。地板网格一块就是一个矩形
+    （mesh ``_floor_and_ceiling``），包围矩形就是它本身。次序跟着网格序。"""
+    boxes: list[tuple[float, float, float, float]] = []
+    for mesh in scene.meshes:
+        if mesh.semantic != "floor" or mesh.room != room or not mesh.vertices:
+            continue
+        verts = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3)
+        boxes.append(
+            (
+                float(verts[:, 0].min()),
+                float(verts[:, 0].max()),
+                float(verts[:, 1].min()),
+                float(verts[:, 1].max()),
+            )
+        )
+    return boxes
+
+
+def _room_view_start_xy_m(
+    scene: ScenePackage, room: str, floor_triangles_xy_m: Float64Array
+) -> Float64Array:
+    """自动取景的起点：这间房**最大的那块连通地板**的面积加权质心；质心落在地板外
+    （L 形）就退到那块连通地板里最大一块矩形的中心。
+
+    为什么不直接用整间房的质心（:func:`_room_floor_anchor_m`）：上游的房间遮罩会把同名的
+    几块不相连的地板算成一间房（真户型 2026-09-05 实测："次卧"两处、"卫生间"三处），
+    整间房的质心落在它们之间的墙里，从墙里出发退到哪儿都不是这间房。连通判据是矩形相接
+    （:data:`_ROOM_FLOOR_TOUCH_TOLERANCE_M`），地板网格一块就是一个矩形
+    （mesh ``_floor_and_ceiling``）。
+    """
+    boxes = _room_floor_boxes_m(scene, room)
+    component_of = list(range(len(boxes)))
+
+    def _root(index: int) -> int:
+        while component_of[index] != index:
+            component_of[index] = component_of[component_of[index]]
+            index = component_of[index]
+        return index
+
+    tolerance = _ROOM_FLOOR_TOUCH_TOLERANCE_M
+    for i, (ax0, ax1, ay0, ay1) in enumerate(boxes):
+        for j in range(i + 1, len(boxes)):
+            bx0, bx1, by0, by1 = boxes[j]
+            touching = (
+                ax0 <= bx1 + tolerance
+                and bx0 <= ax1 + tolerance
+                and ay0 <= by1 + tolerance
+                and by0 <= ay1 + tolerance
+            )
+            if touching:
+                component_of[_root(i)] = _root(j)
+
+    area_of_component: dict[int, float] = {}
+    for index, (x0, x1, y0, y1) in enumerate(boxes):
+        root = _root(index)
+        area_of_component[root] = area_of_component.get(root, 0.0) + (x1 - x0) * (y1 - y0)
+    # 同面积取先出现的连通块：dict 的插入序跟着网格序走，网格序是场景包写死的
+    best_root = max(area_of_component, key=lambda root: (area_of_component[root], -root))
+
+    weighted = np.zeros(2, dtype=np.float64)
+    total_area = 0.0
+    largest_box_center = np.zeros(2, dtype=np.float64)
+    largest_box_area = -1.0
+    for index, (x0, x1, y0, y1) in enumerate(boxes):
+        if _root(index) != best_root:
+            continue
+        area = (x1 - x0) * (y1 - y0)
+        center = np.array([(x0 + x1) * 0.5, (y0 + y1) * 0.5], dtype=np.float64)
+        weighted += center * area
+        total_area += area
+        if area > largest_box_area:
+            largest_box_area, largest_box_center = area, center
+    centroid = weighted / total_area
+    if _point_in_any_triangle_xy(floor_triangles_xy_m, centroid):
+        return centroid
+    return largest_box_center
+
+
+def _room_view_candidate_poses(
+    floor_triangles_xy_m: Float64Array,
+    furnishing_triangles_xy_m: Float64Array,
+    start_xy_m: Float64Array,
+) -> list[tuple[Float64Array, float]]:
+    """候选位姿 ``(eye_xy, yaw_deg)``，次序写死：起点本身在前，然后按退让方向的角序；
+    每个位置按朝向的角序。次序进了"同分取靠前"那条规则，所以它是结果的一部分。"""
+    eyes: list[Float64Array] = [start_xy_m]
+    for step in range(ROOM_VIEW_RETREAT_DIRECTION_COUNT):
+        direction_xy = _yaw_pitch_direction(360.0 * step / ROOM_VIEW_RETREAT_DIRECTION_COUNT, 0.0)[
+            :2
+        ]
+        distance_m = _room_retreat_distance_m(
+            floor_triangles_xy_m, furnishing_triangles_xy_m, start_xy_m, direction_xy
+        )
+        eye_xy = start_xy_m + direction_xy * distance_m
+        if any(float(np.linalg.norm(eye_xy - known)) < _ROOM_VIEW_EYE_DEDUPE_M for known in eyes):
+            continue
+        eyes.append(eye_xy)
+
+    poses: list[tuple[Float64Array, float]] = []
+    for eye_xy in eyes:
+        toward_start = start_xy_m - eye_xy
+        at_start = float(np.linalg.norm(toward_start)) < _ROOM_VIEW_EYE_DEDUPE_M
+        for step in range(ROOM_VIEW_YAW_COUNT):
+            yaw_deg = 360.0 * step / ROOM_VIEW_YAW_COUNT
+            forward_xy = _yaw_pitch_direction(yaw_deg, 0.0)[:2]
+            if not at_start and float(np.dot(forward_xy, toward_start)) < 0.0:
+                continue
+            poses.append((eye_xy, yaw_deg))
+    return poses
+
+
+def _room_view_pick(
+    scene: ScenePackage,
+    room: str,
+    job: _RoomViewJob,
+    floor_triangles_xy_m: Float64Array,
+    eye_z_m: float,
+) -> RoomViewCheck:
+    """评估全部候选，取达标里"地板占比 × 主体占比"最大的；一个都不达标就响亮失败。"""
+    start_xy = _room_view_start_xy_m(scene, room, floor_triangles_xy_m)
+    poses = _room_view_candidate_poses(
+        floor_triangles_xy_m, _room_furnishing_triangles_xy_m(scene, room), start_xy
+    )
+    checks = [
+        _room_view_check(job, eye_xy, eye_z_m, yaw_deg, candidate_count=len(poses))
+        for eye_xy, yaw_deg in poses
+    ]
+
+    def _score(check: RoomViewCheck) -> float:
+        return check.target_floor_ratio * check.dominance_ratio
+
+    best: RoomViewCheck | None = None
+    for check in checks:
+        if check.passed and (best is None or _score(check) > _score(best)):
+            best = check
+    if best is not None:
+        return best
+
+    closest = checks[0]
+    for check in checks[1:]:
+        if _score(check) > _score(closest):
+            closest = check
+    raise BaseRenderError(
+        f"房间 {room} 无法取景：{len(checks)} 个候选位姿没有一个达标"
+        f"（判据：最近深度 ≥ {ROOM_EYE_WALL_MARGIN_M} m、目标房间地板占比 ≥ "
+        f"{ROOM_VIEW_MIN_TARGET_FLOOR_RATIO}、主体占比 ≥ {ROOM_VIEW_MIN_DOMINANCE_RATIO}）；"
+        f"最接近的一个站在 ({closest.eye_m[0]:.2f}, {closest.eye_m[1]:.2f}) 朝 "
+        f"{closest.yaw_deg:.1f}°：最近深度 {closest.min_depth_m:.2f} m、地板占比 "
+        f"{closest.target_floor_ratio:.3f}、主体占比 {closest.dominance_ratio:.3f}"
+    )
 
 
 def _yaw_pitch_direction(yaw_deg: float, pitch_deg: float) -> Float64Array:
@@ -1068,7 +1406,7 @@ def _shade_linear(
 
     三盏灯全部写死在世界系、不随相机转（理由见 :data:`KEY_LIGHT_FROM_DIR_XYZ`）。
     """
-    ray_world = _world_ray_xyz(buffers, job.view_matrix, pose, aspect_ratio)
+    ray_world = _world_ray_xyz(buffers, job.view_matrix, pose.fov_deg, aspect_ratio)
     facing = np.where(
         np.einsum("hwi,hwi->hw", buffers.normal_unit_xyz, ray_world) > 0.0,
         np.float32(-1.0),
@@ -1111,7 +1449,7 @@ def _lambert(
 
 
 def _world_ray_xyz(
-    buffers: RasterBuffers, view_matrix: Float64Array, pose: CameraPose, aspect_ratio: float
+    buffers: RasterBuffers, view_matrix: Float64Array, fov_deg: float, aspect_ratio: float
 ) -> Float32Array:
     """(H, W, 3) 每个像素的**世界系**视线方向，长度归一到"走一米深度前进一米"。
 
@@ -1125,7 +1463,7 @@ def _world_ray_xyz(
     up = view_matrix[1, :3].astype(np.float32)
     forward = -view_matrix[2, :3].astype(np.float32)
 
-    tan_v = np.float32(math.tan(math.radians(pose.fov_deg) * 0.5))
+    tan_v = np.float32(math.tan(math.radians(fov_deg) * 0.5))
     tan_h = tan_v * np.float32(aspect_ratio)
     x_view = ((np.arange(width_px, dtype=np.float32) + 0.5) * (2.0 / width_px) - 1.0) * tan_h
     y_view = (1.0 - (np.arange(height_px, dtype=np.float32) + 0.5) * (2.0 / height_px)) * tan_v
@@ -1397,6 +1735,375 @@ def _depth_break(
     return np.asarray(both_hit & ~continuous, dtype=np.bool_)
 
 
+# ---------------------------------------------------------------------------
+# 控制稿：给"线稿生图"控制通道画的那一路（画法规则见模块 docstring）
+# ---------------------------------------------------------------------------
+
+_SKETCH_BACKGROUND_CODE: int = 0
+_SKETCH_SEMANTIC_CODE: dict[MeshSemantic, int] = {
+    "floor": 1,
+    "ceiling": 2,
+    "wall": 3,
+    "reveal": 4,
+    "furnishing": 5,
+}
+"""网格语义 → 控制稿取舍用的整数码，0 留给背景（没打到几何）。"""
+
+_OPENING_KINDS: tuple[str, ...] = ("door", "window", "pass")
+
+
+@dataclass(frozen=True)
+class _OpeningFrame:
+    """一个洞口在三维里的框：沿墙的起讫、墙厚中心、竖向起讫。门窗符号画在这个框里。"""
+
+    kind: str
+    along_axis: int
+    """洞口宽度沿哪根世界轴：0 ＝ x、1 ＝ y。另一根轴就是墙厚方向。"""
+
+    along_m: tuple[float, float]
+    across_center_m: float
+    z_m: tuple[float, float]
+
+
+def _sketch_semantic_code_of_index(scene: ScenePackage) -> npt.NDArray[np.int8]:
+    """(1 + 网格数,) 遮罩索引 → 语义码。``id_buffer + 1`` 直接当下标用（同调色板那套编号）。"""
+    codes = np.full(len(scene.meshes) + 1, _SKETCH_BACKGROUND_CODE, dtype=np.int8)
+    for mesh_index, mesh in enumerate(scene.meshes):
+        codes[mesh_index + 1] = _SKETCH_SEMANTIC_CODE[mesh.semantic]
+    return codes
+
+
+def _encode_sketch_png(
+    scene: ScenePackage,
+    buffers: RasterBuffers,
+    screen: _ScreenGeometry,
+    view_matrix: Float64Array,
+    proj_matrix: Float64Array,
+    pose: CameraPose,
+) -> bytes:
+    """控制稿路：黑底白线的 8 位灰度 PNG，与线稿同尺寸同编码，**从同一份 1 倍缓冲取**。
+
+    两步：相邻像素对按几何关系与两侧语义取舍（:func:`_sketch_pair_marks`，横竖各扫一遍），
+    再把门窗符号按三维线段投影上去、过深度缓冲的遮挡判断（:func:`_draw_opening_symbols`）。
+    线宽 1 像素，理由同线稿：条件图上细线比粗线好。
+    """
+    semantic = _sketch_semantic_code_of_index(scene)[buffers.id_buffer + 1]
+    hit = buffers.hit_mask
+    depth_m = buffers.depth_m.astype(np.float64)
+    canvas = np.zeros(buffers.id_buffer.shape, dtype=np.bool_)
+
+    mark_a, mark_b = _sketch_pair_marks(
+        semantic[:, :-1],
+        semantic[:, 1:],
+        hit[:, :-1],
+        hit[:, 1:],
+        depth_m[:, :-1],
+        depth_m[:, 1:],
+        screen.normal_view_xyz[:, :-1],
+        screen.normal_view_xyz[:, 1:],
+        screen.position_view_m[:, :-1],
+        screen.position_view_m[:, 1:],
+        screen.ray_view_xyz[:, :-1],
+        screen.ray_view_xyz[:, 1:],
+    )
+    canvas[:, :-1] |= mark_a
+    canvas[:, 1:] |= mark_b
+
+    mark_a, mark_b = _sketch_pair_marks(
+        semantic[:-1, :],
+        semantic[1:, :],
+        hit[:-1, :],
+        hit[1:, :],
+        depth_m[:-1, :],
+        depth_m[1:, :],
+        screen.normal_view_xyz[:-1, :],
+        screen.normal_view_xyz[1:, :],
+        screen.position_view_m[:-1, :],
+        screen.position_view_m[1:, :],
+        screen.ray_view_xyz[:-1, :],
+        screen.ray_view_xyz[1:, :],
+    )
+    canvas[:-1, :] |= mark_a
+    canvas[1:, :] |= mark_b
+
+    _draw_opening_symbols(canvas, scene, buffers, view_matrix, proj_matrix, pose.near_clip_m)
+    sketch_u8 = np.where(canvas, SKETCH_FOREGROUND_U8, SKETCH_BACKGROUND_U8).astype(np.uint8)
+    return _encode_png(Image.fromarray(sketch_u8, mode="L"))
+
+
+def _plane_residual_ratio(
+    normal_view_xyz: Float64Array,
+    position_view_m: Float64Array,
+    neighbour_ray_xyz: Float64Array,
+    neighbour_depth_m: Float64Array,
+    both_hit: npt.NDArray[np.bool_],
+) -> Float64Array:
+    """当前像素所在平面外推到邻居视线上，预测深度与邻居实测深度的相对残差；外推不成立
+    （掠射、外推到相机背后、任一侧没打到几何）记 ``inf``。与 :func:`_depth_break` 是同一个
+    几何量，只是这里要的是数不是布尔——控制稿要拿它分"相接"与"遮挡"。"""
+    denom = np.einsum("hwi,hwi->hw", normal_view_xyz, neighbour_ray_xyz)
+    numer = np.einsum("hwi,hwi->hw", normal_view_xyz, position_view_m)
+    usable = both_hit & (np.abs(denom) > 1e-9)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        predicted_m = np.where(usable, numer / np.where(usable, denom, 1.0), 0.0)
+        safe_depth_m = np.where(both_hit & (neighbour_depth_m > 0.0), neighbour_depth_m, 1.0)
+        ratio = np.abs(neighbour_depth_m - predicted_m) / safe_depth_m
+    valid = usable & (predicted_m > 0.0) & np.isfinite(ratio)
+    return np.asarray(np.where(valid, ratio, np.inf), dtype=np.float64)
+
+
+def _sketch_pair_marks(
+    semantic_a: npt.NDArray[np.int8],
+    semantic_b: npt.NDArray[np.int8],
+    hit_a: npt.NDArray[np.bool_],
+    hit_b: npt.NDArray[np.bool_],
+    depth_a_m: Float64Array,
+    depth_b_m: Float64Array,
+    normal_a_xyz: Float64Array,
+    normal_b_xyz: Float64Array,
+    position_a_m: Float64Array,
+    position_b_m: Float64Array,
+    ray_a_xyz: Float64Array,
+    ray_b_xyz: Float64Array,
+) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.bool_]]:
+    """一批相邻像素对 (a, b) → 哪些要在 a 侧标线、哪些要在 b 侧标线。
+
+    先把每一对分成四种几何关系（互斥）：
+
+    - **轮廓**：一侧打到几何、另一侧是背景；
+    - **共面接缝**：两侧法向相同（:data:`SKETCH_SAME_PLANE_COS`）且相接——同一张面，或者
+      被切成几块的同一面墙、两块共面的地板；
+    - **折边**：相接但法向不同——两张面沿一条交线相接（墙角、地脚线、家具的棱）；
+    - **遮挡边**：不相接——一前一后两张面，近的盖住远的（相接的判据见
+      :data:`SKETCH_CONTIGUITY_TOLERANCE_RATIO`）。
+
+    再按模块 docstring 的画法取舍：轮廓画（天花的轮廓除外）；遮挡边画（两侧都是地板的
+    除外——地板全在同一高度，本来也遮不住地板）；折边画，但**两侧任一侧是天花的不画**
+    （天花与墙的交线）、**两侧都是地板的不画**（房间分界线）；共面接缝一律不画。
+
+    线标在**近的那一侧**（轮廓标在几何那一侧、遮挡边标在遮挡物那一侧、折边两侧深度几乎
+    相同则标 a 侧）：这条线属于看得见的那张面，不属于被它盖住的东西。
+    """
+    both_hit = hit_a & hit_b
+    silhouette = hit_a != hit_b
+    same_plane = both_hit & (
+        np.einsum("hwi,hwi->hw", normal_a_xyz, normal_b_xyz) >= (SKETCH_SAME_PLANE_COS)
+    )
+    residual_ab = _plane_residual_ratio(normal_a_xyz, position_a_m, ray_b_xyz, depth_b_m, both_hit)
+    residual_ba = _plane_residual_ratio(normal_b_xyz, position_b_m, ray_a_xyz, depth_a_m, both_hit)
+    contiguous = both_hit & (
+        (residual_ab <= SKETCH_CONTIGUITY_TOLERANCE_RATIO)
+        | (residual_ba <= SKETCH_CONTIGUITY_TOLERANCE_RATIO)
+    )
+    fold = contiguous & ~same_plane
+    occlusion = both_hit & ~contiguous
+
+    ceiling_code = _SKETCH_SEMANTIC_CODE["ceiling"]
+    floor_code = _SKETCH_SEMANTIC_CODE["floor"]
+    ceiling_involved = (semantic_a == ceiling_code) | (semantic_b == ceiling_code)
+    both_floor = (semantic_a == floor_code) & (semantic_b == floor_code)
+    visible_semantic = np.where(hit_a, semantic_a, semantic_b)
+
+    draw = (
+        (silhouette & (visible_semantic != ceiling_code))
+        | (occlusion & ~both_floor)
+        | (fold & ~ceiling_involved & ~both_floor)
+    )
+    choose_a = hit_a & (~hit_b | (depth_a_m <= depth_b_m))
+    return np.asarray(draw & choose_a, dtype=np.bool_), np.asarray(draw & ~choose_a, dtype=np.bool_)
+
+
+def _reveal_along_axis(mesh_id: str, verts_m: Float64Array, triangles: Float64Array) -> int:
+    """洞口套框的宽度沿哪根轴：套框的两侧洞壁是竖直面、法向沿墙走向，找到一张竖直面即得。"""
+    edge_a = triangles[:, 1] - triangles[:, 0]
+    edge_b = triangles[:, 2] - triangles[:, 0]
+    normals = np.cross(edge_a, edge_b)
+    lengths = np.linalg.norm(normals, axis=1)
+    for normal, length in zip(normals, lengths, strict=True):
+        if length <= 0.0:
+            continue
+        unit = normal / length
+        if abs(float(unit[2])) < 0.5:
+            return 0 if abs(float(unit[0])) >= abs(float(unit[1])) else 1
+    raise BaseRenderError(f"洞口套框没有竖直的洞壁面，定不出洞口方向：mesh_id={mesh_id}")
+
+
+def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
+    """从场景包的网格里读出每个洞口的框与种类（来路与 id 格式见模块 docstring）。
+
+    次序写死：切出来的洞按套框网格在场景包里的次序，补出来的洞按过梁块在场景包里的次序、
+    排在后面——次序进了符号的绘制序，绘制序进了像素（后画的覆盖先画的，虽然都是白）。
+    """
+    frames: list[_OpeningFrame] = []
+    fills: dict[str, dict[str, Float64Array]] = {}
+    for mesh in scene.meshes:
+        parts = mesh.id.split(":")
+        if not mesh.vertices or not mesh.triangles:
+            continue
+        verts_m = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3)
+        if parts[0] == "reveal" and len(parts) >= 2:
+            kind = parts[1]
+            if kind not in _OPENING_KINDS:
+                raise BaseRenderError(
+                    f"洞口套框的 id 里种类认不出：mesh_id={mesh.id}；认得的：{_OPENING_KINDS}"
+                )
+            index = np.asarray(mesh.triangles, dtype=np.int64).reshape(-1, 3)
+            along_axis = _reveal_along_axis(mesh.id, verts_m, verts_m[index])
+            across_axis = 1 - along_axis
+            frames.append(
+                _OpeningFrame(
+                    kind=kind,
+                    along_axis=along_axis,
+                    along_m=(
+                        float(verts_m[:, along_axis].min()),
+                        float(verts_m[:, along_axis].max()),
+                    ),
+                    across_center_m=float(
+                        (verts_m[:, across_axis].min() + verts_m[:, across_axis].max()) * 0.5
+                    ),
+                    z_m=(float(verts_m[:, 2].min()), float(verts_m[:, 2].max())),
+                )
+            )
+        elif len(parts) >= 4 and parts[0] == "wall" and parts[1] == "fill":
+            fills.setdefault(parts[2], {})[parts[3]] = verts_m
+
+    for blocks in fills.values():
+        lintel_m = blocks.get("lintel")
+        if lintel_m is None:
+            # 过梁块薄到没起体（洞顶就是天花）：这个洞从地面通到天花，没有框可挂符号，
+            # 洞口轮廓本身照样由折边与遮挡边画出来。
+            continue
+        extent_m = lintel_m.max(axis=0) - lintel_m.min(axis=0)
+        # 过梁块的两条水平边里长的是洞宽、短的是墙厚——补出来的块厚度抄的是邻墙
+        # （真户型实测墙厚 0.1～0.3 m，门洞宽 0.7～1.0 m），洞比墙厚是户型的常态。
+        along_axis = 0 if float(extent_m[0]) >= float(extent_m[1]) else 1
+        across_axis = 1 - along_axis
+        sill_m = blocks.get("sill")
+        z_bottom_m = float(sill_m[:, 2].max()) if sill_m is not None else 0.0
+        frames.append(
+            _OpeningFrame(
+                kind="window" if sill_m is not None else "door",
+                along_axis=along_axis,
+                along_m=(
+                    float(lintel_m[:, along_axis].min()),
+                    float(lintel_m[:, along_axis].max()),
+                ),
+                across_center_m=float(
+                    (lintel_m[:, across_axis].min() + lintel_m[:, across_axis].max()) * 0.5
+                ),
+                z_m=(z_bottom_m, float(lintel_m[:, 2].min())),
+            )
+        )
+    return frames
+
+
+def _opening_symbol_segments(frame: _OpeningFrame) -> list[tuple[Float64Array, Float64Array]]:
+    """一个洞口的符号线段（世界系，画在墙厚中心平面上）：门一条斜线、窗一个十字、过口没有。"""
+
+    def point(along_m: float, z_m: float) -> Float64Array:
+        xyz = np.zeros(3, dtype=np.float64)
+        xyz[frame.along_axis] = along_m
+        xyz[1 - frame.along_axis] = frame.across_center_m
+        xyz[2] = z_m
+        return xyz
+
+    (along0_m, along1_m), (z0_m, z1_m) = frame.along_m, frame.z_m
+    if frame.kind == "door":
+        return [(point(along0_m, z0_m), point(along1_m, z1_m))]
+    if frame.kind == "window":
+        mid_along_m = (along0_m + along1_m) * 0.5
+        mid_z_m = (z0_m + z1_m) * 0.5
+        return [
+            (point(mid_along_m, z0_m), point(mid_along_m, z1_m)),
+            (point(along0_m, mid_z_m), point(along1_m, mid_z_m)),
+        ]
+    return []
+
+
+def _draw_opening_symbols(
+    canvas: npt.NDArray[np.bool_],
+    scene: ScenePackage,
+    buffers: RasterBuffers,
+    view_matrix: Float64Array,
+    proj_matrix: Float64Array,
+    near_clip_m: float,
+) -> None:
+    for frame in _opening_frames(scene):
+        for start_m, end_m in _opening_symbol_segments(frame):
+            _draw_segment(canvas, start_m, end_m, view_matrix, proj_matrix, buffers, near_clip_m)
+
+
+def _draw_segment(
+    canvas: npt.NDArray[np.bool_],
+    start_m: Float64Array,
+    end_m: Float64Array,
+    view_matrix: Float64Array,
+    proj_matrix: Float64Array,
+    buffers: RasterBuffers,
+    near_clip_m: float,
+) -> None:
+    """把一条世界系线段画进画布：近平面裁剪 → 投影 → 按画幅裁剪 → 逐像素采样 → 深度测试。
+
+    深度沿线段按 1/w 线性插值（屏幕上线性的是 1/w，同光栅那一路的口径）。深度测试对着
+    1 倍缓冲：比缓冲深的点被挡住，不画——所以被墙挡住的洞口，符号也被挡住。
+    采样步长一像素，点数由裁剪后的屏幕长度定，全程无随机。
+    """
+    height_px, width_px = canvas.shape
+    points_m = np.stack([start_m, end_m]).astype(np.float64)
+    homogeneous = np.concatenate([points_m, np.ones((2, 1), dtype=np.float64)], axis=1)
+    view_xyz = (homogeneous @ view_matrix.T)[:, :3]
+    signed_m = -view_xyz[:, 2] - near_clip_m
+    inside = signed_m >= 0.0
+    if not bool(inside.any()):
+        return
+    if not bool(inside.all()):
+        kept, cut = (0, 1) if bool(inside[0]) else (1, 0)
+        ratio = float(signed_m[kept] / (signed_m[kept] - signed_m[cut]))
+        view_xyz[cut] = view_xyz[kept] + ratio * (view_xyz[cut] - view_xyz[kept])
+
+    clip = np.concatenate([view_xyz, np.ones((2, 1), dtype=np.float64)], axis=1) @ proj_matrix.T
+    w_m = clip[:, 3]
+    if not bool(np.all(w_m > 0.0)) or not bool(np.isfinite(clip).all()):
+        return
+    x_px = (clip[:, 0] / w_m + 1.0) * 0.5 * width_px
+    y_px = (1.0 - clip[:, 1] / w_m) * 0.5 * height_px
+
+    # Liang–Barsky：把参数 t 裁到画幅内，裁剪后的 t 仍是屏幕空间的参数，1/w 照样按它线性插
+    dx_px, dy_px = float(x_px[1] - x_px[0]), float(y_px[1] - y_px[0])
+    t_from, t_to = 0.0, 1.0
+    for p, q in (
+        (-dx_px, float(x_px[0])),
+        (dx_px, float(width_px) - float(x_px[0])),
+        (-dy_px, float(y_px[0])),
+        (dy_px, float(height_px) - float(y_px[0])),
+    ):
+        if p == 0.0:
+            if q < 0.0:
+                return
+            continue
+        ratio = q / p
+        if p < 0.0:
+            t_from = max(t_from, ratio)
+        else:
+            t_to = min(t_to, ratio)
+    if t_from > t_to:
+        return
+
+    length_px = math.hypot(dx_px, dy_px) * (t_to - t_from)
+    sample_count = max(2, int(math.ceil(length_px)) + 1)
+    t = t_from + (t_to - t_from) * np.linspace(0.0, 1.0, sample_count, dtype=np.float64)
+    column = np.clip(np.floor(x_px[0] + t * dx_px).astype(np.int64), 0, width_px - 1)
+    row = np.clip(np.floor(y_px[0] + t * dy_px).astype(np.int64), 0, height_px - 1)
+    inverse_w = (1.0 - t) / w_m[0] + t / w_m[1]
+    sample_depth_m = 1.0 / inverse_w
+
+    buffer_depth_m = buffers.depth_m[row, column].astype(np.float64)
+    visible = ~np.isfinite(buffer_depth_m) | (
+        sample_depth_m <= buffer_depth_m * (1.0 + SKETCH_SYMBOL_DEPTH_TOLERANCE_RATIO)
+    )
+    canvas[row[visible], column[visible]] = True
+
+
 def _encode_mask_png(buffers: RasterBuffers, scene: ScenePackage) -> tuple[bytes, list[MaskEntry]]:
     """遮罩路：16 位灰度索引 PNG（索引 0 ＝ 背景，网格 k 占索引 k+1）+ 索引表。
 
@@ -1433,6 +2140,7 @@ def _encode_png(image: Image.Image) -> bytes:
 __all__ = [
     "BaseRenderError",
     "CameraPose",
+    "RoomViewCheck",
     "render_base_views",
     "resolve_camera_pose",
 ]

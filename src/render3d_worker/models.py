@@ -214,7 +214,7 @@ class CameraSpec(_Contract):
     """一台相机。`bird` 俯瞰整户（`room` 留空），`room` 站在某间房里平视。
 
     相机是**输入不是产物**：换一个机位不该重编场景包（编场景包是几何活，摆相机是取景活）。
-    底渲按 `camera_id` 取其中一台，一次出四路图。
+    底渲按 `camera_id` 取其中一台，一次出五路图。
     """
 
     id: str
@@ -330,7 +330,7 @@ class SceneCompileRequest(_Contract):
     同一份契约、同一段代码**，差别只在数据从哪儿来。
 
     `design_package_key` 的键模板今天**还没进 contracts 注册表**（那份表里只有报告册与
-    用户上传件两行）。补登记的时点写死＝本仓落桶那一批，与 `scene_package_key`、底渲四路
+    用户上传件两行）。补登记的时点写死＝本仓落桶那一批，与 `scene_package_key`、底渲五路
     的键一起进表——在那之前 activity 是存根，键只在本模型里作为形态存在。
     """
 
@@ -339,9 +339,9 @@ class SceneCompileRequest(_Contract):
 
 
 class BaseRenderRequest(_Contract):
-    """base-render 输入：三维底渲（几何/深度/线稿/遮罩输出）。
+    """base-render 输入：三维底渲（几何/深度/线稿/遮罩/控制稿五路输出）。
 
-    四路输出是**给下一步当条件图的**（realism-pass 在 imagegen 那仓），不是给人看的成品图，
+    五路输出是**给下一步当条件图的**（realism-pass 在 imagegen 那仓），不是给人看的成品图，
     所以这一步既不需要 GPU 也不需要三维引擎：纯 numpy 软光栅，同一份场景包渲两次
     逐字节相同（同 render2d 母版那条口径）。
     """
@@ -363,8 +363,40 @@ class MaskEntry(_Contract):
     pixel_count: int = 0
 
 
+class RoomViewCheck(_Contract):
+    """``room`` 机位取景的自证数：这台机位最终站在哪儿、画面里目标房间占多少。
+
+    数是按底渲自己的低分辨率深度/遮罩渲染量出来的（取景那一步的候选评估，见
+    base_render ``resolve_camera_pose``），**不是最终那张图上的数**——两者分辨率不同，
+    差在小数点后两位；要最终图上的数，从 ``mask_index`` 按房间加像素数即可。
+    随产物带出的理由同其他自证数：一张室内图"是不是在拍这间房"要答得出来。
+    """
+
+    eye_m: tuple[float, float, float]
+    yaw_deg: float
+    min_depth_m: float
+    """画面里最近的几何离镜头多远（米）。小于避墙距离就是站进了墙里或贴着墙。"""
+
+    target_floor_ratio: float
+    """目标房间**地板**像素占整幅的比例。"""
+
+    target_room_ratio: float
+    other_room_ratio: float
+    """目标房间 / 其他房间的地板 + 天花像素各占整幅的比例。墙不归任何房间，不计入。"""
+
+    dominance_ratio: float
+    """目标房间在"有房间归属的像素"里占的比例：target ÷ (target + other)，两者都为 0 记 0。"""
+
+    candidate_count: int
+    """评估了几个候选位姿。上游显式给了 yaw 时不做候选评估，记 1（只量不判）。"""
+
+    passed: bool
+    """按取景判据（避墙距离、地板占比、主体占比）达标没有。自动取景选出来的必然为
+    True（不达标就已经响亮失败）；上游显式给 yaw 的机位只量不判，False 也照渲。"""
+
+
 class BaseRenderViews(BaseModel):
-    """底渲一次的全部产物：四张图 + 遮罩索引表 + 自证数。
+    """底渲一次的全部产物：五张图 + 遮罩索引表 + 自证数。
 
     不落桶、不签链接——落桶是 activity 那一层的事，本模型是纯库那条路的返回值
     （CLI 直接把它写到本地目录）。签名更是业务侧的事（"给谁看、看多久"）。
@@ -374,6 +406,10 @@ class BaseRenderViews(BaseModel):
     depth_png: bytes
     line_png: bytes
     mask_png: bytes
+    sketch_png: bytes
+    """控制稿：给"线稿生图"控制通道画的那一路（与 ``line_png`` 同尺寸同编码，画法不同，
+    分工见 base_render 模块 docstring）。"""
+
     width_px: int
     height_px: int
     camera_id: str
@@ -384,3 +420,6 @@ class BaseRenderViews(BaseModel):
     near_m: float = 0.0
     far_m: float = 0.0
     """深度图的两端（米）。深度是 16 位归一化存的，没有这两个数就还原不回米。"""
+
+    room_view: RoomViewCheck | None = None
+    """``room`` 机位的取景自证数；``bird`` 机位为 ``None``。"""
