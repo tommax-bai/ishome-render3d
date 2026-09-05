@@ -1,0 +1,65 @@
+{
+  "request": {
+    "model": "wanx2.1-imageedit",
+    "input": {
+      "function": "doodle",
+      "prompt": "揭顶式户型鸟瞰效果图：去掉天花板从上方斜俯视整套公寓，墙体、门窗洞口和房间划分严格按线稿，不增减墙体、不合并或拆分房间。现代简约风格，暖白哑光墙面、浅橡木宽板地板、灰色亚麻布艺、黑色金属细节，柔和自然光，写实建筑可视化渲染。无文字、无水印、无标注。",
+      "base_image_url": "<data:image/png;base64, 64914 chars>"
+    },
+    "parameters": {
+      "is_sketch": true,
+      "n": 1,
+      "watermark": false,
+      "seed": 12345
+    }
+  },
+  "input_file": "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/wanx-sr/条件图-线稿反色-2560x1920-nearest.png",
+  "input_size": [
+    2560,
+    1920
+  ],
+  "input_bytes": 48668,
+  "submit_response": {
+    "request_id": "fd28caff-fa02-92e3-bb62-63eb61b4f6e1",
+    "output": {
+      "task_id": "e48d438b-4ab6-4e71-adfd-e465546e75be",
+      "task_status": "PENDING"
+    }
+  },
+  "final": {
+    "request_id": "fcd5b48d-2806-960a-8501-90b88ded9253",
+    "output": {
+      "task_id": "e48d438b-4ab6-4e71-adfd-e465546e75be",
+      "task_status": "SUCCEEDED",
+      "submit_time": "2026-09-05 18:19:46.043",
+      "scheduled_time": "2026-09-05 18:19:46.112",
+      "end_time": "2026-09-05 18:20:02.101",
+      "results": [
+        {
+          "url": "https://dashscope-5859.oss-cn-wulanchabu-acdr-1.aliyuncs.com/1d/85/20260905/901e463f/67e1825b-4335-43be-be90-62fdd3c41b1112345.png?Expires=1788690001&OSSAccessKeyId=LTAI5tPxpiCM2hjmWrFXrym1&Signature=O2uNjbERDxwDRhtybGkubnXlEMs%3D"
+        }
+      ],
+      "task_metrics": {
+        "TOTAL": 1,
+        "SUCCEEDED": 1,
+        "FAILED": 0
+      }
+    },
+    "usage": {
+      "image_count": 1
+    }
+  },
+  "poll_seconds": 19.9,
+  "submit_seconds": 0.42,
+  "outputs": [
+    {
+      "file": "doodle-2560-seed12345.png",
+      "size": [
+        1168,
+        880
+      ],
+      "format": "PNG",
+      "bytes": 543714
+    }
+  ]
+}

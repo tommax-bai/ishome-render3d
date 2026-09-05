@@ -1,0 +1,64 @@
+{
+  "request": {
+    "model": "wanx2.1-imageedit",
+    "input": {
+      "function": "super_resolution",
+      "prompt": "图像超分",
+      "base_image_url": "<data:image/png;base64, 726158 chars>"
+    },
+    "parameters": {
+      "upscale_factor": 3,
+      "n": 1,
+      "watermark": false
+    }
+  },
+  "input_file": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-02-control-path-survey/万相-doodle/run1-seed12345.png",
+  "input_size": [
+    1168,
+    880
+  ],
+  "input_bytes": 544600,
+  "submit_response": {
+    "request_id": "46416de1-4b57-9e96-9780-101ce9700850",
+    "output": {
+      "task_id": "064b98ce-244f-4312-b7f0-ad884e54a8bb",
+      "task_status": "PENDING"
+    }
+  },
+  "final": {
+    "request_id": "4ec56bae-98d9-9354-a1f0-e669bed47504",
+    "output": {
+      "task_id": "064b98ce-244f-4312-b7f0-ad884e54a8bb",
+      "task_status": "SUCCEEDED",
+      "submit_time": "2026-09-05 18:20:31.155",
+      "scheduled_time": "2026-09-05 18:20:31.194",
+      "end_time": "2026-09-05 18:21:05.275",
+      "results": [
+        {
+          "url": "https://dashscope-5859.oss-cn-wulanchabu-acdr-1.aliyuncs.com/1d/da/20260905/901e463f/13e50f72-a160-4e30-a322-406a0f2d250e1118973949.png?Expires=1788690064&OSSAccessKeyId=LTAI5tPxpiCM2hjmWrFXrym1&Signature=IE60GaXZQPcKb47xcFaGEXPQ9eo%3D"
+        }
+      ],
+      "task_metrics": {
+        "TOTAL": 1,
+        "SUCCEEDED": 1,
+        "FAILED": 0
+      }
+    },
+    "usage": {
+      "image_count": 1
+    }
+  },
+  "poll_seconds": 36.8,
+  "submit_seconds": 0.93,
+  "outputs": [
+    {
+      "file": "sr-x3-of-run1.png",
+      "size": [
+        1168,
+        880
+      ],
+      "format": "PNG",
+      "bytes": 651470
+    }
+  ]
+}

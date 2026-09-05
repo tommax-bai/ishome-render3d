@@ -1,0 +1,64 @@
+{
+  "request": {
+    "model": "wanx2.1-imageedit",
+    "input": {
+      "function": "super_resolution",
+      "prompt": "图像超分",
+      "base_image_url": "<data:image/png;base64, 313506 chars>"
+    },
+    "parameters": {
+      "upscale_factor": 2,
+      "n": 1,
+      "watermark": false
+    }
+  },
+  "input_file": "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/wanx-sr/run1-small-683x512.png",
+  "input_size": [
+    683,
+    512
+  ],
+  "input_bytes": 235111,
+  "submit_response": {
+    "request_id": "0446d863-5e06-9695-8613-3e63071f69cb",
+    "output": {
+      "task_id": "a090cf85-ca58-4927-b50a-5b18217f421d",
+      "task_status": "PENDING"
+    }
+  },
+  "final": {
+    "request_id": "a9b6d59d-3025-9a7c-9ff6-cd4da404cd27",
+    "output": {
+      "task_id": "a090cf85-ca58-4927-b50a-5b18217f421d",
+      "task_status": "SUCCEEDED",
+      "submit_time": "2026-09-05 18:23:27.023",
+      "scheduled_time": "2026-09-05 18:23:27.103",
+      "end_time": "2026-09-05 18:23:43.747",
+      "results": [
+        {
+          "url": "https://dashscope-5859.oss-cn-wulanchabu-acdr-1.aliyuncs.com/1d/40/20260905/901e463f/168a43b0-6352-4a15-98f5-2ee0f7fabbaa1020278737.png?Expires=1788690223&OSSAccessKeyId=LTAI5tPxpiCM2hjmWrFXrym1&Signature=%2FiGCHf2c%2B%2BZewxIWZYfjGC%2BjFmY%3D"
+        }
+      ],
+      "task_metrics": {
+        "TOTAL": 1,
+        "SUCCEEDED": 1,
+        "FAILED": 0
+      }
+    },
+    "usage": {
+      "image_count": 1
+    }
+  },
+  "poll_seconds": 17.4,
+  "submit_seconds": 0.77,
+  "outputs": [
+    {
+      "file": "sr-x2-of-run1-small683.png",
+      "size": [
+        1168,
+        880
+      ],
+      "format": "PNG",
+      "bytes": 667899
+    }
+  ]
+}

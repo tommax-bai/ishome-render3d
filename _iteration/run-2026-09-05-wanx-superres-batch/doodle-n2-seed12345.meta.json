@@ -1,0 +1,77 @@
+{
+  "request": {
+    "model": "wanx2.1-imageedit",
+    "input": {
+      "function": "doodle",
+      "prompt": "揭顶式户型鸟瞰效果图：去掉天花板从上方斜俯视整套公寓，墙体、门窗洞口和房间划分严格按线稿，不增减墙体、不合并或拆分房间。现代简约风格，暖白哑光墙面、浅橡木宽板地板、灰色亚麻布艺、黑色金属细节，柔和自然光，写实建筑可视化渲染。无文字、无水印、无标注。",
+      "base_image_url": "<data:image/png;base64, 39530 chars>"
+    },
+    "parameters": {
+      "is_sketch": true,
+      "n": 2,
+      "watermark": false,
+      "seed": 12345
+    }
+  },
+  "input_file": "/Users/baitianxing/codes/ishome-render3d/_iteration/run-2026-09-02-control-path-survey/万相-doodle/条件图-线稿反色.png",
+  "input_size": [
+    1280,
+    960
+  ],
+  "input_bytes": 29630,
+  "submit_response": {
+    "request_id": "605ffb36-86c8-9bdf-8741-db91930d145c",
+    "output": {
+      "task_id": "4ee3c8cb-53f0-48c9-9cc3-5d203dff44e8",
+      "task_status": "PENDING"
+    }
+  },
+  "final": {
+    "request_id": "77657b68-5e0a-946c-b914-7dd671b90335",
+    "output": {
+      "task_id": "4ee3c8cb-53f0-48c9-9cc3-5d203dff44e8",
+      "task_status": "SUCCEEDED",
+      "submit_time": "2026-09-05 18:19:21.560",
+      "scheduled_time": "2026-09-05 18:19:21.633",
+      "end_time": "2026-09-05 18:19:39.616",
+      "results": [
+        {
+          "url": "https://dashscope-5859.oss-cn-wulanchabu-acdr-1.aliyuncs.com/1d/8f/20260905/901e463f/11aa725d-aacc-46b3-b711-517531b9dd0e12346.png?Expires=1788689979&OSSAccessKeyId=LTAI5tPxpiCM2hjmWrFXrym1&Signature=A6EV2Tsk4lO9Sun2nfyI%2FcRQ9BI%3D"
+        },
+        {
+          "url": "https://dashscope-5859.oss-cn-wulanchabu-acdr-1.aliyuncs.com/1d/fe/20260905/901e463f/5d9b143b-c65b-41a0-ae38-c28503b91bc712345.png?Expires=1788689977&OSSAccessKeyId=LTAI5tPxpiCM2hjmWrFXrym1&Signature=Jy6%2Bfp85cbTCrAMoFUJRzztlaTc%3D"
+        }
+      ],
+      "task_metrics": {
+        "TOTAL": 2,
+        "SUCCEEDED": 2,
+        "FAILED": 0
+      }
+    },
+    "usage": {
+      "image_count": 2
+    }
+  },
+  "poll_seconds": 19.5,
+  "submit_seconds": 1.94,
+  "outputs": [
+    {
+      "file": "doodle-n2-seed12345-1.png",
+      "size": [
+        1168,
+        880
+      ],
+      "format": "PNG",
+      "bytes": 713673
+    },
+    {
+      "file": "doodle-n2-seed12345-2.png",
+      "size": [
+        1168,
+        880
+      ],
+      "format": "PNG",
+      "bytes": 544600
+    }
+  ]
+}
