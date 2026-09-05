@@ -58,11 +58,19 @@ yaw 的照旧听上游的。判据的数与取值理由在 `base_render.py` 的 
 - **纯库 + CLI（今天能跑）**：`render3d --design design-package.json -o out/`，不碰 Temporal、
   不碰对象存储。import-linter 锁死 `cli` 看不见 `activities`——从它能看见那一层起，
   "本地渲一张图不需要起编排"就只是一句承诺而不是结构。
-- **activity（存根，时点写死）**：接通那一批要做三件——①加只依赖 oss2 的落桶模块（形态照抄
-  reportrender 的 `book_store`：只写不签，签名属业务侧）；②`design_package_key` /
-  `scene_package_key` / 底渲五路的键模板进 contracts `registries/object_keys.md`，产物类型进
-  `registries/artifacts.md`（今天两张表里都没有三维的位置）；③把两个函数体换成
-  "取键 → 调纯库 → 写桶 → 返回键与自证数"。
+- **activity（已实装，2026-09-05）**：取键 → 调纯库 → 写桶 → 返回键与自证数，与 CLI 共用同一份
+  纯库代码；怎么接、还欠什么见下节《接进编排》。
+
+## 接进编排
+
+两个 activity（`scene-compile` / `base-render`）已实装：取键 → 调纯库 → 写桶 → 返回键与自证数，请求收
+camelCase 不透明字典、回执是 snake_case 字典（字段见 `activity_models.py` 模块 docstring；`base-render`
+逐机位渲，一台失败整份 `failed`、已写进桶的照样列在 `renders` 里）。键形态
+（`{prefix}/render3d/{revision_id}/…`，见 `object_store.py` 模块 docstring）是**草案，待 contracts
+`registries/object_keys.md` 登记**，登记时若改形态只改那个模块的模板与 `tests/test_object_store.py`。
+worker 起进程要 `ISHOME_OSS_ENDPOINT` / `ISHOME_OSS_BUCKET_PRIVATE` / `ISHOME_OSS_ACCESS_KEY_ID` /
+`ISHOME_OSS_ACCESS_KEY_SECRET` 四个变量（凭证不入库：本机 `~/.ishome/oss-local.env`，服务器
+`/opt/ishome/env/oss.env`），缺一即起不来。
 
 ## 常用命令
 
@@ -73,7 +81,7 @@ uv run ruff check .     # lint
 uv run lint-imports     # import 方向契约（worker|cli → activities → scene_compile|base_render → mesh|raster → models）
 uv run mypy             # strict 类型检查
 uv run pytest           # 测试
-uv run render3d-worker  # 起 worker（TEMPORAL_ADDRESS，默认 localhost:7233）
+uv run render3d-worker  # 起 worker（TEMPORAL_ADDRESS 默认 localhost:7233；私有桶四个 ISHOME_OSS_* 变量见《接进编排》）
 ```
 
 新 clone 后执行一次：`git config core.hooksPath .githooks`（本地 pre-push 质量门）。
