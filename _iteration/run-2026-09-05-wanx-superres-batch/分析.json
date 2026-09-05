@@ -1,0 +1,207 @@
+{
+  "baseline_run1_fidelity": 0.23958691910499139,
+  "doodle-2560-seed12345.png": {
+    "vs_run1": {
+      "a": "run1-seed12345.png",
+      "a_size": [
+        1168,
+        880
+      ],
+      "b": "doodle-2560-seed12345.png",
+      "b_size": [
+        1168,
+        880
+      ],
+      "compare_size": [
+        1168,
+        880
+      ],
+      "mean_abs_diff": 2.123073954441677,
+      "pct_pixels_maxch_diff_gt10": 5.225716064757161,
+      "pct_pixels_maxch_diff_gt30": 1.047050124533001,
+      "pct_pixels_identical": 10.27212406600249
+    },
+    "fidelity": 0.23284976641258914,
+    "overlay": "overlay-doodle-2560-seed12345.png"
+  },
+  "doodle-n2-seed12345-1.png": {
+    "vs_run1": {
+      "a": "run1-seed12345.png",
+      "a_size": [
+        1168,
+        880
+      ],
+      "b": "doodle-n2-seed12345-1.png",
+      "b_size": [
+        1168,
+        880
+      ],
+      "compare_size": [
+        1168,
+        880
+      ],
+      "mean_abs_diff": 50.80280426266086,
+      "pct_pixels_maxch_diff_gt10": 97.17611690535492,
+      "pct_pixels_maxch_diff_gt30": 82.7458553860523,
+      "pct_pixels_identical": 0.003988947696139476
+    },
+    "fidelity": 0.25802803048930417,
+    "overlay": "overlay-doodle-n2-seed12345-1.png"
+  },
+  "doodle-n2-seed12345-2.png": {
+    "vs_run1": {
+      "a": "run1-seed12345.png",
+      "a_size": [
+        1168,
+        880
+      ],
+      "b": "doodle-n2-seed12345-2.png",
+      "b_size": [
+        1168,
+        880
+      ],
+      "compare_size": [
+        1168,
+        880
+      ],
+      "mean_abs_diff": 0.0,
+      "pct_pixels_maxch_diff_gt10": 0.0,
+      "pct_pixels_maxch_diff_gt30": 0.0,
+      "pct_pixels_identical": 100.0
+    },
+    "fidelity": 0.23958691910499139,
+    "overlay": "overlay-doodle-n2-seed12345-2.png"
+  },
+  "sr-x2-of-run1-small683.png": {
+    "vs_run1": {
+      "a": "run1-seed12345.png",
+      "a_size": [
+        1168,
+        880
+      ],
+      "b": "sr-x2-of-run1-small683.png",
+      "b_size": [
+        1168,
+        880
+      ],
+      "compare_size": [
+        1168,
+        880
+      ],
+      "mean_abs_diff": 4.035677731942715,
+      "pct_pixels_maxch_diff_gt10": 5.580537826899128,
+      "pct_pixels_maxch_diff_gt30": 0.8947890722291407,
+      "pct_pixels_identical": 0.12968944582814446
+    },
+    "fidelity": 0.2562576837964101,
+    "overlay": "overlay-sr-x2-of-run1-small683.png"
+  },
+  "sr-x2-of-run1.png": {
+    "vs_run1": {
+      "a": "run1-seed12345.png",
+      "a_size": [
+        1168,
+        880
+      ],
+      "b": "sr-x2-of-run1.png",
+      "b_size": [
+        1168,
+        880
+      ],
+      "compare_size": [
+        1168,
+        880
+      ],
+      "mean_abs_diff": 2.6502756589871317,
+      "pct_pixels_maxch_diff_gt10": 3.3521754358655045,
+      "pct_pixels_maxch_diff_gt30": 0.49657534246575347,
+      "pct_pixels_identical": 0.3172672789539228
+    },
+    "fidelity": 0.2511433489058274,
+    "overlay": "overlay-sr-x2-of-run1.png"
+  },
+  "sr-x3-of-run1.png": {
+    "vs_run1": {
+      "a": "run1-seed12345.png",
+      "a_size": [
+        1168,
+        880
+      ],
+      "b": "sr-x3-of-run1.png",
+      "b_size": [
+        1168,
+        880
+      ],
+      "compare_size": [
+        1168,
+        880
+      ],
+      "mean_abs_diff": 3.5345815820880033,
+      "pct_pixels_maxch_diff_gt10": 3.8083748443337484,
+      "pct_pixels_maxch_diff_gt30": 0.5582580946450809,
+      "pct_pixels_identical": 0.19468010585305107
+    },
+    "fidelity": 0.24902876813375951,
+    "overlay": "overlay-sr-x3-of-run1.png"
+  },
+  "doodle-n2-seed12345-1.png vs doodle-n2-seed12345-2.png": {
+    "a": "doodle-n2-seed12345-1.png",
+    "a_size": [
+      1168,
+      880
+    ],
+    "b": "doodle-n2-seed12345-2.png",
+    "b_size": [
+      1168,
+      880
+    ],
+    "compare_size": [
+      1168,
+      880
+    ],
+    "mean_abs_diff": 50.80280426266086,
+    "pct_pixels_maxch_diff_gt10": 97.17611690535492,
+    "pct_pixels_maxch_diff_gt30": 82.7458553860523,
+    "pct_pixels_identical": 0.003988947696139476
+  },
+  "sr-x2-of-run1.png vs sr-x3-of-run1.png": {
+    "a": "sr-x2-of-run1.png",
+    "a_size": [
+      1168,
+      880
+    ],
+    "b": "sr-x3-of-run1.png",
+    "b_size": [
+      1168,
+      880
+    ],
+    "compare_size": [
+      1168,
+      880
+    ],
+    "mean_abs_diff": 1.8345770418223328,
+    "pct_pixels_maxch_diff_gt10": 2.4901735678704857,
+    "pct_pixels_maxch_diff_gt30": 0.33332036114570357,
+    "pct_pixels_identical": 3.2270586861768367
+  },
+  "对照 run1 vs run2-repeat（9-02 同 seed n=1 重复跑）": {
+    "a": "run1-seed12345.png",
+    "a_size": [
+      1168,
+      880
+    ],
+    "b": "run2-seed12345-repeat.png",
+    "b_size": [
+      1168,
+      880
+    ],
+    "compare_size": [
+      1168,
+      880
+    ],
+    "mean_abs_diff": 0.0,
+    "pct_pixels_maxch_diff_gt10": 0.0,
+    "pct_pixels_maxch_diff_gt30": 0.0,
+    "pct_pixels_identical": 100.0
+  }
+}

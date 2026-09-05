@@ -1,0 +1,47 @@
+{
+  "request": {
+    "model": "wanx2.1-imageedit",
+    "input": {
+      "function": "super_resolution",
+      "prompt": "图像超分",
+      "base_image_url": "<data:image/png;base64, 233238 chars>"
+    },
+    "parameters": {
+      "upscale_factor": 2,
+      "n": 1,
+      "watermark": false
+    }
+  },
+  "input_file": "/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/wanx-sr/run1-half-584x440.png",
+  "input_size": [
+    584,
+    440
+  ],
+  "input_bytes": 174912,
+  "submit_response": {
+    "request_id": "0b34e725-4004-97a2-9538-26d0430d710e",
+    "output": {
+      "task_id": "8e7d6b33-b96c-4268-8106-b11513eea2fc",
+      "task_status": "PENDING"
+    }
+  },
+  "final": {
+    "request_id": "a5db0efc-6a5a-987f-9f79-fdb14d3a8e85",
+    "output": {
+      "task_id": "8e7d6b33-b96c-4268-8106-b11513eea2fc",
+      "task_status": "FAILED",
+      "submit_time": "2026-09-05 18:21:59.461",
+      "scheduled_time": "2026-09-05 18:21:59.514",
+      "end_time": "2026-09-05 18:21:59.812",
+      "code": "InvalidParameter",
+      "message": "The height of the image should be between 512 and 4096 pixels.",
+      "task_metrics": {
+        "TOTAL": 1,
+        "SUCCEEDED": 0,
+        "FAILED": 1
+      }
+    }
+  },
+  "poll_seconds": 3.2,
+  "submit_seconds": 0.54
+}
