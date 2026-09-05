@@ -61,6 +61,11 @@ BIRD_PITCH_DEG = -60.0
 # 100 度才把天花与地板一起框进来——"room 机位天花仍在"这条断言要它才立得住。
 ROOM_WIDE_FOV_DEG = 100.0
 
+# 自动取景那台的张角：室内机位固定平视、眼高 1.55 米，地板只从 眼高 ÷ tan(竖直半张角) 以外
+# 才进画面——默认 55 度是 2.98 米，这间 4 米长的房只剩一条地板，过不了"拍到了地板"那条
+# 门槛（ROOM_VIEW_MIN_TARGET_FLOOR_RATIO）。80 度把这个距离拉到 1.85 米。
+ROOM_AUTO_FOV_DEG = 80.0
+
 
 def _quad_mesh(
     mesh_id: str,
@@ -215,7 +220,13 @@ def _make_scene() -> ScenePackage:
                 fov_deg=ROOM_WIDE_FOV_DEG,
             ),
             # 不给 yaw_deg：验自动取景那条路（camera.model_fields_set 里没有它）。
-            CameraSpec(id=ROOM_AUTO_CAMERA_ID, kind="room", room=ROOM_NAME, eye_height_m=1.55),
+            CameraSpec(
+                id=ROOM_AUTO_CAMERA_ID,
+                kind="room",
+                room=ROOM_NAME,
+                eye_height_m=1.55,
+                fov_deg=ROOM_AUTO_FOV_DEG,
+            ),
             CameraSpec(id="room-卧室", kind="room", room="卧室"),
         ],
         bounds_min_m=(0.0, 0.0, 0.0),
@@ -252,7 +263,7 @@ def _decode_depth_m(views: BaseRenderViews, depth_u16: int) -> float:
 
 @pytest.mark.parametrize("camera_id", [BIRD_CAMERA_ID, ROOM_WIDE_CAMERA_ID])
 def test_渲两次逐字节相同(camera_id: str) -> None:
-    """确定性：同一份场景包渲两次，四张 PNG 的字节完全相同。
+    """确定性：同一份场景包渲两次，五张 PNG 的字节完全相同。
 
     两台相机都跑：几何那一路的观感这一批（超采样、环境光遮蔽、家具投影）在两种机位下
     走的采样与查表都不一样，只验一台等于只验了其中一条路。**这条断言就是"不许随机数"
@@ -264,6 +275,7 @@ def test_渲两次逐字节相同(camera_id: str) -> None:
     assert first.depth_png == second.depth_png
     assert first.line_png == second.line_png
     assert first.mask_png == second.mask_png
+    assert first.sketch_png == second.sketch_png
     assert first.covered_pixel_ratio == second.covered_pixel_ratio
     assert (first.near_m, first.far_m) == (second.near_m, second.far_m)
 
@@ -303,6 +315,7 @@ def test_观感常量只动得了几何那一路(knob: str, value: Any, monkeypa
     assert tweaked.depth_png == baseline.depth_png, f"{knob} 漏到深度那一路了"
     assert tweaked.line_png == baseline.line_png, f"{knob} 漏到线稿那一路了"
     assert tweaked.mask_png == baseline.mask_png, f"{knob} 漏到遮罩那一路了"
+    assert tweaked.sketch_png == baseline.sketch_png, f"{knob} 漏到控制稿那一路了"
     assert tweaked.covered_pixel_ratio == baseline.covered_pixel_ratio
     assert (tweaked.near_m, tweaked.far_m) == (baseline.near_m, baseline.far_m)
     assert [entry.model_dump() for entry in tweaked.mask_index] == [
@@ -433,9 +446,14 @@ def test_室内机位退到房间边缘朝内容看() -> None:
     assert pose.eye_m[1] == pytest.approx(base_render.ROOM_EYE_WALL_MARGIN_M, abs=0.02)
     assert pose.target_m[0] == pytest.approx(pose.eye_m[0])
     assert pose.target_m[1] > pose.eye_m[1], "上游给的是朝北（+y），没被自动取景扭到别的方向"
+    # 上游给了 yaw 就不做候选评估：只量一次、不判（2026-09-05 取景规则改动后的口径）
+    assert pose.room_view is not None
+    assert pose.room_view.candidate_count == 1
+    assert pose.room_view.eye_m == pose.eye_m
 
     views = render_base_views(scene, ROOM_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     assert views.camera_id == ROOM_CAMERA_ID
+    assert views.room_view == pose.room_view
     semantics = {entry.semantic for entry in views.mask_index}
     assert {"wall", "furnishing"} <= semantics, "退到边缘朝内看，墙与家具都该露出来"
     # 房间四面都是封闭的墙+天花，画面本来就不会露出背景（covered_pixel_ratio 恒为
@@ -444,25 +462,30 @@ def test_室内机位退到房间边缘朝内容看() -> None:
     assert len(views.mask_index) > 1, "改前只有一堵墙填满画面，改后不该只剩一块网格"
 
 
-def test_室内机位没给yaw时自动看向家具() -> None:
-    """没给 ``yawDeg``（不在 ``model_fields_set`` 里）：机位改自动指向该房间家具的
-    面积加权质心。这间测试房只有一件边柜，摆在地板质心的 +x 一侧，自动朝向该指向 +x，
-    退景方向随之翻转到 -x——退到房间西侧、看向东侧的家具。
+def test_室内机位没给yaw时按候选评估取景() -> None:
+    """没给 ``yawDeg``（不在 ``model_fields_set`` 里）：走候选评估（2026-09-05，取代
+    "自动看向家具质心"那版——那版只定朝向不看画面，小房间里退到贴着墙照样出图）。
+    选出来的位姿必须达标：不贴墙、拍到了地板、主体是这间房；机位在房间里；评估的候选
+    不止一个；渲出来的自证数与位姿上带的是同一份。
     """
     scene = _make_scene()
     pose = resolve_camera_pose(scene, ROOM_AUTO_CAMERA_ID, WIDTH_PX / HEIGHT_PX)
 
-    floor_centroid_x, floor_centroid_y = 2.0, 1.5
-    assert pose.eye_m[0] < floor_centroid_x, "家具偏在 +x 一侧，没退到 -x 一侧就是没自动取景"
-    assert pose.eye_m[0] > 0.0, "退出房间外面去了"
-    assert pose.eye_m[1] == pytest.approx(floor_centroid_y), (
-        "家具质心相对地板质心只在 x 上偏，退景不该带偏 y"
+    check = pose.room_view
+    assert check is not None
+    assert check.passed
+    assert check.candidate_count > 1
+    assert check.min_depth_m >= base_render.ROOM_EYE_WALL_MARGIN_M
+    assert check.target_floor_ratio >= base_render.ROOM_VIEW_MIN_TARGET_FLOOR_RATIO
+    assert check.dominance_ratio >= base_render.ROOM_VIEW_MIN_DOMINANCE_RATIO
+    assert 0.0 < pose.eye_m[0] < ROOM_WIDTH_M and 0.0 < pose.eye_m[1] < ROOM_DEPTH_M, (
+        "机位退出房间外面去了"
     )
-    assert pose.target_m[0] > pose.eye_m[0], "该看向 +x（家具那一侧），不是背对着看"
 
     views = render_base_views(scene, ROOM_AUTO_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
+    assert views.room_view == check
     semantics = {entry.semantic for entry in views.mask_index}
-    assert "furnishing" in semantics, "自动取景连家具都框不进去，等于没做到"
+    assert {"floor", "wall"} <= semantics, "达标的位姿至少该同时看见地板和墙"
 
 
 def test_近平面裁剪保住穿过相机的大面() -> None:

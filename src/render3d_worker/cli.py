@@ -5,14 +5,15 @@
 再谈它在编排里怎么被调——反过来是接一遍再改一遍。
 
 这条路不碰 Temporal、不碰对象存储：吃一份本地 :class:`DesignPackage` JSON，
-出场景包与底渲四路图。import-linter 锁死 `cli` 看不见 `activities`——从它能看见
+出场景包与底渲五路图。import-linter 锁死 `cli` 看不见 `activities`——从它能看见
 那一层起，"本地渲一张图不需要起编排"就只是一句承诺而不是结构。
 
 产出（每台相机一个子目录）：
     scene-package.json          场景包（米制、含自证数）
     {camera_id}/geometry.png    几何：材质分色 + 固定方向明暗
     {camera_id}/depth.png       深度：16 位，还原回米要用 near_m/far_m
-    {camera_id}/line.png        线稿：几何边界确定性提取，不做图像滤波猜边
+    {camera_id}/line.png        线稿：几何事实边，保真度尺子的输入，不做图像滤波猜边
+    {camera_id}/sketch.png      控制稿：给线稿生图控制通道画的（画法见 base_render 模块 docstring）
     {camera_id}/mask.png        遮罩：索引图，0 是背景
     {camera_id}/mask-index.json 索引表：index → 网格 id / 语义 / 房间 / 像素数
 """
@@ -36,6 +37,7 @@ SCENE_PACKAGE_JSON = "scene-package.json"
 GEOMETRY_PNG = "geometry.png"
 DEPTH_PNG = "depth.png"
 LINE_PNG = "line.png"
+SKETCH_PNG = "sketch.png"
 MASK_PNG = "mask.png"
 MASK_INDEX_JSON = "mask-index.json"
 
@@ -58,6 +60,7 @@ def _write_views(out_dir: Path, views: BaseRenderViews) -> None:
     (out_dir / GEOMETRY_PNG).write_bytes(views.geometry_png)
     (out_dir / DEPTH_PNG).write_bytes(views.depth_png)
     (out_dir / LINE_PNG).write_bytes(views.line_png)
+    (out_dir / SKETCH_PNG).write_bytes(views.sketch_png)
     (out_dir / MASK_PNG).write_bytes(views.mask_png)
     index = [entry.model_dump(by_alias=True) for entry in views.mask_index]
     (out_dir / MASK_INDEX_JSON).write_text(
@@ -97,7 +100,9 @@ def _print_mock_furnishing_self_check(report: MockFurnishingReport) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="render3d",
-        description="三维底渲：输入包 → 场景包 → 几何/深度/线稿/遮罩四路（确定性、零模型调用）",
+        description=(
+            "三维底渲：输入包 → 场景包 → 几何/深度/线稿/遮罩/控制稿五路（确定性、零模型调用）"
+        ),
     )
     parser.add_argument("--design", required=True, type=Path, help="DesignPackage JSON")
     parser.add_argument("-o", "--out", type=Path, default=Path("out"), help="产物目录")
@@ -151,12 +156,16 @@ def main(argv: list[str] | None = None) -> int:
         print("输入包里没有相机，渲不了——机位是输入不是产物", file=sys.stderr)
         return EXIT_BAD_INPUT
 
+    failed_camera_ids: list[str] = []
     for camera_id in camera_ids:
         try:
             views = render_base_views(scene, camera_id, args.width_px, args.height_px)
         except BaseRenderError as e:
+            # 一台失败不拦着别的机位：每台机位各自独立，失败的那台不出图、最后一并报出来
+            # 并以非零退出——响亮，但不把能出的图也扣下
             print(f"底渲失败（相机 {camera_id}）：{e}", file=sys.stderr)
-            return EXIT_RENDER_FAILED
+            failed_camera_ids.append(camera_id)
+            continue
         _write_views(args.out / camera_id, views)
         print(
             f"相机 {camera_id}：{views.width_px}×{views.height_px}，"
@@ -164,9 +173,29 @@ def main(argv: list[str] | None = None) -> int:
             f"深度 {views.near_m:.2f}~{views.far_m:.2f} 米，"
             f"遮罩 {len(views.mask_index)} 块"
         )
+        if views.room_view is not None:
+            _print_room_view_self_check(views)
 
     print(f"产物在 {args.out}")
+    if failed_camera_ids:
+        print(f"底渲失败的机位：{'、'.join(failed_camera_ids)}", file=sys.stderr)
+        return EXIT_RENDER_FAILED
     return 0
+
+
+def _print_room_view_self_check(views: BaseRenderViews) -> None:
+    """室内机位的取景自证数。自动取景的必然达标（不达标已经响亮失败了）；上游显式给 yaw
+    的只量不判，打出来让人看见"上游给的机位按我们的判据是不是对着墙"。"""
+    check = views.room_view
+    assert check is not None
+    verdict = "达标" if check.passed else "不达标（上游显式给的 yaw，只量不判）"
+    print(
+        f"  取景：站在 ({check.eye_m[0]:.2f}, {check.eye_m[1]:.2f}) 朝 {check.yaw_deg:.1f}°，"
+        f"评估了 {check.candidate_count} 个候选；最近深度 {check.min_depth_m:.2f} 米，"
+        f"目标房间地板占比 {check.target_floor_ratio:.3f}，"
+        f"主体占比 {check.dominance_ratio:.3f}"
+        f"（目标 {check.target_room_ratio:.3f} / 其他房间 {check.other_room_ratio:.3f}）——{verdict}"
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover
