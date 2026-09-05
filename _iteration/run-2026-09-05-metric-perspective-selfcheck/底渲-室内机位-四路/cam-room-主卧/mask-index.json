@@ -1,0 +1,457 @@
+[
+  {
+    "index": 1,
+    "meshId": "floor:客厅:0",
+    "semantic": "floor",
+    "room": "客厅",
+    "pixelCount": 1566
+  },
+  {
+    "index": 7,
+    "meshId": "floor:客厅:3",
+    "semantic": "floor",
+    "room": "客厅",
+    "pixelCount": 42
+  },
+  {
+    "index": 19,
+    "meshId": "floor:客厅:9",
+    "semantic": "floor",
+    "room": "客厅",
+    "pixelCount": 8
+  },
+  {
+    "index": 53,
+    "meshId": "floor:次卧:4",
+    "semantic": "floor",
+    "room": "次卧",
+    "pixelCount": 1
+  },
+  {
+    "index": 79,
+    "meshId": "floor:主卧:0",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 4607
+  },
+  {
+    "index": 80,
+    "meshId": "ceiling:主卧:0",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 3715
+  },
+  {
+    "index": 81,
+    "meshId": "floor:主卧:1",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 30938
+  },
+  {
+    "index": 82,
+    "meshId": "ceiling:主卧:1",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 58217
+  },
+  {
+    "index": 85,
+    "meshId": "floor:主卧:3",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 3046
+  },
+  {
+    "index": 86,
+    "meshId": "ceiling:主卧:3",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 2457
+  },
+  {
+    "index": 87,
+    "meshId": "floor:主卧:4",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 41043
+  },
+  {
+    "index": 88,
+    "meshId": "ceiling:主卧:4",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 67080
+  },
+  {
+    "index": 91,
+    "meshId": "floor:主卧:6",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 877
+  },
+  {
+    "index": 92,
+    "meshId": "ceiling:主卧:6",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 705
+  },
+  {
+    "index": 93,
+    "meshId": "floor:主卧:7",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 8297
+  },
+  {
+    "index": 94,
+    "meshId": "ceiling:主卧:7",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 6684
+  },
+  {
+    "index": 95,
+    "meshId": "floor:主卧:8",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 3076
+  },
+  {
+    "index": 96,
+    "meshId": "ceiling:主卧:8",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 2480
+  },
+  {
+    "index": 97,
+    "meshId": "floor:主卧:9",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 54198
+  },
+  {
+    "index": 98,
+    "meshId": "ceiling:主卧:9",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 81380
+  },
+  {
+    "index": 101,
+    "meshId": "floor:主卧:11",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 670
+  },
+  {
+    "index": 102,
+    "meshId": "ceiling:主卧:11",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 544
+  },
+  {
+    "index": 103,
+    "meshId": "floor:主卧:12",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 3850
+  },
+  {
+    "index": 104,
+    "meshId": "ceiling:主卧:12",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 3111
+  },
+  {
+    "index": 105,
+    "meshId": "floor:主卧:13",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 1041
+  },
+  {
+    "index": 106,
+    "meshId": "ceiling:主卧:13",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 841
+  },
+  {
+    "index": 107,
+    "meshId": "floor:主卧:14",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 25061
+  },
+  {
+    "index": 108,
+    "meshId": "ceiling:主卧:14",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 32437
+  },
+  {
+    "index": 111,
+    "meshId": "floor:主卧:16",
+    "semantic": "floor",
+    "room": "主卧",
+    "pixelCount": 1371
+  },
+  {
+    "index": 112,
+    "meshId": "ceiling:主卧:16",
+    "semantic": "ceiling",
+    "room": "主卧",
+    "pixelCount": 668
+  },
+  {
+    "index": 119,
+    "meshId": "floor:卫生间:3",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 2
+  },
+  {
+    "index": 120,
+    "meshId": "ceiling:卫生间:3",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 2
+  },
+  {
+    "index": 143,
+    "meshId": "floor:卫生间:15",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 20
+  },
+  {
+    "index": 144,
+    "meshId": "ceiling:卫生间:15",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 16
+  },
+  {
+    "index": 145,
+    "meshId": "floor:卫生间:16",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 31
+  },
+  {
+    "index": 146,
+    "meshId": "ceiling:卫生间:16",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 26
+  },
+  {
+    "index": 147,
+    "meshId": "floor:卫生间:17",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 3
+  },
+  {
+    "index": 148,
+    "meshId": "ceiling:卫生间:17",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 3
+  },
+  {
+    "index": 149,
+    "meshId": "floor:卫生间:18",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 3
+  },
+  {
+    "index": 150,
+    "meshId": "ceiling:卫生间:18",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 2
+  },
+  {
+    "index": 151,
+    "meshId": "floor:卫生间:19",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 5
+  },
+  {
+    "index": 152,
+    "meshId": "ceiling:卫生间:19",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 4
+  },
+  {
+    "index": 153,
+    "meshId": "floor:卫生间:20",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 3
+  },
+  {
+    "index": 154,
+    "meshId": "ceiling:卫生间:20",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 2
+  },
+  {
+    "index": 155,
+    "meshId": "floor:卫生间:21",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 16
+  },
+  {
+    "index": 156,
+    "meshId": "ceiling:卫生间:21",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 12
+  },
+  {
+    "index": 159,
+    "meshId": "floor:卫生间:23",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 23
+  },
+  {
+    "index": 160,
+    "meshId": "ceiling:卫生间:23",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 18
+  },
+  {
+    "index": 161,
+    "meshId": "floor:卫生间:24",
+    "semantic": "floor",
+    "room": "卫生间",
+    "pixelCount": 7
+  },
+  {
+    "index": 162,
+    "meshId": "ceiling:卫生间:24",
+    "semantic": "ceiling",
+    "room": "卫生间",
+    "pixelCount": 6
+  },
+  {
+    "index": 203,
+    "meshId": "wall:outline:0:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 54617
+  },
+  {
+    "index": 295,
+    "meshId": "wall:grid:10:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 1363
+  },
+  {
+    "index": 297,
+    "meshId": "wall:grid:12:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 5454
+  },
+  {
+    "index": 298,
+    "meshId": "wall:grid:13:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 16965
+  },
+  {
+    "index": 299,
+    "meshId": "wall:grid:14:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 353443
+  },
+  {
+    "index": 302,
+    "meshId": "wall:grid:18:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 273
+  },
+  {
+    "index": 305,
+    "meshId": "wall:grid:22:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 746
+  },
+  {
+    "index": 306,
+    "meshId": "wall:grid:23:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 3641
+  },
+  {
+    "index": 332,
+    "meshId": "wall:grid:53:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 176
+  },
+  {
+    "index": 344,
+    "meshId": "wall:grid:65:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 15052
+  },
+  {
+    "index": 345,
+    "meshId": "wall:grid:66:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 21704
+  },
+  {
+    "index": 346,
+    "meshId": "wall:grid:67:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 8172
+  },
+  {
+    "index": 350,
+    "meshId": "wall:grid:71:span:0",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 284278
+  },
+  {
+    "index": 362,
+    "meshId": "wall:fill:2:lintel",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 8253
+  },
+  {
+    "index": 367,
+    "meshId": "wall:fill:11:lintel",
+    "semantic": "wall",
+    "room": null,
+    "pixelCount": 66
+  }
+]
