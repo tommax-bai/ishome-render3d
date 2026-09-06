@@ -1,0 +1,45 @@
+{
+  "cameraId": "cam-bird-dollhouse",
+  "widthPx": 1280,
+  "heightPx": 960,
+  "package": "_iteration/run-2026-09-05-opening-kind-consume/design-package-真值138-16洞-roomcams.json",
+  "schemes": {
+    "diagonal-cross": {
+      "sketchSha256": "e5aa33cd6141d1884bf345a2399207d825d5dafc3f00c56ca8e11f090f996b95",
+      "whitePixels": 19717,
+      "priorSketch": "_iteration/run-2026-09-05-opening-kind-consume/cam-bird-dollhouse/sketch.png",
+      "byteIdenticalToPrior": true,
+      "priorRunDir": "_iteration/run-2026-09-05-opening-kind-realism",
+      "priorSeedImages": [
+        "cam-bird-dollhouse-seed1.png",
+        "cam-bird-dollhouse-seed2.png",
+        "cam-bird-dollhouse-seed3.png"
+      ]
+    },
+    "frame-sill": {
+      "sketchSha256": "328c606d8a19d34729704dc5d0ed2460a3596c007437261486762cacec2d25f9",
+      "whitePixels": 22229,
+      "priorSketch": "_iteration/run-2026-09-05-sketch-symbol-combo/frame-sill/cam-bird-dollhouse/sketch.png",
+      "byteIdenticalToPrior": true,
+      "priorRunDir": "_iteration/run-2026-09-05-sketch-symbol-combo/真跑/frame-sill/cam-bird-dollhouse",
+      "priorSeedImages": [
+        "seed1.png",
+        "seed2.png",
+        "seed3.png"
+      ]
+    },
+    "frame-handle": {
+      "sketchSha256": "15913073881d7cf0f47cc5681250dc0ce670a14067795504c357c890e270eb68",
+      "whitePixels": 22260,
+      "priorSketch": "_iteration/run-2026-09-05-sketch-symbol-combo/frame-handle/cam-bird-dollhouse/sketch.png",
+      "byteIdenticalToPrior": true,
+      "priorRunDir": "_iteration/run-2026-09-05-sketch-symbol-combo/真跑/frame-handle/cam-bird-dollhouse",
+      "priorSeedImages": [
+        "seed1.png",
+        "seed2.png",
+        "seed3.png"
+      ]
+    }
+  },
+  "fourRoutesIdenticalAcrossSchemes": true
+}
