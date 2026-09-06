@@ -235,12 +235,15 @@ SKETCH_SYMBOL_DEPTH_TOLERANCE_RATIO: float = LINE_DEPTH_TOLERANCE_RATIO
 """门窗符号做遮挡判断时，符号上的点比深度缓冲远不超过这个比例仍算可见。符号画在墙厚的
 中心平面上，端点正落在洞口侧壁那张面上，与缓冲里的深度只差浮点误差；容差用同一个数。"""
 
-SketchSymbolScheme = Literal["diagonal-cross", "frame-sill", "glazing-hatch", "leaf-swing"]
+SketchSymbolScheme = Literal[
+    "diagonal-cross", "frame-sill", "glazing-hatch", "leaf-swing", "frame-handle"
+]
 SKETCH_SYMBOL_SCHEMES: tuple[SketchSymbolScheme, ...] = (
     "diagonal-cross",
     "frame-sill",
     "glazing-hatch",
     "leaf-swing",
+    "frame-handle",
 )
 """控制稿门窗符号方案闭集。所有方案：确定性、同编码（黑底白线）、门与窗的符号互不相同、
 过口不画符号、门不在地面上画门槛线。**外框**＝洞口边界在墙厚中心平面上的矩形（门三边、
@@ -258,6 +261,11 @@ SKETCH_SYMBOL_SCHEMES: tuple[SketchSymbolScheme, ...] = (
 - ``leaf-swing``：门＝外框 + 一扇朝相机这一侧开到 :data:`SKETCH_DOOR_SWING_DEG` 的门扇（铰链在
   沿墙坐标小的那侧洞边；画门扇的顶边、底边、自由竖边三条线，是三维里的线段、不在墙面上）；
   窗＝外框 + 内框 + 窗台线 + 中竖梃（双扇平开窗的分扇线），不画横梃。
+- ``frame-handle``（2026-09-06 加，来路＝真跑 ``_iteration/run-2026-09-05-sketch-symbols/``：
+  ``frame-sill`` 的窗 6/6 读对、门里无斜线残影，``glazing-hatch`` 的把手 3/3 长成真把手）：
+  窗＝照 ``frame-sill``（外框 + 内框 + 窗台线）；门＝外框 + 门扇线（照 ``frame-sill``）+ 把手
+  短横（位置与尺寸照 ``glazing-hatch``）。门扇线在沿墙坐标小的那侧、把手在大的那侧，两件
+  各自照抄、没有合成一扇门的几何。
 """
 
 DEFAULT_SKETCH_SYMBOLS: SketchSymbolScheme = "diagonal-cross"
@@ -2197,7 +2205,7 @@ def _window_symbol_segments(
     inner_along_m, inner_z_m = _inner_rect_m(frame)
     segments = _rect_segments(frame, frame.along_m, frame.z_m, with_bottom=True)
     segments += _rect_segments(frame, inner_along_m, inner_z_m, with_bottom=True)
-    if scheme == "frame-sill":
+    if scheme in ("frame-sill", "frame-handle"):
         segments.append(_sill_segment(frame, viewer_across_sign))
         return segments
     if scheme == "glazing-hatch":
@@ -2226,6 +2234,36 @@ def _window_symbol_segments(
     raise BaseRenderError(f"控制稿符号方案认不出：{scheme}；认得的：{SKETCH_SYMBOL_SCHEMES}")
 
 
+def _door_leaf_line_segments(frame: _OpeningFrame) -> list[_Segment]:
+    """门扇线：离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_M` 的一条通高竖线，
+    墙厚中心平面上；洞比这个偏移还窄就不画。"""
+    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
+    c = frame.across_center_m
+    leaf_along_m = a0 + SKETCH_DOOR_LEAF_OFFSET_M
+    if leaf_along_m >= a1:
+        return []
+    return [(_frame_point(frame, leaf_along_m, z0, c), _frame_point(frame, leaf_along_m, z1, c))]
+
+
+def _door_handle_segments(frame: _OpeningFrame) -> list[_Segment]:
+    """门把手：离沿墙坐标大的那侧洞边 :data:`SKETCH_DOOR_HANDLE_EDGE_M`、长
+    :data:`SKETCH_DOOR_HANDLE_LENGTH_M`、离地 :data:`SKETCH_DOOR_HANDLE_HEIGHT_M` 的一条短横，
+    墙厚中心平面上；洞太窄或太矮放不下就不画。"""
+    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
+    c = frame.across_center_m
+    handle_z_m = z0 + SKETCH_DOOR_HANDLE_HEIGHT_M
+    handle_to_m = a1 - SKETCH_DOOR_HANDLE_EDGE_M
+    handle_from_m = max(a0, handle_to_m - SKETCH_DOOR_HANDLE_LENGTH_M)
+    if handle_from_m >= handle_to_m or handle_z_m >= z1:
+        return []
+    return [
+        (
+            _frame_point(frame, handle_from_m, handle_z_m, c),
+            _frame_point(frame, handle_to_m, handle_z_m, c),
+        )
+    ]
+
+
 def _door_symbol_segments(
     frame: _OpeningFrame, scheme: SketchSymbolScheme, viewer_across_sign: float
 ) -> list[_Segment]:
@@ -2234,24 +2272,11 @@ def _door_symbol_segments(
     if scheme == "diagonal-cross":
         return [(_frame_point(frame, a0, z0, c), _frame_point(frame, a1, z1, c))]
     segments = _rect_segments(frame, frame.along_m, frame.z_m, with_bottom=False)
-    if scheme == "frame-sill":
-        leaf_along_m = a0 + SKETCH_DOOR_LEAF_OFFSET_M
-        if leaf_along_m < a1:
-            segments.append(
-                (_frame_point(frame, leaf_along_m, z0, c), _frame_point(frame, leaf_along_m, z1, c))
-            )
-        return segments
-    if scheme == "glazing-hatch":
-        handle_z_m = z0 + SKETCH_DOOR_HANDLE_HEIGHT_M
-        handle_to_m = a1 - SKETCH_DOOR_HANDLE_EDGE_M
-        handle_from_m = max(a0, handle_to_m - SKETCH_DOOR_HANDLE_LENGTH_M)
-        if handle_from_m < handle_to_m and handle_z_m < z1:
-            segments.append(
-                (
-                    _frame_point(frame, handle_from_m, handle_z_m, c),
-                    _frame_point(frame, handle_to_m, handle_z_m, c),
-                )
-            )
+    if scheme in ("frame-sill", "frame-handle"):
+        segments += _door_leaf_line_segments(frame)
+    if scheme in ("glazing-hatch", "frame-handle"):
+        segments += _door_handle_segments(frame)
+    if scheme in ("frame-sill", "glazing-hatch", "frame-handle"):
         return segments
     if scheme == "leaf-swing":
         width_m = a1 - a0

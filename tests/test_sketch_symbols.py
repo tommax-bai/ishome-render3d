@@ -174,6 +174,46 @@ def test_frame_sill_窗是双框加窗台线_门是外框加门扇线() -> None:
     assert not _white(sketch, (DOOR_X_M[1] - 0.2, WALL_CENTER_Y_M, 1.0)), "门扇线只在一侧"
 
 
+def test_frame_handle_窗照frame_sill_门是外框加门扇线加把手() -> None:
+    """合成方案：窗的线段集合与 ``frame-sill`` 逐条相同；门的线段集合＝``frame-sill`` 的门
+    ∪ ``glazing-hatch`` 的门（外框只算一次）；三个方案的控制稿两两不同。"""
+    assert "frame-handle" in SKETCH_SYMBOL_SCHEMES
+
+    def segments(kind: str, scheme: SketchSymbolScheme) -> set[tuple[float, ...]]:
+        frame = base_render._OpeningFrame(kind, 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
+        if kind == "window":
+            frame = base_render._OpeningFrame(kind, 0, WINDOW_X_M, NORTH_WALL_Y_M, WINDOW_Z_M)
+        return {
+            tuple(np.round(np.concatenate([start, end]), 6).tolist())
+            for start, end in base_render._opening_symbol_segments(frame, scheme, -1.0)
+        }
+
+    assert segments("window", "frame-handle") == segments("window", "frame-sill")
+    assert segments("door", "frame-handle") == segments("door", "frame-sill") | segments(
+        "door", "glazing-hatch"
+    )
+    assert segments("entry-door", "frame-handle") == segments("door", "frame-handle")
+    assert len(segments("door", "frame-handle")) == len(segments("door", "frame-sill")) + 1
+
+    sketch = _sketch("frame-handle")
+    assert _white(sketch, (WINDOW_INNER_X_M[0], WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗内框左边没画"
+    assert _white(sketch, (WINDOW_MID_X_M, ROOM_FACE_Y_M, SILL_LINE_Z_M)), (
+        "窗台线没画在朝相机的墙面上"
+    )
+    assert not _white(sketch, (WINDOW_MID_X_M, WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗中心不该有十字"
+    assert _white(sketch, DOOR_LEAF_LINE), "门扇线没画"
+    assert _white(sketch, DOOR_HANDLE_MID), "门把手没画"
+    assert _white(sketch, (DOOR_X_M[0] + DOOR_WIDTH_M * 0.5, WALL_CENTER_Y_M, DOOR_TOP_M)), (
+        "门外框顶边没画"
+    )
+    assert not _white(sketch, DOOR_DIAGONAL_QUARTER), "门洞里不该有斜线"
+
+    frame_sill = _views_by_scheme("frame-sill").sketch_png
+    glazing_hatch = _views_by_scheme("glazing-hatch").sketch_png
+    frame_handle = _views_by_scheme("frame-handle").sketch_png
+    assert len({frame_sill, glazing_hatch, frame_handle}) == 3, "三个方案的控制稿要两两不同"
+
+
 def test_glazing_hatch_窗是双框加斜向短划_门是外框加把手() -> None:
     sketch = _sketch("glazing-hatch")
     inner_w = WINDOW_INNER_X_M[1] - WINDOW_INNER_X_M[0]

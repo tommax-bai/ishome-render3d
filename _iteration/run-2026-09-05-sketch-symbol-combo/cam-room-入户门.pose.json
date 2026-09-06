@@ -1,0 +1,139 @@
+{
+  "candidates": [
+    {
+      "cameraId": "cam-room-入户门-退到门高占半幅",
+      "rule": "退到门高占半幅",
+      "openingIndex": 10,
+      "openingKind": "entry-door",
+      "openingAlongAxis": 0,
+      "openingAlongM": [
+        9.220542,
+        10.29058
+      ],
+      "openingAcrossM": [
+        6.243787,
+        6.448688
+      ],
+      "openingZM": [
+        0.0,
+        2.05
+      ],
+      "insideRoom": "次卧",
+      "insideFaceAcrossM": 6.448688,
+      "firstWallHitFromFaceM": 1.24,
+      "distanceToFaceM": 3.217855433090855,
+      "visibleHeightAtDoorM": 4.1,
+      "doorFitsVertically": true,
+      "eyeM": [
+        9.755561,
+        9.666543433090855,
+        1.55
+      ],
+      "yawDeg": 180.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0,
+      "eyeOnRoomFloor": true,
+      "roomView": {
+        "eye_m": [
+          9.755561,
+          9.666543433090855,
+          1.55
+        ],
+        "yaw_deg": 180.0,
+        "min_depth_m": 1.4519782066345215,
+        "target_floor_ratio": 0.0,
+        "target_room_ratio": 0.0,
+        "other_room_ratio": 0.056477864583333336,
+        "dominance_ratio": 0.0,
+        "candidate_count": 1,
+        "passed": false
+      }
+    },
+    {
+      "cameraId": "cam-room-入户门-退到撞墙留墙距",
+      "rule": "退到撞墙留墙距",
+      "openingIndex": 10,
+      "openingKind": "entry-door",
+      "openingAlongAxis": 0,
+      "openingAlongM": [
+        9.220542,
+        10.29058
+      ],
+      "openingAcrossM": [
+        6.243787,
+        6.448688
+      ],
+      "openingZM": [
+        0.0,
+        2.05
+      ],
+      "insideRoom": "次卧",
+      "insideFaceAcrossM": 6.448688,
+      "firstWallHitFromFaceM": 1.24,
+      "distanceToFaceM": 0.89,
+      "visibleHeightAtDoorM": 1.133985064237338,
+      "doorFitsVertically": false,
+      "eyeM": [
+        9.755561,
+        7.338687999999999,
+        1.55
+      ],
+      "yawDeg": 180.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0,
+      "eyeOnRoomFloor": true,
+      "roomView": {
+        "eye_m": [
+          9.755561,
+          7.338687999999999,
+          1.55
+        ],
+        "yaw_deg": 180.0,
+        "min_depth_m": 0.8899999856948853,
+        "target_floor_ratio": 0.0,
+        "target_room_ratio": 0.0,
+        "other_room_ratio": 0.0,
+        "dominance_ratio": 0.0,
+        "candidate_count": 1,
+        "passed": false
+      }
+    }
+  ],
+  "roomViewThresholds": {
+    "minDepthM": 0.35,
+    "minTargetFloorRatio": 0.04,
+    "minDominanceRatio": 0.5
+  },
+  "packageRouteExplicitYaw": {
+    "camera": {
+      "id": "cam-room-次卧-显式yaw",
+      "kind": "room",
+      "room": "次卧",
+      "eyeHeightM": 1.55,
+      "yawDeg": 180.0,
+      "pitchDeg": 0.0,
+      "fovDeg": 65.0
+    },
+    "eyeM": [
+      6.89706503332818,
+      6.150019251318269,
+      1.55
+    ],
+    "roomView": {
+      "eye_m": [
+        6.89706503332818,
+        6.150019251318269,
+        1.55
+      ],
+      "yaw_deg": 180.0,
+      "min_depth_m": 1.1968520879745483,
+      "target_floor_ratio": 0.0,
+      "target_room_ratio": 0.0,
+      "other_room_ratio": 0.298828125,
+      "dominance_ratio": 0.0,
+      "candidate_count": 1,
+      "passed": false
+    }
+  },
+  "anyPassed": false
+}
