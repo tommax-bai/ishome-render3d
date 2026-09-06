@@ -14,7 +14,9 @@
     {camera_id}/depth.png       深度：16 位，还原回米要用 near_m/far_m
     {camera_id}/line.png        线稿：几何事实边，保真度尺子的输入，不做图像滤波猜边
     {camera_id}/sketch.png      控制稿：给线稿生图控制通道画的（画法见 base_render 模块 docstring；
-                                门窗符号方案由 --sketch-symbols 选，默认 diagonal-cross）
+                                门窗符号方案由 --sketch-symbols 选，默认 frame-handle
+                                ——2026-09-06 用户裁决换掉 diagonal-cross，来路与数据见
+                                base_render.DEFAULT_SKETCH_SYMBOLS）
     {camera_id}/mask.png        遮罩：索引图，0 是背景
     {camera_id}/mask-index.json 索引表：index → 网格 id / 语义 / 房间 / 像素数
 """
@@ -125,7 +127,10 @@ def main(argv: list[str] | None = None) -> int:
         "--sketch-symbols",
         choices=SKETCH_SYMBOL_SCHEMES,
         default=DEFAULT_SKETCH_SYMBOLS,
-        help="控制稿门窗符号方案（画法见 base_render.SKETCH_SYMBOL_SCHEMES）；其余四路不受它影响",
+        help=(
+            "控制稿门窗符号方案（画法见 base_render.SKETCH_SYMBOL_SCHEMES）；其余四路不受它影响。"
+            "默认 frame-handle（2026-09-06 用户裁决）；diagonal-cross 是旧默认，留着复现历史样本"
+        ),
     )
     parser.add_argument(
         "--mock-furnishing",

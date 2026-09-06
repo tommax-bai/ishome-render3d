@@ -1,7 +1,8 @@
 """控制稿门窗符号方案（``sketch_symbols`` / CLI ``--sketch-symbols``）的守门测试。
 
 每个方案都要：确定性、同编码、门与窗的符号互不相同、过口不画、四路一个字节不动；
-默认方案不变（``diagonal-cross``），换默认要用户拍。各方案的画法见
+默认方案是 ``frame-handle``（2026-09-06 用户裁决从 ``diagonal-cross`` 换的，来路与数据见
+``base_render.DEFAULT_SKETCH_SYMBOLS``），再换默认要用户拍。各方案的画法见
 ``base_render.SKETCH_SYMBOL_SCHEMES``，这里按画法逐点验：该白的白、该黑的黑。
 
 场景复用 test_control_sketch 现造的那间房（北墙上一门一窗，室内机位从南墙边平视北墙，
@@ -54,9 +55,10 @@ from render3d_worker.base_render import (
 from render3d_worker.models import BaseRenderViews
 from render3d_worker.scene_compile import compile_scene_package
 
-NEW_SCHEMES: tuple[SketchSymbolScheme, ...] = tuple(
+OTHER_SCHEMES: tuple[SketchSymbolScheme, ...] = tuple(
     scheme for scheme in SKETCH_SYMBOL_SCHEMES if scheme != DEFAULT_SKETCH_SYMBOLS
 )
+"""闭集里除默认之外的方案（含旧默认 ``diagonal-cross``，它留着复现 2026-09-06 之前的样本）。"""
 ROOM_FACE_Y_M = NORTH_WALL_Y_M[0]
 """朝相机那一面：机位在南边，北墙朝南的面是 y=3.0。"""
 
@@ -95,11 +97,16 @@ def _white(sketch: npt.NDArray[np.int64], point_m: tuple[float, float, float]) -
     return _white_near(sketch, *_project(_make_scene(), ROOM_CAMERA_ID, point_m))
 
 
-def test_默认方案是斜线加十字_且显式给默认与不给逐字节相同() -> None:
-    assert DEFAULT_SKETCH_SYMBOLS == "diagonal-cross"
+def test_默认方案是双框加把手_且显式给默认与不给逐字节相同() -> None:
+    """守默认值本身：2026-09-06 用户裁决把默认从 ``diagonal-cross`` 换成 ``frame-handle``。
+    不给方案渲出来的稿要与显式给 ``frame-handle`` 逐字节相同，且与旧默认那张不同——
+    把 ``DEFAULT_SKETCH_SYMBOLS`` 改回 ``diagonal-cross`` 这三条会一起红。"""
+    assert DEFAULT_SKETCH_SYMBOLS == "frame-handle"
     implicit = render_base_views(_make_scene(), ROOM_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     explicit = _views_by_scheme(DEFAULT_SKETCH_SYMBOLS)
     assert implicit.sketch_png == explicit.sketch_png
+    assert implicit.sketch_png == _views_by_scheme("frame-handle").sketch_png
+    assert implicit.sketch_png != _views_by_scheme("diagonal-cross").sketch_png
 
 
 def test_认不出的方案炸() -> None:
@@ -113,7 +120,7 @@ def test_认不出的方案炸() -> None:
         )
 
 
-@pytest.mark.parametrize("scheme", NEW_SCHEMES)
+@pytest.mark.parametrize("scheme", OTHER_SCHEMES)
 def test_换方案只动控制稿_四路逐字节不变(scheme: SketchSymbolScheme) -> None:
     default = _views_by_scheme(DEFAULT_SKETCH_SYMBOLS)
     other = _views_by_scheme(scheme)
@@ -286,15 +293,17 @@ def test_编场景包那条路的洞_每个方案门窗符号都出现(tmp_path:
 
     package_path = tmp_path / "package.json"
     package_path.write_text(package.model_dump_json(by_alias=True), encoding="utf-8")
+    white = base_render.SKETCH_FOREGROUND_U8
+    diagonal_sketch = _open_gray(
+        render_base_views(
+            scene, PACKAGE_CAMERA_ID, width_px, height_px, "diagonal-cross"
+        ).sketch_png
+    )
     for scheme in SKETCH_SYMBOL_SCHEMES:
         views = render_base_views(scene, PACKAGE_CAMERA_ID, width_px, height_px, scheme)
         sketch = _open_gray(views.sketch_png)
-        default_sketch = _open_gray(
-            render_base_views(scene, PACKAGE_CAMERA_ID, width_px, height_px).sketch_png
-        )
-        white = base_render.SKETCH_FOREGROUND_U8
-        if scheme != DEFAULT_SKETCH_SYMBOLS:
-            assert np.count_nonzero(sketch == white) > np.count_nonzero(default_sketch == white), (
+        if scheme != "diagonal-cross":
+            assert np.count_nonzero(sketch == white) > np.count_nonzero(diagonal_sketch == white), (
                 f"{scheme}：外框加符号的线该比一条斜线加一个十字多"
             )
         out_dir = tmp_path / scheme
