@@ -1,0 +1,8 @@
+写实图已出：/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/combo-out/frame-handle/cam-room-客厅/seed3.png（风格 modern-minimal，视角 room，906925 字节）
+控制稿留档：/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/combo-out/frame-handle/cam-room-客厅/seed3.sketch.png；提示词留档：/private/tmp/claude-501/-Users-baitianxing-codes-ishome/5043122a-4d91-4234-8b80-a5febe79f775/scratchpad/combo-out/frame-handle/cam-room-客厅/seed3.prompt.txt
+backend_name=gateway-sketch seed=3
+elapsed_seconds=34.9 prompt_sha256=73bbb9d203a4a36139e40af32d615103f0999515f91cf62845d97d87425b827c
+fidelity_score=0.6109（结构边重合度，只能同输出形态横向比）
+fidelity_v3_at_origin=0.8138 fidelity_v3_registered=0.8138 registration=sx=1.000 sy=1.000 dx=+0 dy=+0（只记录不判）
+gate=只记录不判（没配 ISHOME_REALISM_MIN_FIDELITY_SCORE）
+exit=0 wall_seconds=38
