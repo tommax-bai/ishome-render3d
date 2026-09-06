@@ -48,6 +48,9 @@ pyrender / OpenGL / blender，也没有系统级渲染栈依赖。
 来路＝中控仓《评审/失效清单-控制图通路-2026-09-04》：构件级四条失效（地面分界线画成台阶、
 天花交线画成灯槽、透视天花线读成斜顶、门窗不分）来源全是线稿画了不该画的边、没画该画的区别。
 两路同尺寸同编码（单通道、黑底白线），细节与取舍理由在 `base_render.py` 模块 docstring。
+门窗符号方案有开关：CLI `--sketch-symbols`（纯库参数 `sketch_symbols`），闭集四个 `diagonal-cross` / `frame-sill` /
+`glazing-hatch` / `leaf-swing`，默认 `diagonal-cross`，不认的名字炸；只换洞口内的符号，其余四路一个字节不动。
+真跑对比在 `_iteration/run-2026-09-05-sketch-symbols/`（frame-sill、glazing-hatch 各 9 张，leaf-swing 没真跑），换默认待拍。
 
 室内机位同日起**不许对墙**：没给 yaw 的 `room` 机位按候选评估取景（退让方向 × 朝向，用本仓自己的
 低分辨率深度/遮罩量最近深度、目标房间地板占比、主体占比），没有一个达标就响亮失败；上游显式给
