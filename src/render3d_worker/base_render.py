@@ -47,17 +47,19 @@
   外轮廓与网格墙重合的段之间）。
 - **符号按洞的最终种类画**（判据＝同一张图上门和窗的符号不同）：**门**（``door``，入户门
   ``entry-door`` 同）画到地面——门洞侧壁与地面相交的地脚线画、地面上不画门槛线——洞口内画
-  **一条从洞口左下角到右上角的斜线**（门扇线）；**窗**（``window``）离地有窗台线（窗下墙顶面
-  与窗下墙立面的折边），洞口内画**一个十字**（竖梃在洞口宽度中点通高、横梃在洞口高度中点
-  通宽）；**过口**（``passage``）洞口内不画符号——它没有门扇、没有窗台，只有洞口轮廓。
+  **外框（三边，不画门槛线）+ 一条通高的门扇线 + 一条把手短横**；**窗**（``window``）离地
+  有窗台线（窗下墙顶面与窗下墙立面的折边），洞口内画**外框 + 内框 + 窗台线**；**过口**
+  （``passage``）洞口内不画符号——它没有门扇、没有窗台，只有洞口轮廓。
   上游没给种类（``unknown``）的洞在编场景包时已按档位猜成了门或窗，这儿画的就是猜出来
   那一种的符号（猜了几个、哪几个，场景包 ``guessed_opening_indices`` 说得出）。
-  符号画在墙厚的中心平面上，按本机位的深度缓冲做遮挡判断——被墙挡住的洞口，符号也被挡住。
+  符号画在墙厚的中心平面上（窗台线画在朝相机那一面的墙面上），按本机位的深度缓冲做遮挡
+  判断——被墙挡住的洞口，符号也被挡住。
 - **符号方案**（``sketch_symbols``，CLI ``--sketch-symbols``；2026-09-05 晚加，来路＝真跑
   ``_iteration/run-2026-09-05-opening-kind-realism/``：窗十字 2/3 被读成黑板或带格柜子、门斜线 1/3
-  被画成实体斜条）。上面那段是默认方案 ``diagonal-cross``；其余方案只换洞口内的符号，画的边、
-  编码、尺寸、遮挡判断全同，四路一个字节不动。每个方案的画法在 :data:`SKETCH_SYMBOL_SCHEMES`
-  条目里写死；哪个方案当默认要用户拍，默认值不随实验换（:data:`DEFAULT_SKETCH_SYMBOLS`）。
+  被画成实体斜条）。上面那段是默认方案 ``frame-handle``（2026-09-06 用户裁决换的，见
+  :data:`DEFAULT_SKETCH_SYMBOLS`）；其余方案只换洞口内的符号，画的边、编码、尺寸、遮挡判断
+  全同，四路一个字节不动。每个方案的画法在 :data:`SKETCH_SYMBOL_SCHEMES` 条目里写死；
+  哪个方案当默认要用户拍，默认值不随实验换。
 - 洞口的**种类**从场景包的洞口表读（``ScenePackage.openings``，2026-09-05 起编场景包时带出，
   每个洞一行：最终种类与来源）；洞口的**框**从网格里读（:func:`_opening_frames`）：切出来的洞
   有 ``reveal:{kind}:{来源}:{墙线号}:{洞号}`` 套框网格，补出来的洞（洞落在两段墙的空隙里，
@@ -249,7 +251,10 @@ SKETCH_SYMBOL_SCHEMES: tuple[SketchSymbolScheme, ...] = (
 过口不画符号、门不在地面上画门槛线。**外框**＝洞口边界在墙厚中心平面上的矩形（门三边、
 窗四边），**内框**＝外框向内缩 :data:`SKETCH_FRAME_INSET_M` 的矩形（窗才有，表示玻璃边）。
 
-- ``diagonal-cross``（默认）：门＝洞内一条左下到右上的斜线；窗＝洞内十字（竖梃 + 横梃）。
+- ``diagonal-cross``（2026-09-06 之前的默认，现在只作可选）：门＝洞内一条左下到右上的斜线；
+  窗＝洞内十字（竖梃 + 横梃）。**留着是历史样本的复现依据**——2026-09-06 之前跑出来的图全
+  是这个方案的稿，删了就复现不出来；新图不用它（模型常把斜线当成真东西，见
+  :data:`DEFAULT_SKETCH_SYMBOLS` 那条的数据）。
 - ``frame-sill``：窗＝外框 + 内框 + 窗台线（洞下沿再向下 :data:`SKETCH_SILL_DROP_M`、两端各
   伸出 :data:`SKETCH_SILL_OVERHANG_M`，画在朝相机那一侧的墙面上），不画十字；门＝外框 +
   门扇线（洞内一条通高竖线，离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_M`，
@@ -261,15 +266,34 @@ SKETCH_SYMBOL_SCHEMES: tuple[SketchSymbolScheme, ...] = (
 - ``leaf-swing``：门＝外框 + 一扇朝相机这一侧开到 :data:`SKETCH_DOOR_SWING_DEG` 的门扇（铰链在
   沿墙坐标小的那侧洞边；画门扇的顶边、底边、自由竖边三条线，是三维里的线段、不在墙面上）；
   窗＝外框 + 内框 + 窗台线 + 中竖梃（双扇平开窗的分扇线），不画横梃。
-- ``frame-handle``（2026-09-06 加，来路＝真跑 ``_iteration/run-2026-09-05-sketch-symbols/``：
-  ``frame-sill`` 的窗 6/6 读对、门里无斜线残影，``glazing-hatch`` 的把手 3/3 长成真把手）：
+- ``frame-handle``（**默认**，2026-09-06 加，来路＝真跑
+  ``_iteration/run-2026-09-05-sketch-symbols/``：``frame-sill`` 的窗 6/6 读对、门里无斜线残影，
+  ``glazing-hatch`` 的把手 3/3 长成真把手）：
   窗＝照 ``frame-sill``（外框 + 内框 + 窗台线）；门＝外框 + 门扇线（照 ``frame-sill``）+ 把手
   短横（位置与尺寸照 ``glazing-hatch``）。门扇线在沿墙坐标小的那侧、把手在大的那侧，两件
   各自照抄、没有合成一扇门的几何。
 """
 
-DEFAULT_SKETCH_SYMBOLS: SketchSymbolScheme = "diagonal-cross"
-"""默认方案。换默认要用户拍（真跑对比在 ``_iteration/run-2026-09-05-sketch-symbols/``）。"""
+DEFAULT_SKETCH_SYMBOLS: SketchSymbolScheme = "frame-handle"
+"""默认方案。**2026-09-06 用户裁决从 ``diagonal-cross`` 换成 ``frame-handle``**——问的是"门窗在
+线描图上的画法，换不换（新画法 49 个门零失误，老画法 21 个残影 + 12 个被渲成实体）"，选中
+"换（推荐）"（备选：保持现状／再看看别的户型）。连带：斜线被渲成实体那类失效消失，为它做
+检测器也不必要了。
+
+数据出处（三批真跑，写完不改）：
+- ``_iteration/run-2026-09-05-sketch-symbols/``：室内 18 张。``diagonal-cross`` 门里符号残影 6/12、
+  书房那扇窗 3 张只读对 1；``frame-sill`` 残影 0/12、窗 3/3。
+- ``_iteration/run-2026-09-05-sketch-symbol-combo/``：合成方案 + 揭顶 15 张。两批合计 33 个门格，
+  ``frame-sill``/``frame-handle`` 0 残影对 ``diagonal-cross`` 10/33。
+- ``_iteration/run-2026-09-06-sketch-symbol-birdview/``：揭顶 7 个 seed、49 个门格。
+  ``diagonal-cross`` 残影 21/49、被画成实体 12/49、7 张里 5 张地面被斜线切成两色、门形态 43/49；
+  ``frame-sill``/``frame-handle`` 0/49、0/49、0 处、48/49。窗 168 格三方案全对，换默认由门定。
+  两个新方案四栏同分，差别只在把手：没被遮挡的 21 格长出 16 格，无一例变差——默认取
+  ``frame-handle``（是 ``frame-sill`` 的超集）。
+
+换默认要用户拍，默认值不随实验换。旧方案 ``diagonal-cross`` 留在
+:data:`SKETCH_SYMBOL_SCHEMES` 里作可选：2026-09-06 之前的图都是它渲的稿，它是那批历史样本的
+复现依据。"""
 
 SKETCH_FRAME_INSET_M: float = 0.08
 """内框向内缩的量：窗框型材可见宽 6～8 厘米的常规档位。"""

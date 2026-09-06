@@ -297,30 +297,46 @@ def test_天花与墙的交线不画而地脚线画() -> None:
 
 
 def test_门与窗的符号不同() -> None:
-    """失效清单 B4：门洞里一条从左下到右上的斜线，窗洞里一个十字；同一张图上两者不同。
-    点都取在墙厚中心平面上（符号就画在那儿）。"""
+    """失效清单 B4：同一张图上门与窗的符号不同。默认方案 ``frame-handle``（2026-09-06 用户裁决
+    从 ``diagonal-cross`` 换的）下，门＝外框三边 + 门扇线 + 把手短横，窗＝外框 + 内框 + 窗台线；
+    门洞里不该有斜线、窗洞中心不该有十字。点取在墙厚中心平面上（窗台线除外——它画在朝相机
+    那一面的墙面上）。"""
     scene = _make_scene()
     views = render_base_views(scene, ROOM_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     sketch = _open_gray(views.sketch_png)
     y_m = WALL_CENTER_Y_M
 
     door_width_m = DOOR_X_M[1] - DOOR_X_M[0]
+    on_leaf_line = (DOOR_X_M[0] + base_render.SKETCH_DOOR_LEAF_OFFSET_M, y_m, 1.0)
+    on_handle = (
+        DOOR_X_M[1]
+        - base_render.SKETCH_DOOR_HANDLE_EDGE_M
+        - base_render.SKETCH_DOOR_HANDLE_LENGTH_M * 0.5,
+        y_m,
+        base_render.SKETCH_DOOR_HANDLE_HEIGHT_M,
+    )
     on_diagonal = (DOOR_X_M[0] + door_width_m * 0.25, y_m, DOOR_TOP_M * 0.25)
-    door_center_low = (DOOR_X_M[0] + door_width_m * 0.5, y_m, 0.5)
-    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_diagonal)), "门洞里没有斜线"
-    assert not _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, door_center_low)), (
-        "门洞里出现了竖梃一类的线——门的符号该只是一条斜线"
+    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_leaf_line)), "门洞里没有门扇线"
+    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_handle)), "门洞里没有把手"
+    assert not _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_diagonal)), (
+        "门洞里出现了斜线——默认方案不画斜线"
     )
 
     window_mid_x_m = (WINDOW_X_M[0] + WINDOW_X_M[1]) * 0.5
     window_mid_z_m = (WINDOW_Z_M[0] + WINDOW_Z_M[1]) * 0.5
-    on_vertical = (window_mid_x_m, y_m, WINDOW_Z_M[0] + 0.3)
-    on_horizontal = (WINDOW_X_M[0] + 0.25, y_m, window_mid_z_m)
-    off_cross = (WINDOW_X_M[0] + 0.25, y_m, WINDOW_Z_M[0] + 0.3)
-    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_vertical)), "窗洞里没有竖梃"
-    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_horizontal)), "窗洞里没有横梃"
-    assert not _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, off_cross)), (
-        "窗洞里十字之外出现了线——窗的符号该只是一个十字"
+    on_inner_frame = (WINDOW_X_M[0] + base_render.SKETCH_FRAME_INSET_M, y_m, window_mid_z_m)
+    on_sill_line = (
+        window_mid_x_m,
+        NORTH_WALL_Y_M[0],
+        WINDOW_Z_M[0] - base_render.SKETCH_SILL_DROP_M,
+    )
+    off_symbol = (window_mid_x_m, y_m, window_mid_z_m)
+    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_inner_frame)), "窗洞里没有内框"
+    assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_sill_line)), (
+        "窗台线没画在朝相机那一面的墙面上"
+    )
+    assert not _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, off_symbol)), (
+        "窗洞中心出现了线——默认方案不画十字"
     )
 
     door_frame = base_render._OpeningFrame("door", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
@@ -331,9 +347,10 @@ def test_门与窗的符号不同() -> None:
     passage_frame = base_render._OpeningFrame(
         "passage", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M)
     )
-    assert len(base_render._opening_symbol_segments(door_frame)) == 1
-    assert len(base_render._opening_symbol_segments(entry_frame)) == 1
-    assert len(base_render._opening_symbol_segments(window_frame)) == 2
+    # 门＝外框三边（不画门槛线）+ 门扇线 + 把手；窗＝外框四边 + 内框四边 + 窗台线
+    assert len(base_render._opening_symbol_segments(door_frame)) == 5
+    assert len(base_render._opening_symbol_segments(entry_frame)) == 5
+    assert len(base_render._opening_symbol_segments(window_frame)) == 9
     assert base_render._opening_symbol_segments(passage_frame) == []
 
 

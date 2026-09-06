@@ -8,8 +8,10 @@
    `unknown` 才按外墙＝窗 / 内墙＝门猜（来源 `guessed`），猜了几个、哪几个随场景包带出。
 3. **过口与入户门的起体**：`passage` 落地、不出窗下墙、洞高按过口档位；`entry-door` 按门起体、
    种类照写 `entry-door`。
-4. **控制稿按最终种类画**：门斜线、窗十字、过口无符号；落在墙段空隙里（补出来的）的过口也按
-   洞口表画成过口，不再被"没有窗下墙就是门"那条老退路画成门。
+4. **控制稿按最终种类画**：门＝外框 + 门扇线 + 把手、窗＝外框 + 内框 + 窗台线、过口无符号
+   （默认方案 `frame-handle`，2026-09-06 用户裁决换掉 `diagonal-cross`；画法见
+   `base_render.SKETCH_SYMBOL_SCHEMES`）；落在墙段空隙里（补出来的）的过口也按洞口表画成过口，
+   不再被"没有窗下墙就是门"那条老退路画成门。
 
 真户型那两份基准包（19 洞旧产物、16 洞 c9fc00c 产物）各走一遍：旧包没有 `kind` 仍读得进、
 全部走猜法；新包 15 个上游给的照读、1 个 `unknown`（管井小门）走猜法。
@@ -289,9 +291,10 @@ def test_入户门按门起体_种类照写() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_控制稿三种符号各自出现_门斜线窗十字过口无() -> None:
-    """同一道墙上门、窗、过口各一个（种类全由上游给）：门洞里有斜线、窗洞里有十字、过口洞里
-    在"若是门就该有斜线"的那个像素上是黑的。三个洞都按同一份高度档位起体。"""
+def test_控制稿三种符号各自出现_门扇线加把手_窗双框_过口无() -> None:
+    """同一道墙上门、窗、过口各一个（种类全由上游给）：门洞里有门扇线与把手、窗洞里有内框、
+    过口洞里在"若是门就该有门扇线/把手"的那两个像素上是黑的。三个洞都按同一份高度档位起体。
+    符号按默认方案 ``frame-handle`` 画（2026-09-06 用户裁决换掉 ``diagonal-cross``）。"""
     package = _three_opening_package(
         [
             _opening(DOOR_X, kind="door"),
@@ -309,29 +312,43 @@ def test_控制稿三种符号各自出现_门斜线窗十字过口无() -> None
     def on_wall(along_m: float, z_m: float, frame: base_render._OpeningFrame) -> tuple[int, int]:
         return _project(scene, ROOM_CAMERA_ID, (along_m, frame.across_center_m, z_m))
 
+    def leaf_line_x(frame: base_render._OpeningFrame) -> float:
+        return frame.along_m[0] + base_render.SKETCH_DOOR_LEAF_OFFSET_M
+
+    def handle_x(frame: base_render._OpeningFrame) -> float:
+        return (
+            frame.along_m[1]
+            - base_render.SKETCH_DOOR_HANDLE_EDGE_M
+            - base_render.SKETCH_DOOR_HANDLE_LENGTH_M * 0.5
+        )
+
+    handle_z = base_render.SKETCH_DOOR_HANDLE_HEIGHT_M
     door = frames["door"]
     door_w = door.along_m[1] - door.along_m[0]
     on_diagonal = on_wall(door.along_m[0] + door_w * 0.25, door.z_m[1] * 0.25, door)
-    assert _white_near(sketch, *on_diagonal), "门洞里没有斜线"
+    assert _white_near(sketch, *on_wall(leaf_line_x(door), handle_z, door)), "门洞里没有门扇线"
+    assert _white_near(sketch, *on_wall(handle_x(door), handle_z, door)), "门洞里没有把手"
+    assert not _white_near(sketch, *on_diagonal), "门洞里画了斜线——默认方案不画斜线"
 
     window = frames["window"]
     mid_x = (window.along_m[0] + window.along_m[1]) * 0.5
     mid_z = (window.z_m[0] + window.z_m[1]) * 0.5
-    assert _white_near(sketch, *on_wall(mid_x, window.z_m[0] + 0.3, window)), "窗洞里没有竖梃"
-    assert _white_near(sketch, *on_wall(window.along_m[0] + 0.2, mid_z, window)), "窗洞里没有横梃"
+    inner_x = window.along_m[0] + base_render.SKETCH_FRAME_INSET_M
+    assert _white_near(sketch, *on_wall(inner_x, mid_z, window)), "窗洞里没有内框竖边"
+    assert not _white_near(sketch, *on_wall(mid_x, mid_z, window)), "窗洞中心有线——默认方案不画十字"
 
     passage = frames["passage"]
-    passage_w = passage.along_m[1] - passage.along_m[0]
-    diagonal_point = on_wall(passage.along_m[0] + passage_w * 0.25, passage.z_m[1] * 0.25, passage)
-    assert not _white_near(sketch, *diagonal_point), "过口洞里画了门扇斜线"
-    assert not _white_near(
-        sketch, *on_wall(passage.along_m[0] + passage_w * 0.5, passage.z_m[1] * 0.15, passage)
-    ), "过口洞里出现了竖梃一类的线"
+    assert not _white_near(sketch, *on_wall(leaf_line_x(passage), handle_z, passage)), (
+        "过口洞里画了门扇线"
+    )
+    assert not _white_near(sketch, *on_wall(handle_x(passage), handle_z, passage)), (
+        "过口洞里画了把手"
+    )
 
 
-def test_同一个洞判成过口的控制稿是判成门的子集_只少一条斜线() -> None:
+def test_同一个洞判成过口的控制稿是判成门的子集_只少门的符号() -> None:
     """把过口高度与门高设成同一个数，两份包的几何逐字相同，控制稿的差别只能来自符号：
-    过口稿上白的像素门稿上也白；门稿多出来的正是斜线。"""
+    过口稿上白的像素门稿上也白；门稿多出来的正是门的符号（默认方案下＝外框 + 门扇线 + 把手）。"""
     heights = HeightRules(door_height_m=2.2, pass_height_m=2.2)
     as_door = compile_scene_package(
         _three_opening_package([_opening(PASSAGE_X, kind="door")], heights)
