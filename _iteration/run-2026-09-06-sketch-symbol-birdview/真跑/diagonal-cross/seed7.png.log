@@ -1,0 +1,8 @@
+写实图已出：/private/tmp/claude-501/-Users-baitianxing-codes-ishome/4852fa67-c85d-4d44-9c8f-640c4d0fa07c/scratchpad/birdview-out/diagonal-cross/seed7.png（风格 modern-minimal，视角 bird，515401 字节）
+控制稿留档：/private/tmp/claude-501/-Users-baitianxing-codes-ishome/4852fa67-c85d-4d44-9c8f-640c4d0fa07c/scratchpad/birdview-out/diagonal-cross/seed7.sketch.png；提示词留档：/private/tmp/claude-501/-Users-baitianxing-codes-ishome/4852fa67-c85d-4d44-9c8f-640c4d0fa07c/scratchpad/birdview-out/diagonal-cross/seed7.prompt.txt
+backend_name=gateway-sketch seed=7
+elapsed_seconds=34.9 prompt_sha256=cb9807f75378dc458ead6247002be90f88dbf1f439a4a75befe26e356c1b046a
+fidelity_score=0.1412（结构边重合度，只能同输出形态横向比）
+fidelity_v3_at_origin=0.3564 fidelity_v3_registered=0.3941 registration=sx=1.000 sy=1.000 dx=+1 dy=+0（只记录不判）
+gate=只记录不判（没配 ISHOME_REALISM_MIN_FIDELITY_SCORE）
+exit=0 wall_seconds=241
