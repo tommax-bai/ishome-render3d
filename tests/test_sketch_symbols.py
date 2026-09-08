@@ -20,15 +20,15 @@ import numpy.typing as npt
 import pytest
 from PIL import Image
 from test_control_sketch import (
-    DOOR_TOP_M,
-    DOOR_X_M,
+    DOOR_TOP_MM,
+    DOOR_X_MM,
     HEIGHT_PX,
-    NORTH_WALL_Y_M,
+    NORTH_WALL_Y_MM,
     ROOM_CAMERA_ID,
-    WALL_CENTER_Y_M,
+    WALL_CENTER_Y_MM,
     WIDTH_PX,
-    WINDOW_X_M,
-    WINDOW_Z_M,
+    WINDOW_X_MM,
+    WINDOW_Z_MM,
     _make_scene,
     _open_gray,
     _project,
@@ -59,29 +59,29 @@ OTHER_SCHEMES: tuple[SketchSymbolScheme, ...] = tuple(
     scheme for scheme in SKETCH_SYMBOL_SCHEMES if scheme != DEFAULT_SKETCH_SYMBOLS
 )
 """闭集里除默认之外的方案（含旧默认 ``diagonal-cross``，它留着复现 2026-09-06 之前的样本）。"""
-ROOM_FACE_Y_M = NORTH_WALL_Y_M[0]
-"""朝相机那一面：机位在南边，北墙朝南的面是 y=3.0。"""
+ROOM_FACE_Y_MM = NORTH_WALL_Y_MM[0]
+"""朝相机那一面：机位在南边，北墙朝南的面是 y=3000。"""
 
-WINDOW_INNER_X_M = (
-    WINDOW_X_M[0] + base_render.SKETCH_FRAME_INSET_M,
-    WINDOW_X_M[1] - base_render.SKETCH_FRAME_INSET_M,
+WINDOW_INNER_X_MM = (
+    WINDOW_X_MM[0] + base_render.SKETCH_FRAME_INSET_MM,
+    WINDOW_X_MM[1] - base_render.SKETCH_FRAME_INSET_MM,
 )
-WINDOW_INNER_Z_M = (
-    WINDOW_Z_M[0] + base_render.SKETCH_FRAME_INSET_M,
-    WINDOW_Z_M[1] - base_render.SKETCH_FRAME_INSET_M,
+WINDOW_INNER_Z_MM = (
+    WINDOW_Z_MM[0] + base_render.SKETCH_FRAME_INSET_MM,
+    WINDOW_Z_MM[1] - base_render.SKETCH_FRAME_INSET_MM,
 )
-WINDOW_MID_X_M = (WINDOW_X_M[0] + WINDOW_X_M[1]) * 0.5
-WINDOW_MID_Z_M = (WINDOW_Z_M[0] + WINDOW_Z_M[1]) * 0.5
-SILL_LINE_Z_M = WINDOW_Z_M[0] - base_render.SKETCH_SILL_DROP_M
-DOOR_WIDTH_M = DOOR_X_M[1] - DOOR_X_M[0]
-DOOR_DIAGONAL_QUARTER = (DOOR_X_M[0] + DOOR_WIDTH_M * 0.25, WALL_CENTER_Y_M, DOOR_TOP_M * 0.25)
-DOOR_LEAF_LINE = (DOOR_X_M[0] + base_render.SKETCH_DOOR_LEAF_OFFSET_M, WALL_CENTER_Y_M, 1.0)
+WINDOW_MID_X_MM = (WINDOW_X_MM[0] + WINDOW_X_MM[1]) * 0.5
+WINDOW_MID_Z_MM = (WINDOW_Z_MM[0] + WINDOW_Z_MM[1]) * 0.5
+SILL_LINE_Z_MM = WINDOW_Z_MM[0] - base_render.SKETCH_SILL_DROP_MM
+DOOR_WIDTH_MM = DOOR_X_MM[1] - DOOR_X_MM[0]
+DOOR_DIAGONAL_QUARTER = (DOOR_X_MM[0] + DOOR_WIDTH_MM * 0.25, WALL_CENTER_Y_MM, DOOR_TOP_MM * 0.25)
+DOOR_LEAF_LINE = (DOOR_X_MM[0] + base_render.SKETCH_DOOR_LEAF_OFFSET_MM, WALL_CENTER_Y_MM, 1.0)
 DOOR_HANDLE_MID = (
-    DOOR_X_M[1]
-    - base_render.SKETCH_DOOR_HANDLE_EDGE_M
-    - base_render.SKETCH_DOOR_HANDLE_LENGTH_M * 0.5,
-    WALL_CENTER_Y_M,
-    base_render.SKETCH_DOOR_HANDLE_HEIGHT_M,
+    DOOR_X_MM[1]
+    - base_render.SKETCH_DOOR_HANDLE_EDGE_MM
+    - base_render.SKETCH_DOOR_HANDLE_LENGTH_MM * 0.5,
+    WALL_CENTER_Y_MM,
+    base_render.SKETCH_DOOR_HANDLE_HEIGHT_MM,
 )
 
 
@@ -93,8 +93,8 @@ def _sketch(scheme: SketchSymbolScheme) -> npt.NDArray[np.int64]:
     return _open_gray(_views_by_scheme(scheme).sketch_png)
 
 
-def _white(sketch: npt.NDArray[np.int64], point_m: tuple[float, float, float]) -> bool:
-    return _white_near(sketch, *_project(_make_scene(), ROOM_CAMERA_ID, point_m))
+def _white(sketch: npt.NDArray[np.int64], point_mm: tuple[float, float, float]) -> bool:
+    return _white_near(sketch, *_project(_make_scene(), ROOM_CAMERA_ID, point_mm))
 
 
 def test_默认方案是双框加把手_且显式给默认与不给逐字节相同() -> None:
@@ -145,7 +145,7 @@ def test_每个方案确定性且同编码(scheme: SketchSymbolScheme) -> None:
 @pytest.mark.parametrize("scheme", SKETCH_SYMBOL_SCHEMES)
 def test_每个方案门与窗的符号互不相同_过口不画(scheme: SketchSymbolScheme) -> None:
     """同一个框按门画与按窗画，线段集合不同；过口一条都没有。"""
-    box = (DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
+    box = (DOOR_X_MM, NORTH_WALL_Y_MM, (0.0, DOOR_TOP_MM))
 
     def segments(kind: str) -> set[tuple[float, ...]]:
         frame = base_render._OpeningFrame(kind, 0, *box)
@@ -163,22 +163,28 @@ def test_每个方案门与窗的符号互不相同_过口不画(scheme: SketchS
 
 def test_frame_sill_窗是双框加窗台线_门是外框加门扇线() -> None:
     sketch = _sketch("frame-sill")
-    assert _white(sketch, (WINDOW_INNER_X_M[0], WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗内框左边没画"
-    assert _white(sketch, (WINDOW_MID_X_M, WALL_CENTER_Y_M, WINDOW_INNER_Z_M[1])), "窗内框顶边没画"
-    assert _white(sketch, (WINDOW_MID_X_M, ROOM_FACE_Y_M, SILL_LINE_Z_M)), (
+    assert _white(sketch, (WINDOW_INNER_X_MM[0], WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), (
+        "窗内框左边没画"
+    )
+    assert _white(sketch, (WINDOW_MID_X_MM, WALL_CENTER_Y_MM, WINDOW_INNER_Z_MM[1])), (
+        "窗内框顶边没画"
+    )
+    assert _white(sketch, (WINDOW_MID_X_MM, ROOM_FACE_Y_MM, SILL_LINE_Z_MM)), (
         "窗台线没画在朝相机的墙面上"
     )
-    assert not _white(sketch, (WINDOW_MID_X_M, WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗中心不该有十字"
-    assert not _white(sketch, (WINDOW_X_M[0] + 0.25, WALL_CENTER_Y_M, WINDOW_Z_M[0] + 0.3)), (
+    assert not _white(sketch, (WINDOW_MID_X_MM, WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), (
+        "窗中心不该有十字"
+    )
+    assert not _white(sketch, (WINDOW_X_MM[0] + 250.0, WALL_CENTER_Y_MM, WINDOW_Z_MM[0] + 300.0)), (
         "玻璃面上不该有线"
     )
 
     assert _white(sketch, DOOR_LEAF_LINE), "门扇线没画"
-    assert _white(sketch, (DOOR_X_M[0] + DOOR_WIDTH_M * 0.5, WALL_CENTER_Y_M, DOOR_TOP_M)), (
+    assert _white(sketch, (DOOR_X_MM[0] + DOOR_WIDTH_MM * 0.5, WALL_CENTER_Y_MM, DOOR_TOP_MM)), (
         "门外框顶边没画"
     )
     assert not _white(sketch, DOOR_DIAGONAL_QUARTER), "门洞里不该有斜线"
-    assert not _white(sketch, (DOOR_X_M[1] - 0.2, WALL_CENTER_Y_M, 1.0)), "门扇线只在一侧"
+    assert not _white(sketch, (DOOR_X_MM[1] - 200.0, WALL_CENTER_Y_MM, 1000.0)), "门扇线只在一侧"
 
 
 def test_frame_handle_窗照frame_sill_门是外框加门扇线加把手() -> None:
@@ -187,9 +193,9 @@ def test_frame_handle_窗照frame_sill_门是外框加门扇线加把手() -> No
     assert "frame-handle" in SKETCH_SYMBOL_SCHEMES
 
     def segments(kind: str, scheme: SketchSymbolScheme) -> set[tuple[float, ...]]:
-        frame = base_render._OpeningFrame(kind, 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
+        frame = base_render._OpeningFrame(kind, 0, DOOR_X_MM, NORTH_WALL_Y_MM, (0.0, DOOR_TOP_MM))
         if kind == "window":
-            frame = base_render._OpeningFrame(kind, 0, WINDOW_X_M, NORTH_WALL_Y_M, WINDOW_Z_M)
+            frame = base_render._OpeningFrame(kind, 0, WINDOW_X_MM, NORTH_WALL_Y_MM, WINDOW_Z_MM)
         return {
             tuple(np.round(np.concatenate([start, end]), 6).tolist())
             for start, end in base_render._opening_symbol_segments(frame, scheme, -1.0)
@@ -203,14 +209,18 @@ def test_frame_handle_窗照frame_sill_门是外框加门扇线加把手() -> No
     assert len(segments("door", "frame-handle")) == len(segments("door", "frame-sill")) + 1
 
     sketch = _sketch("frame-handle")
-    assert _white(sketch, (WINDOW_INNER_X_M[0], WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗内框左边没画"
-    assert _white(sketch, (WINDOW_MID_X_M, ROOM_FACE_Y_M, SILL_LINE_Z_M)), (
+    assert _white(sketch, (WINDOW_INNER_X_MM[0], WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), (
+        "窗内框左边没画"
+    )
+    assert _white(sketch, (WINDOW_MID_X_MM, ROOM_FACE_Y_MM, SILL_LINE_Z_MM)), (
         "窗台线没画在朝相机的墙面上"
     )
-    assert not _white(sketch, (WINDOW_MID_X_M, WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗中心不该有十字"
+    assert not _white(sketch, (WINDOW_MID_X_MM, WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), (
+        "窗中心不该有十字"
+    )
     assert _white(sketch, DOOR_LEAF_LINE), "门扇线没画"
     assert _white(sketch, DOOR_HANDLE_MID), "门把手没画"
-    assert _white(sketch, (DOOR_X_M[0] + DOOR_WIDTH_M * 0.5, WALL_CENTER_Y_M, DOOR_TOP_M)), (
+    assert _white(sketch, (DOOR_X_MM[0] + DOOR_WIDTH_MM * 0.5, WALL_CENTER_Y_MM, DOOR_TOP_MM)), (
         "门外框顶边没画"
     )
     assert not _white(sketch, DOOR_DIAGONAL_QUARTER), "门洞里不该有斜线"
@@ -223,23 +233,27 @@ def test_frame_handle_窗照frame_sill_门是外框加门扇线加把手() -> No
 
 def test_glazing_hatch_窗是双框加斜向短划_门是外框加把手() -> None:
     sketch = _sketch("glazing-hatch")
-    inner_w = WINDOW_INNER_X_M[1] - WINDOW_INNER_X_M[0]
-    inner_h = WINDOW_INNER_Z_M[1] - WINDOW_INNER_Z_M[0]
+    inner_w = WINDOW_INNER_X_MM[1] - WINDOW_INNER_X_MM[0]
+    inner_h = WINDOW_INNER_Z_MM[1] - WINDOW_INNER_Z_MM[0]
     step = base_render.SKETCH_HATCH_LENGTH_RATIO * min(inner_w, inner_h) * np.cos(np.radians(45.0))
     first_stroke_mid = (
-        WINDOW_INNER_X_M[0] + inner_w * 0.18 + step * 0.5,
-        WALL_CENTER_Y_M,
-        WINDOW_INNER_Z_M[0] + inner_h * 0.55 + step * 0.5,
+        WINDOW_INNER_X_MM[0] + inner_w * 0.18 + step * 0.5,
+        WALL_CENTER_Y_MM,
+        WINDOW_INNER_Z_MM[0] + inner_h * 0.55 + step * 0.5,
     )
-    assert _white(sketch, (WINDOW_INNER_X_M[0], WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "窗内框左边没画"
+    assert _white(sketch, (WINDOW_INNER_X_MM[0], WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), (
+        "窗内框左边没画"
+    )
     assert _white(sketch, first_stroke_mid), "玻璃反光短划没画"
-    assert not _white(sketch, (WINDOW_X_M[1] - 0.2, WALL_CENTER_Y_M, WINDOW_Z_M[0] + 0.3)), (
+    assert not _white(sketch, (WINDOW_X_MM[1] - 200.0, WALL_CENTER_Y_MM, WINDOW_Z_MM[0] + 300.0)), (
         "短划之外的玻璃面不该有线"
     )
-    assert not _white(sketch, (WINDOW_MID_X_M, ROOM_FACE_Y_M, SILL_LINE_Z_M)), "这个方案不画窗台线"
+    assert not _white(sketch, (WINDOW_MID_X_MM, ROOM_FACE_Y_MM, SILL_LINE_Z_MM)), (
+        "这个方案不画窗台线"
+    )
 
     assert _white(sketch, DOOR_HANDLE_MID), "门把手没画"
-    assert _white(sketch, (DOOR_X_M[0] + DOOR_WIDTH_M * 0.5, WALL_CENTER_Y_M, DOOR_TOP_M)), (
+    assert _white(sketch, (DOOR_X_MM[0] + DOOR_WIDTH_MM * 0.5, WALL_CENTER_Y_MM, DOOR_TOP_MM)), (
         "门外框顶边没画"
     )
     assert not _white(sketch, DOOR_LEAF_LINE), "这个方案不画门扇线"
@@ -250,34 +264,38 @@ def test_leaf_swing_门扇朝相机开_窗是双框窗台线加中竖梃() -> No
     sketch = _sketch("leaf-swing")
     swing = np.radians(base_render.SKETCH_DOOR_SWING_DEG)
     free_edge_mid = (
-        DOOR_X_M[0] + DOOR_WIDTH_M * float(np.cos(swing)),
-        WALL_CENTER_Y_M - DOOR_WIDTH_M * float(np.sin(swing)),
+        DOOR_X_MM[0] + DOOR_WIDTH_MM * float(np.cos(swing)),
+        WALL_CENTER_Y_MM - DOOR_WIDTH_MM * float(np.sin(swing)),
         1.0,
     )
-    assert free_edge_mid[1] < ROOM_FACE_Y_M, "门扇该开进相机所在的房间（y 更小的一侧）"
+    assert free_edge_mid[1] < ROOM_FACE_Y_MM, "门扇该开进相机所在的房间（y 更小的一侧）"
     assert _white(sketch, free_edge_mid), "门扇的自由竖边没画"
-    assert _white(sketch, (DOOR_X_M[0] + DOOR_WIDTH_M * 0.5, WALL_CENTER_Y_M, DOOR_TOP_M)), (
+    assert _white(sketch, (DOOR_X_MM[0] + DOOR_WIDTH_MM * 0.5, WALL_CENTER_Y_MM, DOOR_TOP_MM)), (
         "门外框顶边没画"
     )
-    assert not _white(sketch, (DOOR_X_M[1] - 0.1, WALL_CENTER_Y_M, 1.0)), "门扇之外的洞里不该有线"
+    assert not _white(sketch, (DOOR_X_MM[1] - 100.0, WALL_CENTER_Y_MM, 1000.0)), (
+        "门扇之外的洞里不该有线"
+    )
 
-    assert _white(sketch, (WINDOW_MID_X_M, WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "中竖梃没画"
-    assert _white(sketch, (WINDOW_MID_X_M, ROOM_FACE_Y_M, SILL_LINE_Z_M)), "窗台线没画"
-    assert not _white(sketch, (WINDOW_X_M[0] + 0.25, WALL_CENTER_Y_M, WINDOW_MID_Z_M)), "不该有横梃"
+    assert _white(sketch, (WINDOW_MID_X_MM, WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), "中竖梃没画"
+    assert _white(sketch, (WINDOW_MID_X_MM, ROOM_FACE_Y_MM, SILL_LINE_Z_MM)), "窗台线没画"
+    assert not _white(sketch, (WINDOW_X_MM[0] + 250.0, WALL_CENTER_Y_MM, WINDOW_MID_Z_MM)), (
+        "不该有横梃"
+    )
 
 
 def test_相机在墙另一侧时窗台线画在另一面_门扇朝另一边开() -> None:
-    frame = base_render._OpeningFrame("window", 0, WINDOW_X_M, NORTH_WALL_Y_M, WINDOW_Z_M)
+    frame = base_render._OpeningFrame("window", 0, WINDOW_X_MM, NORTH_WALL_Y_MM, WINDOW_Z_MM)
     south = base_render._sill_segment(frame, -1.0)
     north = base_render._sill_segment(frame, 1.0)
-    assert south[0][1] == NORTH_WALL_Y_M[0] and north[0][1] == NORTH_WALL_Y_M[1]
+    assert south[0][1] == NORTH_WALL_Y_MM[0] and north[0][1] == NORTH_WALL_Y_MM[1]
 
-    door = base_render._OpeningFrame("door", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
+    door = base_render._OpeningFrame("door", 0, DOOR_X_MM, NORTH_WALL_Y_MM, (0.0, DOOR_TOP_MM))
     toward_south = base_render._opening_symbol_segments(door, "leaf-swing", -1.0)
     toward_north = base_render._opening_symbol_segments(door, "leaf-swing", 1.0)
     south_free_y = min(float(point[1]) for start, end in toward_south for point in (start, end))
     north_free_y = max(float(point[1]) for start, end in toward_north for point in (start, end))
-    assert south_free_y < WALL_CENTER_Y_M < north_free_y
+    assert south_free_y < WALL_CENTER_Y_MM < north_free_y
 
 
 def test_编场景包那条路的洞_每个方案门窗符号都出现(tmp_path: Path) -> None:

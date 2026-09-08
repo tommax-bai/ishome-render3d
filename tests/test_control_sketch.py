@@ -24,32 +24,32 @@ HEIGHT_PX = 480
 
 ROOM_A = "客厅"
 ROOM_B = "餐厅"
-CEILING_M = 2.8
-WALL_THICKNESS_M = 0.2
-SEAM_X_M = 4.0
-"""两间房地板相接的那条线：x = 4，**这儿没有墙**。"""
+CEILING_MM = 2800.0
+WALL_THICKNESS_MM = 200.0
+SEAM_X_MM = 4000.0
+"""两间房地板相接的那条线：x = 4000，**这儿没有墙**。"""
 
-ROOM_A_X_M = (0.0, SEAM_X_M)
-ROOM_B_X_M = (SEAM_X_M, 7.0)
-ROOM_Y_M = (0.0, 3.0)
-NORTH_WALL_Y_M = (3.0, 3.0 + WALL_THICKNESS_M)
-WALL_CENTER_Y_M = 3.0 + WALL_THICKNESS_M * 0.5
+ROOM_A_X_MM = (0.0, SEAM_X_MM)
+ROOM_B_X_MM = (SEAM_X_MM, 7000.0)
+ROOM_Y_MM = (0.0, 3000.0)
+NORTH_WALL_Y_MM = (3000.0, 3000.0 + WALL_THICKNESS_MM)
+WALL_CENTER_Y_MM = 3000.0 + WALL_THICKNESS_MM * 0.5
 
-DOOR_X_M = (0.5, 1.4)
-DOOR_TOP_M = 2.05
-WINDOW_X_M = (2.5, 3.5)
-WINDOW_Z_M = (0.9, 2.1)
+DOOR_X_MM = (500.0, 1400.0)
+DOOR_TOP_MM = 2050.0
+WINDOW_X_MM = (2500.0, 3500.0)
+WINDOW_Z_MM = (900.0, 2100.0)
 
-BOX_X_M = (2.6, 3.6)
-BOX_Y_M = (1.8, 2.6)
-BOX_TOP_Z_M = 0.8
-"""家具体块摆在退景路径（x=2）东侧 0.6 米、离机位 1.45 米以上：不改变机位（家具余量
-0.40 米），顶面前棱又落在 80° 画幅之内。"""
+BOX_X_MM = (2600.0, 3600.0)
+BOX_Y_MM = (1800.0, 2600.0)
+BOX_TOP_Z_MM = 800.0
+"""家具体块摆在退景路径（x=2000）东侧 600 毫米、离机位 1450 毫米以上：不改变机位
+（家具余量 400 毫米），顶面前棱又落在 80° 画幅之内。"""
 
 BIRD_CAMERA_ID = "bird"
 ROOM_CAMERA_ID = "room-客厅"
 ROOM_FOV_DEG = 80.0
-"""室内那台给 80 度：从南墙边（y=0.35）平视北墙（y=3.0），要把门、窗、地脚线、天花交线
+"""室内那台给 80 度：从南墙边（y=350）平视北墙（y=3000），要把门、窗、地脚线、天花交线
 一起框进画面。"""
 
 MATERIAL_ID = "mat"
@@ -76,15 +76,15 @@ def _quad(
 def _box(
     mesh_id: str,
     semantic: str,
-    x_m: tuple[float, float],
-    y_m: tuple[float, float],
-    z_m: tuple[float, float],
+    x_mm: tuple[float, float],
+    y_mm: tuple[float, float],
+    z_mm: tuple[float, float],
     room: str | None = None,
 ) -> Mesh:
     """长方体：8 顶点 12 三角形（绕序不统一，底渲不许依赖它）。"""
-    x0, x1 = x_m
-    y0, y1 = y_m
-    z0, z1 = z_m
+    x0, x1 = x_mm
+    y0, y1 = y_mm
+    z0, z1 = z_mm
     vertices: list[tuple[float, float, float]] = [
         (x0, y0, z0),
         (x1, y0, z0),
@@ -119,11 +119,11 @@ def _box(
     )
 
 
-def _reveal(mesh_id: str, x_m: tuple[float, float], z_m: tuple[float, float]) -> Mesh:
+def _reveal(mesh_id: str, x_mm: tuple[float, float], z_mm: tuple[float, float]) -> Mesh:
     """洞口套框：两侧洞壁 + 洞顶，落地的洞不出洞底（同 mesh ``_reveal_mesh`` 的形态）。"""
-    x0, x1 = x_m
-    y0, y1 = NORTH_WALL_Y_M
-    z0, z1 = z_m
+    x0, x1 = x_mm
+    y0, y1 = NORTH_WALL_Y_MM
+    z0, z1 = z_mm
     vertices: list[tuple[float, float, float]] = []
     triangles: list[tuple[int, int, int]] = []
 
@@ -149,9 +149,9 @@ def _reveal(mesh_id: str, x_m: tuple[float, float], z_m: tuple[float, float]) ->
 
 
 def _make_scene(with_box: bool = False) -> ScenePackage:
-    y0, y1 = ROOM_Y_M
+    y0, y1 = ROOM_Y_MM
     meshes: list[Mesh] = []
-    for room, (x0, x1) in ((ROOM_A, ROOM_A_X_M), (ROOM_B, ROOM_B_X_M)):
+    for room, (x0, x1) in ((ROOM_A, ROOM_A_X_MM), (ROOM_B, ROOM_B_X_MM)):
         meshes.append(
             _quad(
                 f"floor:{room}:0",
@@ -165,35 +165,35 @@ def _make_scene(with_box: bool = False) -> ScenePackage:
                 f"ceiling:{room}:0",
                 "ceiling",
                 [
-                    (x0, y0, CEILING_M),
-                    (x1, y0, CEILING_M),
-                    (x1, y1, CEILING_M),
-                    (x0, y1, CEILING_M),
+                    (x0, y0, CEILING_MM),
+                    (x1, y0, CEILING_MM),
+                    (x1, y1, CEILING_MM),
+                    (x0, y1, CEILING_MM),
                 ],
                 room,
             )
         )
-    full_z = (0.0, CEILING_M)
-    x_left, x_right = ROOM_A_X_M[0], ROOM_B_X_M[1]
-    meshes.append(_box("wall:south", "wall", (x_left, x_right), (-WALL_THICKNESS_M, 0.0), full_z))
-    meshes.append(_box("wall:west", "wall", (-WALL_THICKNESS_M, x_left), ROOM_Y_M, full_z))
+    full_z = (0.0, CEILING_MM)
+    x_left, x_right = ROOM_A_X_MM[0], ROOM_B_X_MM[1]
+    meshes.append(_box("wall:south", "wall", (x_left, x_right), (-WALL_THICKNESS_MM, 0.0), full_z))
+    meshes.append(_box("wall:west", "wall", (-WALL_THICKNESS_MM, x_left), ROOM_Y_MM, full_z))
     meshes.append(
-        _box("wall:east", "wall", (x_right, x_right + WALL_THICKNESS_M), ROOM_Y_M, full_z)
+        _box("wall:east", "wall", (x_right, x_right + WALL_THICKNESS_MM), ROOM_Y_MM, full_z)
     )
-    north = NORTH_WALL_Y_M
-    meshes.append(_box("wall:north:span:0", "wall", (x_left, DOOR_X_M[0]), north, full_z))
-    meshes.append(_box("wall:north:lintel:0", "wall", DOOR_X_M, north, (DOOR_TOP_M, CEILING_M)))
-    meshes.append(_box("wall:north:span:1", "wall", (DOOR_X_M[1], WINDOW_X_M[0]), north, full_z))
-    meshes.append(_box("wall:north:sill:0", "wall", WINDOW_X_M, north, (0.0, WINDOW_Z_M[0])))
+    north = NORTH_WALL_Y_MM
+    meshes.append(_box("wall:north:span:0", "wall", (x_left, DOOR_X_MM[0]), north, full_z))
+    meshes.append(_box("wall:north:lintel:0", "wall", DOOR_X_MM, north, (DOOR_TOP_MM, CEILING_MM)))
+    meshes.append(_box("wall:north:span:1", "wall", (DOOR_X_MM[1], WINDOW_X_MM[0]), north, full_z))
+    meshes.append(_box("wall:north:sill:0", "wall", WINDOW_X_MM, north, (0.0, WINDOW_Z_MM[0])))
     meshes.append(
-        _box("wall:north:lintel:1", "wall", WINDOW_X_M, north, (WINDOW_Z_M[1], CEILING_M))
+        _box("wall:north:lintel:1", "wall", WINDOW_X_MM, north, (WINDOW_Z_MM[1], CEILING_MM))
     )
-    meshes.append(_box("wall:north:span:2", "wall", (WINDOW_X_M[1], x_right), north, full_z))
-    meshes.append(_reveal("reveal:door:outline:0:0", DOOR_X_M, (0.0, DOOR_TOP_M)))
-    meshes.append(_reveal("reveal:window:outline:0:1", WINDOW_X_M, WINDOW_Z_M))
+    meshes.append(_box("wall:north:span:2", "wall", (WINDOW_X_MM[1], x_right), north, full_z))
+    meshes.append(_reveal("reveal:door:outline:0:0", DOOR_X_MM, (0.0, DOOR_TOP_MM)))
+    meshes.append(_reveal("reveal:window:outline:0:1", WINDOW_X_MM, WINDOW_Z_MM))
     if with_box:
         meshes.append(
-            _box("furnishing:茶几", "furnishing", BOX_X_M, BOX_Y_M, (0.0, BOX_TOP_Z_M), ROOM_A)
+            _box("furnishing:茶几", "furnishing", BOX_X_MM, BOX_Y_MM, (0.0, BOX_TOP_Z_MM), ROOM_A)
         )
     return ScenePackage(
         revision_id="rev-test-控制稿",
@@ -205,7 +205,7 @@ def _make_scene(with_box: bool = False) -> ScenePackage:
                 id=ROOM_CAMERA_ID,
                 kind="room",
                 room=ROOM_A,
-                eye_height_m=1.55,
+                eye_height_mm=1550,
                 yaw_deg=0.0,
                 fov_deg=ROOM_FOV_DEG,
             ),
@@ -218,14 +218,14 @@ def _open_gray(png: bytes) -> npt.NDArray[np.int64]:
 
 
 def _project(
-    scene: ScenePackage, camera_id: str, point_m: tuple[float, float, float]
+    scene: ScenePackage, camera_id: str, point_mm: tuple[float, float, float]
 ) -> tuple[int, int]:
     """世界点 → 像素下标，用底渲真正在用的那两个矩阵。"""
     aspect = WIDTH_PX / HEIGHT_PX
     pose = resolve_camera_pose(scene, camera_id, aspect)
-    view = look_at_matrix(pose.eye_m, pose.target_m, pose.up_hint_xyz)
-    proj = perspective_matrix(pose.fov_deg, aspect, pose.near_clip_m, pose.far_clip_m)
-    clip = proj @ (view @ np.array([*point_m, 1.0], dtype=np.float64))
+    view = look_at_matrix(pose.eye_mm, pose.target_mm, pose.up_hint_xyz)
+    proj = perspective_matrix(pose.fov_deg, aspect, pose.near_clip_mm, pose.far_clip_mm)
+    clip = proj @ (view @ np.array([*point_mm, 1.0], dtype=np.float64))
     ndc = clip[:3] / clip[3]
     return int((ndc[0] + 1.0) * 0.5 * WIDTH_PX), int((1.0 - ndc[1]) * 0.5 * HEIGHT_PX)
 
@@ -271,9 +271,9 @@ def test_地面上的房间分界线不画() -> None:
     line = _open_gray(views.line_png)
     sketch = _open_gray(views.sketch_png)
 
-    # 只取 y ≥ 1.8 那一段：揭顶机位从南面 60° 俯视，南墙（通高 2.8 米）挡住了离它
-    # 1.6 米以内的地板，再往南的接缝本来就看不见
-    seam_points = [(SEAM_X_M, float(y_m), 0.0) for y_m in np.linspace(1.8, 2.6, 5)]
+    # 只取 y ≥ 1800 那一段：揭顶机位从南面 60° 俯视，南墙（通高 2800 毫米）挡住了离它
+    # 1600 毫米以内的地板，再往南的接缝本来就看不见
+    seam_points = [(SEAM_X_MM, float(y_mm), 0.0) for y_mm in np.linspace(1800.0, 2600.0, 5)]
     pixels = [_project(scene, BIRD_CAMERA_ID, point) for point in seam_points]
     assert all(_white_near(line, x, y, radius_px=1) for x, y in pixels), "线稿本该画出这条接缝"
     assert not any(_white_near(sketch, x, y, radius_px=1) for x, y in pixels), (
@@ -289,8 +289,8 @@ def test_天花与墙的交线不画而地脚线画() -> None:
     line = _open_gray(views.line_png)
     sketch = _open_gray(views.sketch_png)
 
-    top_x, top_y = _project(scene, ROOM_CAMERA_ID, (2.0, NORTH_WALL_Y_M[0], CEILING_M))
-    bottom_x, bottom_y = _project(scene, ROOM_CAMERA_ID, (2.0, NORTH_WALL_Y_M[0], 0.0))
+    top_x, top_y = _project(scene, ROOM_CAMERA_ID, (2000.0, NORTH_WALL_Y_MM[0], CEILING_MM))
+    bottom_x, bottom_y = _project(scene, ROOM_CAMERA_ID, (2000.0, NORTH_WALL_Y_MM[0], 0.0))
     assert _white_near(line, top_x, top_y), "线稿本该画出天花与墙的交线"
     assert not _white_near(sketch, top_x, top_y), "控制稿画了天花与墙的交线"
     assert _white_near(sketch, bottom_x, bottom_y), "控制稿没画地脚线"
@@ -304,33 +304,33 @@ def test_门与窗的符号不同() -> None:
     scene = _make_scene()
     views = render_base_views(scene, ROOM_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     sketch = _open_gray(views.sketch_png)
-    y_m = WALL_CENTER_Y_M
+    y_mm = WALL_CENTER_Y_MM
 
-    door_width_m = DOOR_X_M[1] - DOOR_X_M[0]
-    on_leaf_line = (DOOR_X_M[0] + base_render.SKETCH_DOOR_LEAF_OFFSET_M, y_m, 1.0)
+    door_width_mm = DOOR_X_MM[1] - DOOR_X_MM[0]
+    on_leaf_line = (DOOR_X_MM[0] + base_render.SKETCH_DOOR_LEAF_OFFSET_MM, y_mm, 1.0)
     on_handle = (
-        DOOR_X_M[1]
-        - base_render.SKETCH_DOOR_HANDLE_EDGE_M
-        - base_render.SKETCH_DOOR_HANDLE_LENGTH_M * 0.5,
-        y_m,
-        base_render.SKETCH_DOOR_HANDLE_HEIGHT_M,
+        DOOR_X_MM[1]
+        - base_render.SKETCH_DOOR_HANDLE_EDGE_MM
+        - base_render.SKETCH_DOOR_HANDLE_LENGTH_MM * 0.5,
+        y_mm,
+        base_render.SKETCH_DOOR_HANDLE_HEIGHT_MM,
     )
-    on_diagonal = (DOOR_X_M[0] + door_width_m * 0.25, y_m, DOOR_TOP_M * 0.25)
+    on_diagonal = (DOOR_X_MM[0] + door_width_mm * 0.25, y_mm, DOOR_TOP_MM * 0.25)
     assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_leaf_line)), "门洞里没有门扇线"
     assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_handle)), "门洞里没有把手"
     assert not _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_diagonal)), (
         "门洞里出现了斜线——默认方案不画斜线"
     )
 
-    window_mid_x_m = (WINDOW_X_M[0] + WINDOW_X_M[1]) * 0.5
-    window_mid_z_m = (WINDOW_Z_M[0] + WINDOW_Z_M[1]) * 0.5
-    on_inner_frame = (WINDOW_X_M[0] + base_render.SKETCH_FRAME_INSET_M, y_m, window_mid_z_m)
+    window_mid_x_mm = (WINDOW_X_MM[0] + WINDOW_X_MM[1]) * 0.5
+    window_mid_z_mm = (WINDOW_Z_MM[0] + WINDOW_Z_MM[1]) * 0.5
+    on_inner_frame = (WINDOW_X_MM[0] + base_render.SKETCH_FRAME_INSET_MM, y_mm, window_mid_z_mm)
     on_sill_line = (
-        window_mid_x_m,
-        NORTH_WALL_Y_M[0],
-        WINDOW_Z_M[0] - base_render.SKETCH_SILL_DROP_M,
+        window_mid_x_mm,
+        NORTH_WALL_Y_MM[0],
+        WINDOW_Z_MM[0] - base_render.SKETCH_SILL_DROP_MM,
     )
-    off_symbol = (window_mid_x_m, y_m, window_mid_z_m)
+    off_symbol = (window_mid_x_mm, y_mm, window_mid_z_mm)
     assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_inner_frame)), "窗洞里没有内框"
     assert _white_near(sketch, *_project(scene, ROOM_CAMERA_ID, on_sill_line)), (
         "窗台线没画在朝相机那一面的墙面上"
@@ -339,13 +339,15 @@ def test_门与窗的符号不同() -> None:
         "窗洞中心出现了线——默认方案不画十字"
     )
 
-    door_frame = base_render._OpeningFrame("door", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M))
-    window_frame = base_render._OpeningFrame("window", 0, WINDOW_X_M, NORTH_WALL_Y_M, WINDOW_Z_M)
+    door_frame = base_render._OpeningFrame(
+        "door", 0, DOOR_X_MM, NORTH_WALL_Y_MM, (0.0, DOOR_TOP_MM)
+    )
+    window_frame = base_render._OpeningFrame("window", 0, WINDOW_X_MM, NORTH_WALL_Y_MM, WINDOW_Z_MM)
     entry_frame = base_render._OpeningFrame(
-        "entry-door", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M)
+        "entry-door", 0, DOOR_X_MM, NORTH_WALL_Y_MM, (0.0, DOOR_TOP_MM)
     )
     passage_frame = base_render._OpeningFrame(
-        "passage", 0, DOOR_X_M, NORTH_WALL_Y_M, (0.0, DOOR_TOP_M)
+        "passage", 0, DOOR_X_MM, NORTH_WALL_Y_MM, (0.0, DOOR_TOP_MM)
     )
     # 门＝外框三边（不画门槛线）+ 门扇线 + 把手；窗＝外框四边 + 内框四边 + 窗台线
     assert len(base_render._opening_symbol_segments(door_frame)) == 5
@@ -360,12 +362,12 @@ def test_洞口形态从网格里读得出来() -> None:
     by_kind = {frame.kind: frame for frame in frames}
     assert set(by_kind) == {"door", "window"}
     assert by_kind["door"].along_axis == 0
-    assert by_kind["door"].along_m == DOOR_X_M
-    assert by_kind["door"].z_m == (0.0, DOOR_TOP_M)
-    assert by_kind["door"].across_m == NORTH_WALL_Y_M
-    assert by_kind["door"].across_center_m == WALL_CENTER_Y_M
-    assert by_kind["window"].along_m == WINDOW_X_M
-    assert by_kind["window"].z_m == WINDOW_Z_M
+    assert by_kind["door"].along_mm == DOOR_X_MM
+    assert by_kind["door"].z_mm == (0.0, DOOR_TOP_MM)
+    assert by_kind["door"].across_mm == NORTH_WALL_Y_MM
+    assert by_kind["door"].across_center_mm == WALL_CENTER_Y_MM
+    assert by_kind["window"].along_mm == WINDOW_X_MM
+    assert by_kind["window"].z_mm == WINDOW_Z_MM
 
 
 def test_家具体块的可见边画() -> None:
@@ -373,7 +375,7 @@ def test_家具体块的可见边画() -> None:
     在没有家具的场景里是黑的（那儿只是地板）。"""
     with_box = _make_scene(with_box=True)
     without_box = _make_scene(with_box=False)
-    edge_point = ((BOX_X_M[0] + BOX_X_M[1]) * 0.5, BOX_Y_M[0], BOX_TOP_Z_M)
+    edge_point = ((BOX_X_MM[0] + BOX_X_MM[1]) * 0.5, BOX_Y_MM[0], BOX_TOP_Z_MM)
     x_px, y_px = _project(with_box, ROOM_CAMERA_ID, edge_point)
     assert _project(without_box, ROOM_CAMERA_ID, edge_point) == (x_px, y_px), (
         "有没有这件家具不该改变机位（它离退景路径够远）"

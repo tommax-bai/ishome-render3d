@@ -1,14 +1,14 @@
 """mock 摆场的守门测试：确定性、按房间名分派、不穿墙、不堵门。
 
 **几何在这儿现搭，不吃 `tests/fixtures/`**——同 `test_scene_compile.py` 的做法：
-量的是摆放这一步本身，卷子换了它还得成立。房间统一用边长 3m 的正方形（`_package` /
-`_single_room_package` 把 `metre_per_unit` 钉成 7.5，好让 ratio 与米之间能手算校验）。
+量的是摆放这一步本身，卷子换了它还得成立。房间统一用边长 3000 毫米的正方形（`_package` /
+`_single_room_package` 把 `mm_per_unit` 钉成 7500，好让 ratio 与毫米之间能手算校验）。
 """
 
 from __future__ import annotations
 
 from render3d_worker.furnish_mock import (
-    DOOR_CLEARANCE_M,
+    DOOR_CLEARANCE_MM,
     MockFurnishingReport,
     Rect,
     build_mock_furnishings,
@@ -23,11 +23,11 @@ from render3d_worker.models import (
     RoomOutline,
 )
 
-# 3m×3m 正方形房间：frame 1000×1000、`plan_box` 取满整幅（得房率 100%）时，
-# `metre_per_unit = sqrt(building_area_sqm)`；56.25㎡ 对应 7.5 米/单位，
-# 0.4 的 ratio 边长换算正好是 3 米——这几个数字是刻意凑的，方便测试里手算校验。
+# 3000×3000 毫米的正方形房间：frame 1000×1000、`plan_box` 取满整幅（得房率 100%）时，
+# `mm_per_unit = sqrt(building_area_sqm) × 1000`；56.25㎡ 对应 7500 毫米/单位，
+# 0.4 的 ratio 边长换算正好是 3000 毫米——这几个数字是刻意凑的，方便测试里手算校验。
 _BUILDING_AREA_SQM = 56.25
-_METRE_PER_UNIT = 7.5
+_MM_PER_UNIT = 7500.0
 _ROOM_BOX: tuple[float, float, float, float] = (0.1, 0.1, 0.5, 0.5)
 
 
@@ -126,20 +126,20 @@ def _point_in_any_box(x_ratio: float, y_ratio: float, boxes: list[Rect]) -> bool
     )
 
 
-def _footprint_ratio(placement: FurnishingPlacement, m_per_x: float, m_per_y: float) -> Rect:
+def _footprint_ratio(placement: FurnishingPlacement, mm_per_x: float, mm_per_y: float) -> Rect:
     """从 `FurnishingPlacement` 独立反推足迹——不借 `furnish_mock` 内部的 `_Slot`，
-    量的是契约本身（中心点 + 米制尺寸 + `yaw_deg`），跟 `mesh.build_furnishings`
+    量的是契约本身（中心点 + 毫米制尺寸 + `yaw_deg`），跟 `mesh.build_furnishings`
     的旋转口径对齐：0°/180° 时宽沿 x、深沿 y，90°/270° 两者对调。
     """
     if placement.yaw_deg in (0.0, 180.0):
-        half_x_m, half_y_m = placement.width_m / 2, placement.depth_m / 2
+        half_x_mm, half_y_mm = placement.width_mm / 2, placement.depth_mm / 2
     else:
-        half_x_m, half_y_m = placement.depth_m / 2, placement.width_m / 2
+        half_x_mm, half_y_mm = placement.depth_mm / 2, placement.width_mm / 2
     return (
-        placement.center_x_ratio - half_x_m / m_per_x,
-        placement.center_y_ratio - half_y_m / m_per_y,
-        placement.center_x_ratio + half_x_m / m_per_x,
-        placement.center_y_ratio + half_y_m / m_per_y,
+        placement.center_x_ratio - half_x_mm / mm_per_x,
+        placement.center_y_ratio - half_y_mm / mm_per_y,
+        placement.center_x_ratio + half_x_mm / mm_per_x,
+        placement.center_y_ratio + half_y_mm / mm_per_y,
     )
 
 
@@ -160,7 +160,7 @@ def test_furnishings_never_leave_the_rooms_box_union() -> None:
     assert report.placements  # 3m×3m 卧室，床/床头柜/衣柜至少摆得出一部分
 
     for placement in report.placements:
-        left, top, right, bottom = _footprint_ratio(placement, _METRE_PER_UNIT, _METRE_PER_UNIT)
+        left, top, right, bottom = _footprint_ratio(placement, _MM_PER_UNIT, _MM_PER_UNIT)
         samples_x = [left + (right - left) * frac for frac in (0.02, 0.3, 0.5, 0.7, 0.98)]
         samples_y = [top + (bottom - top) * frac for frac in (0.02, 0.3, 0.5, 0.7, 0.98)]
         for x_ratio in samples_x:
@@ -180,7 +180,7 @@ def test_an_l_shaped_room_never_gets_furniture_in_its_missing_corner() -> None:
     assert report.placements
 
     for placement in report.placements:
-        left, top, right, bottom = _footprint_ratio(placement, _METRE_PER_UNIT, _METRE_PER_UNIT)
+        left, top, right, bottom = _footprint_ratio(placement, _MM_PER_UNIT, _MM_PER_UNIT)
         missing_corner = (0.3, 0.3, 0.5, 0.5)
         overlaps_missing_corner = (
             left < missing_corner[2]
@@ -209,7 +209,7 @@ def test_furnishings_avoid_the_door_clearance_zone() -> None:
     report = build_mock_furnishings(package)
     assert report.placements  # 至少摆出点东西，不然这条测试测的是"什么都没摆"
 
-    clear_y_ratio = DOOR_CLEARANCE_M / _METRE_PER_UNIT
+    clear_y_ratio = DOOR_CLEARANCE_MM / _MM_PER_UNIT
     door_clear: Rect = (
         door.start_ratio,
         door.position_ratio - clear_y_ratio,
@@ -218,7 +218,7 @@ def test_furnishings_avoid_the_door_clearance_zone() -> None:
     )
 
     for placement in report.placements:
-        footprint = _footprint_ratio(placement, _METRE_PER_UNIT, _METRE_PER_UNIT)
+        footprint = _footprint_ratio(placement, _MM_PER_UNIT, _MM_PER_UNIT)
         overlaps = (
             footprint[0] < door_clear[2]
             and door_clear[0] < footprint[2]

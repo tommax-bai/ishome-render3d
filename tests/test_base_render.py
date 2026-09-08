@@ -32,18 +32,18 @@ from render3d_worker.models import (
 )
 from render3d_worker.raster import look_at_matrix, perspective_matrix
 
-# 一间 4m × 3m × 2.8m 的客厅：地板 + 四面墙 + 天花 + 一件 1.0×1.0×0.8m 的家具体块。
+# 一间 4000×3000×2800 毫米的客厅：地板 + 四面墙 + 天花 + 一件 1000×1000×800 毫米的家具体块。
 # 天花是**必须有**的：bird 剔天花那条裁决，没有天花就验不到（见 test_bird机位剔掉天花）。
 ROOM_NAME = "客厅"
-ROOM_WIDTH_M = 4.0
-ROOM_DEPTH_M = 3.0
-ROOM_HEIGHT_M = 2.8
-BOX_X_M = (2.5, 3.5)
-BOX_Y_M = (1.0, 2.0)
-BOX_TOP_Z_M = 0.8
+ROOM_WIDTH_MM = 4000.0
+ROOM_DEPTH_MM = 3000.0
+ROOM_HEIGHT_MM = 2800.0
+BOX_X_MM = (2500.0, 3500.0)
+BOX_Y_MM = (1000.0, 2000.0)
+BOX_TOP_Z_MM = 800.0
 
-FLOOR_CENTER_M = (2.0, 1.5, 0.0)
-BOX_TOP_CENTER_M = (3.0, 1.5, BOX_TOP_Z_M)
+FLOOR_CENTER_MM = (2000.0, 1500.0, 0.0)
+BOX_TOP_CENTER_MM = (3000.0, 1500.0, BOX_TOP_Z_MM)
 
 WIDTH_PX = 320
 HEIGHT_PX = 240
@@ -57,13 +57,13 @@ ROOM_AUTO_CAMERA_ID = "room-客厅-自动"
 # 擦过去，画面里只有一面墙背。-60 度越过墙顶看进屋里，才验得到室内的深度关系。
 BIRD_PITCH_DEG = -60.0
 
-# 广角室内机位：普通那台（竖直 60 度）在 1.5 米外只看得见北墙的中段，够不着天花。
+# 广角室内机位：普通那台（竖直 60 度）在 1500 毫米外只看得见北墙的中段，够不着天花。
 # 100 度才把天花与地板一起框进来——"room 机位天花仍在"这条断言要它才立得住。
 ROOM_WIDE_FOV_DEG = 100.0
 
-# 自动取景那台的张角：室内机位固定平视、眼高 1.55 米，地板只从 眼高 ÷ tan(竖直半张角) 以外
-# 才进画面——默认 55 度是 2.98 米，这间 4 米长的房只剩一条地板，过不了"拍到了地板"那条
-# 门槛（ROOM_VIEW_MIN_TARGET_FLOOR_RATIO）。80 度把这个距离拉到 1.85 米。
+# 自动取景那台的张角：室内机位固定平视、眼高 1550 毫米，地板只从 眼高 ÷ tan(竖直半张角) 以外
+# 才进画面——默认 55 度是 2980 毫米，这间 4000 毫米长的房只剩一条地板，过不了"拍到了地板"
+# 那条门槛（ROOM_VIEW_MIN_TARGET_FLOOR_RATIO）。80 度把这个距离拉到 1850 毫米。
 ROOM_AUTO_FOV_DEG = 80.0
 
 
@@ -87,9 +87,9 @@ def _quad_mesh(
 
 def _box_mesh(mesh_id: str, material_id: str) -> Mesh:
     """家具体块：8 顶点 12 三角形。绕序刻意不统一——上游不保证，底渲也不许依赖它。"""
-    x0, x1 = BOX_X_M
-    y0, y1 = BOX_Y_M
-    z0, z1 = 0.0, BOX_TOP_Z_M
+    x0, x1 = BOX_X_MM
+    y0, y1 = BOX_Y_MM
+    z0, z1 = 0.0, BOX_TOP_Z_MM
     vertices: list[tuple[float, float, float]] = [
         (x0, y0, z0),
         (x1, y0, z0),
@@ -125,13 +125,18 @@ def _box_mesh(mesh_id: str, material_id: str) -> Mesh:
 
 
 def _make_scene() -> ScenePackage:
-    width_m, depth_m, height_m = ROOM_WIDTH_M, ROOM_DEPTH_M, ROOM_HEIGHT_M
+    width_mm, depth_mm, height_mm = ROOM_WIDTH_MM, ROOM_DEPTH_MM, ROOM_HEIGHT_MM
     meshes = [
         _quad_mesh(
             "floor-客厅",
             "floor",
             "mat-floor",
-            [(0.0, 0.0, 0.0), (width_m, 0.0, 0.0), (width_m, depth_m, 0.0), (0.0, depth_m, 0.0)],
+            [
+                (0.0, 0.0, 0.0),
+                (width_mm, 0.0, 0.0),
+                (width_mm, depth_mm, 0.0),
+                (0.0, depth_mm, 0.0),
+            ],
         ),
         _quad_mesh(
             "wall-南",
@@ -139,9 +144,9 @@ def _make_scene() -> ScenePackage:
             "mat-wall",
             [
                 (0.0, 0.0, 0.0),
-                (width_m, 0.0, 0.0),
-                (width_m, 0.0, height_m),
-                (0.0, 0.0, height_m),
+                (width_mm, 0.0, 0.0),
+                (width_mm, 0.0, height_mm),
+                (0.0, 0.0, height_mm),
             ],
         ),
         _quad_mesh(
@@ -149,10 +154,10 @@ def _make_scene() -> ScenePackage:
             "wall",
             "mat-wall",
             [
-                (0.0, depth_m, 0.0),
-                (width_m, depth_m, 0.0),
-                (width_m, depth_m, height_m),
-                (0.0, depth_m, height_m),
+                (0.0, depth_mm, 0.0),
+                (width_mm, depth_mm, 0.0),
+                (width_mm, depth_mm, height_mm),
+                (0.0, depth_mm, height_mm),
             ],
         ),
         _quad_mesh(
@@ -161,9 +166,9 @@ def _make_scene() -> ScenePackage:
             "mat-wall",
             [
                 (0.0, 0.0, 0.0),
-                (0.0, depth_m, 0.0),
-                (0.0, depth_m, height_m),
-                (0.0, 0.0, height_m),
+                (0.0, depth_mm, 0.0),
+                (0.0, depth_mm, height_mm),
+                (0.0, 0.0, height_mm),
             ],
         ),
         _quad_mesh(
@@ -171,10 +176,10 @@ def _make_scene() -> ScenePackage:
             "wall",
             "mat-wall",
             [
-                (width_m, 0.0, 0.0),
-                (width_m, depth_m, 0.0),
-                (width_m, depth_m, height_m),
-                (width_m, 0.0, height_m),
+                (width_mm, 0.0, 0.0),
+                (width_mm, depth_mm, 0.0),
+                (width_mm, depth_mm, height_mm),
+                (width_mm, 0.0, height_mm),
             ],
         ),
         _quad_mesh(
@@ -182,10 +187,10 @@ def _make_scene() -> ScenePackage:
             "ceiling",
             "mat-ceiling",
             [
-                (0.0, 0.0, height_m),
-                (width_m, 0.0, height_m),
-                (width_m, depth_m, height_m),
-                (0.0, depth_m, height_m),
+                (0.0, 0.0, height_mm),
+                (width_mm, 0.0, height_mm),
+                (width_mm, depth_mm, height_mm),
+                (0.0, depth_mm, height_mm),
             ],
         ),
         _box_mesh("furnishing-边柜", "mat-furnishing"),
@@ -207,7 +212,7 @@ def _make_scene() -> ScenePackage:
                 id=ROOM_CAMERA_ID,
                 kind="room",
                 room=ROOM_NAME,
-                eye_height_m=1.55,
+                eye_height_mm=1550,
                 yaw_deg=0.0,
                 fov_deg=60.0,
             ),
@@ -215,7 +220,7 @@ def _make_scene() -> ScenePackage:
                 id=ROOM_WIDE_CAMERA_ID,
                 kind="room",
                 room=ROOM_NAME,
-                eye_height_m=1.55,
+                eye_height_mm=1550,
                 yaw_deg=0.0,
                 fov_deg=ROOM_WIDE_FOV_DEG,
             ),
@@ -224,15 +229,15 @@ def _make_scene() -> ScenePackage:
                 id=ROOM_AUTO_CAMERA_ID,
                 kind="room",
                 room=ROOM_NAME,
-                eye_height_m=1.55,
+                eye_height_mm=1550,
                 fov_deg=ROOM_AUTO_FOV_DEG,
             ),
             CameraSpec(id="room-卧室", kind="room", room="卧室"),
         ],
-        bounds_min_m=(0.0, 0.0, 0.0),
-        bounds_max_m=(width_m, depth_m, height_m),
-        metre_per_unit=1.0,
-        floor_area_sqm=width_m * depth_m,
+        bounds_min_mm=(0.0, 0.0, 0.0),
+        bounds_max_mm=(width_mm, depth_mm, height_mm),
+        mm_per_unit=1.0,
+        floor_area_sqm=width_mm * depth_mm,
         triangle_count=24,
     )
 
@@ -242,23 +247,23 @@ def _open_gray(png: bytes) -> npt.NDArray[np.int64]:
 
 
 def _project_pixel(
-    point_m: tuple[float, float, float],
+    point_mm: tuple[float, float, float],
     view_matrix: npt.NDArray[np.float64],
     proj_matrix: npt.NDArray[np.float64],
 ) -> tuple[int, int]:
     """世界点 → 像素下标。用的是底渲真正在用的那两个矩阵，取景算法不在测试里复制一份。"""
-    clip = proj_matrix @ (view_matrix @ np.array([*point_m, 1.0], dtype=np.float64))
+    clip = proj_matrix @ (view_matrix @ np.array([*point_mm, 1.0], dtype=np.float64))
     ndc = clip[:3] / clip[3]
     x_px = int((ndc[0] + 1.0) * 0.5 * WIDTH_PX)
     y_px = int((1.0 - ndc[1]) * 0.5 * HEIGHT_PX)
     return x_px, y_px
 
 
-def _decode_depth_m(views: BaseRenderViews, depth_u16: int) -> float:
+def _decode_depth_mm(views: BaseRenderViews, depth_u16: int) -> float:
     """按 :func:`_encode_depth_png` docstring 里公布的公式还原米数（近亮远暗，0 是背景）。"""
     assert depth_u16 >= 1, "背景像素没有深度可还原"
     brightness_ratio = (depth_u16 - 1) / 65534.0
-    return views.near_m + (1.0 - brightness_ratio) * (views.far_m - views.near_m)
+    return views.near_mm + (1.0 - brightness_ratio) * (views.far_mm - views.near_mm)
 
 
 @pytest.mark.parametrize("camera_id", [BIRD_CAMERA_ID, ROOM_WIDE_CAMERA_ID])
@@ -277,7 +282,7 @@ def test_渲两次逐字节相同(camera_id: str) -> None:
     assert first.mask_png == second.mask_png
     assert first.sketch_png == second.sketch_png
     assert first.covered_pixel_ratio == second.covered_pixel_ratio
-    assert (first.near_m, first.far_m) == (second.near_m, second.far_m)
+    assert (first.near_mm, first.far_mm) == (second.near_mm, second.far_mm)
 
 
 # 观感那一节的每个常量各挑一个"改了肯定看得出来"的值。**这张表的意义在于逐条证明
@@ -289,7 +294,7 @@ APPEARANCE_KNOBS: list[tuple[str, Any]] = [
     ("KEY_LIGHT_RGB", (1.0, 0.0, 0.0)),
     ("AMBIENT_SKY_RGB", (0.9, 0.9, 0.9)),
     ("SSAO_STRENGTH_RATIO", 0.0),
-    ("SSAO_RADIUS_M", 2.0),
+    ("SSAO_RADIUS_MM", 2.0),
     ("SHADOW_CASTER_SEMANTICS", frozenset()),
     ("SHADOW_MAP_PX", 256),
 ]
@@ -303,7 +308,7 @@ def test_观感常量只动得了几何那一路(knob: str, value: Any, monkeypa
     （超采样是另渲一遍、遮蔽读的是 1 倍缓冲、投影另起一张深度图），每一条漏过去的
     形态都不一样。逐个改、逐个断，才说得清是哪一条串了台。
 
-    自证数（`covered_pixel_ratio` / `near_m` / `far_m`）一并断：它们同样是数据不是观感，
+    自证数（`covered_pixel_ratio` / `near_mm` / `far_mm`）一并断：它们同样是数据不是观感，
     从 1 倍那次光栅来，不该被超采样那一遍碰到。
     """
     scene = _make_scene()
@@ -317,7 +322,7 @@ def test_观感常量只动得了几何那一路(knob: str, value: Any, monkeypa
     assert tweaked.mask_png == baseline.mask_png, f"{knob} 漏到遮罩那一路了"
     assert tweaked.sketch_png == baseline.sketch_png, f"{knob} 漏到控制稿那一路了"
     assert tweaked.covered_pixel_ratio == baseline.covered_pixel_ratio
-    assert (tweaked.near_m, tweaked.far_m) == (baseline.near_m, baseline.far_m)
+    assert (tweaked.near_mm, tweaked.far_mm) == (baseline.near_mm, baseline.far_mm)
     assert [entry.model_dump() for entry in tweaked.mask_index] == [
         entry.model_dump() for entry in baseline.mask_index
     ]
@@ -391,13 +396,13 @@ def test_地板中心比家具顶面更远() -> None:
     scene = _make_scene()
     views = render_base_views(scene, BIRD_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     pose = resolve_camera_pose(scene, BIRD_CAMERA_ID, WIDTH_PX / HEIGHT_PX)
-    view_matrix = look_at_matrix(pose.eye_m, pose.target_m, pose.up_hint_xyz)
+    view_matrix = look_at_matrix(pose.eye_mm, pose.target_mm, pose.up_hint_xyz)
     proj_matrix = perspective_matrix(
-        pose.fov_deg, WIDTH_PX / HEIGHT_PX, pose.near_clip_m, pose.far_clip_m
+        pose.fov_deg, WIDTH_PX / HEIGHT_PX, pose.near_clip_mm, pose.far_clip_mm
     )
 
-    floor_x, floor_y = _project_pixel(FLOOR_CENTER_M, view_matrix, proj_matrix)
-    box_x, box_y = _project_pixel(BOX_TOP_CENTER_M, view_matrix, proj_matrix)
+    floor_x, floor_y = _project_pixel(FLOOR_CENTER_MM, view_matrix, proj_matrix)
+    box_x, box_y = _project_pixel(BOX_TOP_CENTER_MM, view_matrix, proj_matrix)
 
     mask = _open_gray(views.mask_png)
     by_index = {entry.index: entry.mesh_id for entry in views.mask_index}
@@ -405,15 +410,15 @@ def test_地板中心比家具顶面更远() -> None:
     assert by_index[int(mask[box_y, box_x])] == "furnishing-边柜"
 
     depth = _open_gray(views.depth_png)
-    floor_depth_m = _decode_depth_m(views, int(depth[floor_y, floor_x]))
-    box_depth_m = _decode_depth_m(views, int(depth[box_y, box_x]))
-    assert floor_depth_m > box_depth_m
+    floor_depth_mm = _decode_depth_mm(views, int(depth[floor_y, floor_x]))
+    box_depth_mm = _decode_depth_mm(views, int(depth[box_y, box_x]))
+    assert floor_depth_mm > box_depth_mm
     assert depth[floor_y, floor_x] < depth[box_y, box_x], "近亮远暗：更远的地板要更暗"
-    # 两点 y 相同、只差 0.8 米层高，俯角 60 度 → 深度差 = 0.8 × sin(60°) ≈ 0.693 米。
-    assert floor_depth_m - box_depth_m == pytest.approx(
-        BOX_TOP_Z_M * np.sin(np.radians(-BIRD_PITCH_DEG)), abs=0.02
+    # 两点 y 相同、只差 800 毫米层高，俯角 60 度 → 深度差 = 800 × sin(60°) ≈ 693 毫米。
+    assert floor_depth_mm - box_depth_mm == pytest.approx(
+        BOX_TOP_Z_MM * np.sin(np.radians(-BIRD_PITCH_DEG)), abs=20.0
     )
-    assert views.near_m < views.far_m
+    assert views.near_mm < views.far_mm
 
 
 def test_相机id找不到就抛错() -> None:
@@ -438,18 +443,18 @@ def test_室内机位退到房间边缘朝内容看() -> None:
     scene = _make_scene()
     pose = resolve_camera_pose(scene, ROOM_CAMERA_ID, WIDTH_PX / HEIGHT_PX)
 
-    floor_centroid_x, floor_centroid_y = 2.0, 1.5
-    assert pose.eye_m[0] == pytest.approx(floor_centroid_x), "yaw 朝正北，退景不该带偏 x"
-    assert pose.eye_m[1] < floor_centroid_y, "没有退，还站在地板质心上"
-    # 退景边界是沿射线定步长扫出来的（见 _room_retreat_distance_m），落点比墙距差一个
+    floor_centroid_x, floor_centroid_y = 2000.0, 1500.0
+    assert pose.eye_mm[0] == pytest.approx(floor_centroid_x), "yaw 朝正北，退景不该带偏 x"
+    assert pose.eye_mm[1] < floor_centroid_y, "没有退，还站在地板质心上"
+    # 退景边界是沿射线定步长扫出来的（见 _room_retreat_distance_mm），落点比墙距差一个
     # 采样步长都算数：这里只验"确实退到了墙距附近"，不钉死浮点意义上的相等。
-    assert pose.eye_m[1] == pytest.approx(base_render.ROOM_EYE_WALL_MARGIN_M, abs=0.02)
-    assert pose.target_m[0] == pytest.approx(pose.eye_m[0])
-    assert pose.target_m[1] > pose.eye_m[1], "上游给的是朝北（+y），没被自动取景扭到别的方向"
+    assert pose.eye_mm[1] == pytest.approx(base_render.ROOM_EYE_WALL_MARGIN_MM, abs=20.0)
+    assert pose.target_mm[0] == pytest.approx(pose.eye_mm[0])
+    assert pose.target_mm[1] > pose.eye_mm[1], "上游给的是朝北（+y），没被自动取景扭到别的方向"
     # 上游给了 yaw 就不做候选评估：只量一次、不判（2026-09-05 取景规则改动后的口径）
     assert pose.room_view is not None
     assert pose.room_view.candidate_count == 1
-    assert pose.room_view.eye_m == pose.eye_m
+    assert pose.room_view.eye_mm == pose.eye_mm
 
     views = render_base_views(scene, ROOM_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     assert views.camera_id == ROOM_CAMERA_ID
@@ -475,10 +480,10 @@ def test_室内机位没给yaw时按候选评估取景() -> None:
     assert check is not None
     assert check.passed
     assert check.candidate_count > 1
-    assert check.min_depth_m >= base_render.ROOM_EYE_WALL_MARGIN_M
+    assert check.min_depth_mm >= base_render.ROOM_EYE_WALL_MARGIN_MM
     assert check.target_floor_ratio >= base_render.ROOM_VIEW_MIN_TARGET_FLOOR_RATIO
     assert check.dominance_ratio >= base_render.ROOM_VIEW_MIN_DOMINANCE_RATIO
-    assert 0.0 < pose.eye_m[0] < ROOM_WIDTH_M and 0.0 < pose.eye_m[1] < ROOM_DEPTH_M, (
+    assert 0.0 < pose.eye_mm[0] < ROOM_WIDTH_MM and 0.0 < pose.eye_mm[1] < ROOM_DEPTH_MM, (
         "机位退出房间外面去了"
     )
 
@@ -493,11 +498,11 @@ def test_近平面裁剪保住穿过相机的大面() -> None:
 
     造一块 10m × 10m 的地板，相机站在正中央——两个三角形都从相机背后一直伸到镜头前方，
     每一个都被近平面切开。裁剪写对了，画面下缘看得见地板，最近处落在
-    ``眼高 / tan(竖直半张角)`` ≈ 2.7 米；裁漏了（把整块面当"有顶点在背后"丢掉），
+    ``眼高 / tan(竖直半张角)`` ≈ 2700 毫米；裁漏了（把整块面当"有顶点在背后"丢掉），
     地板就整块消失，下缘只剩背景——所以这条断言真的抓得住这个错。
     """
-    span_m = 5.0
-    eye_height_m = 1.55
+    span_mm = 5000.0
+    eye_height_mm = 1550
     fov_deg = 60.0
     scene = ScenePackage(
         revision_id="rev-test-近裁剪",
@@ -507,10 +512,10 @@ def test_近平面裁剪保住穿过相机的大面() -> None:
                 "floor",
                 "mat-floor",
                 [
-                    (-span_m, -span_m, 0.0),
-                    (span_m, -span_m, 0.0),
-                    (span_m, span_m, 0.0),
-                    (-span_m, span_m, 0.0),
+                    (-span_mm, -span_mm, 0.0),
+                    (span_mm, -span_mm, 0.0),
+                    (span_mm, span_mm, 0.0),
+                    (-span_mm, span_mm, 0.0),
                 ],
                 room="大厅",
             ),
@@ -519,10 +524,10 @@ def test_近平面裁剪保住穿过相机的大面() -> None:
                 "wall",
                 "mat-wall",
                 [
-                    (-span_m, span_m, 0.0),
-                    (span_m, span_m, 0.0),
-                    (span_m, span_m, ROOM_HEIGHT_M),
-                    (-span_m, span_m, ROOM_HEIGHT_M),
+                    (-span_mm, span_mm, 0.0),
+                    (span_mm, span_mm, 0.0),
+                    (span_mm, span_mm, ROOM_HEIGHT_MM),
+                    (-span_mm, span_mm, ROOM_HEIGHT_MM),
                 ],
                 room="大厅",
             ),
@@ -536,7 +541,7 @@ def test_近平面裁剪保住穿过相机的大面() -> None:
                 id="room-大厅",
                 kind="room",
                 room="大厅",
-                eye_height_m=eye_height_m,
+                eye_height_mm=eye_height_mm,
                 yaw_deg=0.0,
                 fov_deg=fov_deg,
             )
@@ -548,8 +553,8 @@ def test_近平面裁剪保住穿过相机的大面() -> None:
     assert "floor-大厅" in by_mesh, "横跨近平面的地板被整块丢掉了——近裁剪没做或做漏了"
     assert by_mesh["floor-大厅"] > 0.1 * WIDTH_PX * HEIGHT_PX
 
-    nearest_floor_m = eye_height_m / np.tan(np.radians(fov_deg) / 2.0)
-    assert views.near_m == pytest.approx(nearest_floor_m, rel=0.02)
+    nearest_floor_mm = eye_height_mm / np.tan(np.radians(fov_deg) / 2.0)
+    assert views.near_mm == pytest.approx(nearest_floor_mm, rel=0.02)
 
 
 def test_bird机位剔掉天花() -> None:

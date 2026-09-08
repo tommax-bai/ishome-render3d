@@ -195,11 +195,16 @@ def test_furnishings_sit_inside_their_own_room(full_package: DesignPackage) -> N
 def test_furnishing_dimensions_are_in_the_package_not_the_code(
     full_package: DesignPackage,
 ) -> None:
-    """尺寸写在包里、单位是米：三条边都得是正数且在常见家具的量级内。"""
+    """尺寸写在包里、单位是整数毫米：三条边都得是正整数且在常见家具的量级内。"""
     for placement in full_package.furnishings:
-        assert 0.2 <= placement.width_m <= 3.0, placement.id
-        assert 0.2 <= placement.depth_m <= 3.0, placement.id
-        assert 0.2 <= placement.height_m <= 2.6, placement.id
+        assert 200 <= placement.width_mm <= 3000, placement.id
+        assert 200 <= placement.depth_mm <= 3000, placement.id
+        assert 200 <= placement.height_mm <= 2600, placement.id
+        # 整数毫米：浮点毫米只可能是"米忘了换算"或一个没有来源的半毫米精度
+        # （同 estate-svc 灌种子那条口径，用户裁决 2026-09-07 / 09-08）
+        assert isinstance(placement.width_mm, int), placement.id
+        assert isinstance(placement.depth_mm, int), placement.id
+        assert isinstance(placement.height_mm, int), placement.id
 
 
 def test_every_furnishing_id_is_unique_and_semantic(full_package: DesignPackage) -> None:
@@ -261,15 +266,15 @@ def _floor_anchor_ratio(room: RoomOutline) -> tuple[float, float]:
 
 
 def _footprint_ratio(
-    placement: FurnishingPlacement, metre_per_unit: float, y_units_per_x_unit: float
+    placement: FurnishingPlacement, mm_per_unit: float, y_units_per_x_unit: float
 ) -> tuple[float, float, float, float]:
     """家具足迹（归一化）。`yawDeg` 只取 0/90/180/270，足迹恒为轴对齐长方形。"""
     if placement.yaw_deg in (0.0, 180.0):
-        half_x_m, half_y_m = placement.width_m / 2, placement.depth_m / 2
+        half_x_mm, half_y_mm = placement.width_mm / 2, placement.depth_mm / 2
     else:
-        half_x_m, half_y_m = placement.depth_m / 2, placement.width_m / 2
-    half_x = half_x_m / metre_per_unit
-    half_y = half_y_m / (metre_per_unit * y_units_per_x_unit)
+        half_x_mm, half_y_mm = placement.depth_mm / 2, placement.width_mm / 2
+    half_x = half_x_mm / mm_per_unit
+    half_y = half_y_mm / (mm_per_unit * y_units_per_x_unit)
     return (
         placement.center_x_ratio - half_x,
         placement.center_y_ratio - half_y,
@@ -281,7 +286,7 @@ def _footprint_ratio(
 def test_room_cameras_face_the_mask_long_axis(full_package: DesignPackage) -> None:
     """room 机位朝的必须是房间遮罩的长轴——这条是"能把进深拍进去"的全部依据。
 
-    长短轴要在**米**里比，不能在归一化里比：x 按图宽归一、y 按图高归一，
+    长短轴要在**毫米**里比，不能在归一化里比：x 按图宽归一、y 按图高归一，
     两个方向除的不是同一个数（这里只需要长宽比，不需要绝对尺子）。
     """
     aspect = full_package.plan.frame_height_px / full_package.plan.frame_width_px
@@ -308,10 +313,10 @@ def test_room_cameras_are_level(full_package: DesignPackage) -> None:
 def test_no_room_camera_stands_inside_a_furnishing(full_package: DesignPackage) -> None:
     """给了机位的房间，眼点不许落在任何家具体块里——站在柜子里往外看，出的图没法看。
 
-    尺子走 `mesh.metre_per_unit` 这个唯一真源，不在这儿抄一份公式：
+    尺子走 `mesh.mm_per_unit` 这个唯一真源，不在这儿抄一份公式：
     它按外轮廓围出的面积锚定，抄一份就会在它改口径时悄悄对不上。
     """
-    metre_per_unit = mesh.metre_per_unit(full_package.plan, full_package.scale)
+    mm_per_unit = mesh.mm_per_unit(full_package.plan, full_package.scale)
     aspect = full_package.plan.frame_height_px / full_package.plan.frame_width_px
     rooms = {room.name: room for room in full_package.plan.rooms}
     for camera in full_package.cameras:
@@ -322,7 +327,7 @@ def test_no_room_camera_stands_inside_a_furnishing(full_package: DesignPackage) 
         for placement in full_package.furnishings:
             if placement.room != camera.room:
                 continue
-            left, top, right, bottom = _footprint_ratio(placement, metre_per_unit, aspect)
+            left, top, right, bottom = _footprint_ratio(placement, mm_per_unit, aspect)
             assert not (left <= eye_x <= right and top <= eye_y <= bottom), (
                 f"{camera.id} 的眼点落在 {placement.id} 的体块内"
             )
@@ -338,12 +343,12 @@ def test_rooms_without_a_camera_are_the_documented_ones(full_package: DesignPack
 
 def test_furnishings_do_not_overlap_each_other(full_package: DesignPackage) -> None:
     """同一间房里两件家具不许叠在一起——叠出来的体块在底渲里是一团说不清的东西。"""
-    metre_per_unit = mesh.metre_per_unit(full_package.plan, full_package.scale)
+    mm_per_unit = mesh.mm_per_unit(full_package.plan, full_package.scale)
     aspect = full_package.plan.frame_height_px / full_package.plan.frame_width_px
     by_room: dict[str, list[tuple[str, tuple[float, float, float, float]]]] = {}
     for placement in full_package.furnishings:
         by_room.setdefault(placement.room, []).append(
-            (placement.id, _footprint_ratio(placement, metre_per_unit, aspect))
+            (placement.id, _footprint_ratio(placement, mm_per_unit, aspect))
         )
     for room, items in by_room.items():
         for index, (left_id, a) in enumerate(items):
@@ -386,7 +391,7 @@ def test_minimal_package_omits_heights_and_falls_back_to_contract_defaults(
 ) -> None:
     """`heights` 整段不写——竖向那一维今天没有上游，吃契约默认档位。"""
     assert "heights" not in load_raw("design-package-minimal.json")
-    assert minimal_package.heights.ceiling_height_m == 2.80
+    assert minimal_package.heights.ceiling_height_mm == 2800
     assert minimal_package.heights.outer_opening_kind == "window"
     assert minimal_package.heights.inner_opening_kind == "door"
 

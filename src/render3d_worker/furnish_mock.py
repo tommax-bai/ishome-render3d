@@ -43,51 +43,51 @@ from render3d_worker.models import (
 
 type Rect = tuple[float, float, float, float]
 """一个矩形：`(left, top, right, bottom)`，坐标口径同 `RoomOutline.boxes`——归一化平面
-坐标（0~1），不是米。本模块几乎全部运算都在这个坐标系里做矩形运算，只在需要知道
-"多大算合适"（家具尺寸、留多少净空）时才换算成米。"""
+坐标（0~1），不是毫米。本模块几乎全部运算都在这个坐标系里做矩形运算，只在需要知道
+"多大算合适"（家具尺寸、留多少净空）时才换算成毫米。"""
 
 # ---------------------------------------------------------------------------
 # 一、家具尺寸档位：常规住宅 mock，不是这户人家的实测/设计值
 # ---------------------------------------------------------------------------
 
-BED_WIDTH_M, BED_DEPTH_M, BED_HEIGHT_M = 1.8, 2.0, 0.45
+BED_WIDTH_MM, BED_DEPTH_MM, BED_HEIGHT_MM = 1800, 2000, 450
 """双人床。1.8×2.0m 是国标双人床最常见的档位；0.45m 是床垫+床架的常见高度。"""
 
-NIGHTSTAND_WIDTH_M, NIGHTSTAND_DEPTH_M, NIGHTSTAND_HEIGHT_M = 0.45, 0.4, 0.55
-WARDROBE_WIDTH_M, WARDROBE_DEPTH_M, WARDROBE_HEIGHT_M = 1.2, 0.6, 2.2
+NIGHTSTAND_WIDTH_MM, NIGHTSTAND_DEPTH_MM, NIGHTSTAND_HEIGHT_MM = 450, 400, 550
+WARDROBE_WIDTH_MM, WARDROBE_DEPTH_MM, WARDROBE_HEIGHT_MM = 1200, 600, 2200
 """两门衣柜的常规进深与高度；宽度取偏保守的 1.2m，不按房间大小放大——放大是软装的活。"""
 
-SOFA_WIDTH_M, SOFA_DEPTH_M, SOFA_HEIGHT_M = 2.2, 0.9, 0.8
+SOFA_WIDTH_MM, SOFA_DEPTH_MM, SOFA_HEIGHT_MM = 2200, 900, 800
 """三人位布艺沙发的常规档位。"""
 
-COFFEE_TABLE_WIDTH_M, COFFEE_TABLE_DEPTH_M, COFFEE_TABLE_HEIGHT_M = 1.2, 0.6, 0.42
-TV_CABINET_WIDTH_M, TV_CABINET_DEPTH_M, TV_CABINET_HEIGHT_M = 1.8, 0.4, 0.5
+COFFEE_TABLE_WIDTH_MM, COFFEE_TABLE_DEPTH_MM, COFFEE_TABLE_HEIGHT_MM = 1200, 600, 420
+TV_CABINET_WIDTH_MM, TV_CABINET_DEPTH_MM, TV_CABINET_HEIGHT_MM = 1800, 400, 500
 
-DINING_TABLE_WIDTH_M, DINING_TABLE_DEPTH_M, DINING_TABLE_HEIGHT_M = 1.4, 0.8, 0.75
+DINING_TABLE_WIDTH_MM, DINING_TABLE_DEPTH_MM, DINING_TABLE_HEIGHT_MM = 1400, 800, 750
 """四人餐桌的常规档位。"""
-DINING_CHAIR_WIDTH_M, DINING_CHAIR_DEPTH_M, DINING_CHAIR_HEIGHT_M = 0.45, 0.45, 0.9
+DINING_CHAIR_WIDTH_MM, DINING_CHAIR_DEPTH_MM, DINING_CHAIR_HEIGHT_MM = 450, 450, 900
 
-KITCHEN_CABINET_WIDTH_M, KITCHEN_CABINET_DEPTH_M, KITCHEN_CABINET_HEIGHT_M = 1.8, 0.6, 0.85
+KITCHEN_CABINET_WIDTH_MM, KITCHEN_CABINET_DEPTH_MM, KITCHEN_CABINET_HEIGHT_MM = 1800, 600, 850
 """一段直跑橱柜台面的常规档位。厨房布局（一字/L 形/U 形）是软装决策，这儿只给一段
 台面体块——"这儿有橱柜"比"猜一个像样的橱柜形状"更诚实。"""
 
-BATHROOM_FIXTURE_WIDTH_M, BATHROOM_FIXTURE_DEPTH_M, BATHROOM_FIXTURE_HEIGHT_M = 1.2, 0.5, 0.85
+BATHROOM_FIXTURE_WIDTH_MM, BATHROOM_FIXTURE_DEPTH_MM, BATHROOM_FIXTURE_HEIGHT_MM = 1200, 500, 850
 """洁具体块：马桶+洗手台合并成一段贴墙体块的常规尺寸。**不拆成马桶/洗手盆/淋浴分开摆**——
 真实布局要看给排水点位（这层几何不含这个信息），拆开摆等于替设计瞎猜点位。"""
 
-DESK_WIDTH_M, DESK_DEPTH_M, DESK_HEIGHT_M = 1.2, 0.6, 0.75
-BOOKSHELF_WIDTH_M, BOOKSHELF_DEPTH_M, BOOKSHELF_HEIGHT_M = 0.8, 0.3, 2.0
+DESK_WIDTH_MM, DESK_DEPTH_MM, DESK_HEIGHT_MM = 1200, 600, 750
+BOOKSHELF_WIDTH_MM, BOOKSHELF_DEPTH_MM, BOOKSHELF_HEIGHT_MM = 800, 300, 2000
 
-WASHER_WIDTH_M, WASHER_DEPTH_M, WASHER_HEIGHT_M = 0.6, 0.6, 0.85
+WASHER_WIDTH_MM, WASHER_DEPTH_MM, WASHER_HEIGHT_MM = 600, 600, 850
 
-WALL_CLEARANCE_M = 0.04
+WALL_CLEARANCE_MM = 40.0
 """家具背贴墙面留的缝。取值同这条线此前给 `design-package-full.json` 摆家具时用的口径
 （见 `tests/fixtures/README.md`）：0 缝会让家具与墙面共面，光栅两个面会互相闪。"""
 
-ITEM_GAP_M = 0.05
-"""同一间房里两件家具之间留的缝，避免贴面打架，量级同 `WALL_CLEARANCE_M`。"""
+ITEM_GAP_MM = 50.0
+"""同一间房里两件家具之间留的缝，避免贴面打架，量级同 `WALL_CLEARANCE_MM`。"""
 
-DOOR_CLEARANCE_M = 0.6
+DOOR_CLEARANCE_MM = 600.0
 """门洞前留的净空——常规住宅通行净宽的下限，不是这户实测。摆家具时**当作门两侧都是
 房间内部**对称留出（不判断门到底朝哪边开），因此偏保守：宁可少摆一件，也不堵门。"""
 
@@ -202,54 +202,54 @@ def _rects_overlap(a: Rect, b: Rect) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# 四、房间坐标系：局部米制（原点＝摆场矩形左上角）↔ 全局归一化坐标
+# 四、房间坐标系：局部毫米制（原点＝摆场矩形左上角）↔ 全局归一化坐标
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class _RoomFrame:
-    """一间房的摆场：矩形范围 + 这张图的米制换算。局部坐标原点在 `rect` 左上角，
-    x 向右、y 向下，单位米——摆放算法只在这套坐标里想问题，只在算好之后才转回归一化坐标
-    （`FurnishingPlacement` 存的是归一化中心点 + 米制尺寸，两套单位并存是契约本身的口径）。
+    """一间房的摆场：矩形范围 + 这张图的毫米制换算。局部坐标原点在 `rect` 左上角，
+    x 向右、y 向下，单位毫米——摆放算法只在这套坐标里想问题，只在算好之后才转回归一化坐标
+    （`FurnishingPlacement` 存的是归一化中心点 + 毫米制尺寸，两套单位并存是契约本身的口径）。
     """
 
     rect: Rect
-    m_per_x: float
+    mm_per_x: float
     m_per_y: float
 
     @property
-    def width_m(self) -> float:
-        return (self.rect[2] - self.rect[0]) * self.m_per_x
+    def width_mm(self) -> float:
+        return (self.rect[2] - self.rect[0]) * self.mm_per_x
 
     @property
-    def depth_m(self) -> float:
+    def depth_mm(self) -> float:
         return (self.rect[3] - self.rect[1]) * self.m_per_y
 
-    def to_ratio(self, local_x_m: float, local_y_m: float) -> tuple[float, float]:
+    def to_ratio(self, local_x_mm: float, local_y_mm: float) -> tuple[float, float]:
         return (
-            self.rect[0] + local_x_m / self.m_per_x,
-            self.rect[1] + local_y_m / self.m_per_y,
+            self.rect[0] + local_x_mm / self.mm_per_x,
+            self.rect[1] + local_y_mm / self.m_per_y,
         )
 
     def to_local(self, ratio_x: float, ratio_y: float) -> tuple[float, float]:
         return (
-            (ratio_x - self.rect[0]) * self.m_per_x,
+            (ratio_x - self.rect[0]) * self.mm_per_x,
             (ratio_y - self.rect[1]) * self.m_per_y,
         )
 
     def footprint_ratio(
-        self, local_x_m: float, local_y_m: float, half_x_m: float, half_y_m: float
+        self, local_x_mm: float, local_y_mm: float, half_x_mm: float, half_y_mm: float
     ) -> Rect:
-        cx_ratio, cy_ratio = self.to_ratio(local_x_m, local_y_m)
+        cx_ratio, cy_ratio = self.to_ratio(local_x_mm, local_y_mm)
         return (
-            cx_ratio - half_x_m / self.m_per_x,
-            cy_ratio - half_y_m / self.m_per_y,
-            cx_ratio + half_x_m / self.m_per_x,
-            cy_ratio + half_y_m / self.m_per_y,
+            cx_ratio - half_x_mm / self.mm_per_x,
+            cy_ratio - half_y_mm / self.m_per_y,
+            cx_ratio + half_x_mm / self.mm_per_x,
+            cy_ratio + half_y_mm / self.m_per_y,
         )
 
-    def expand(self, rect: Rect, gap_m: float) -> Rect:
-        gap_x_ratio, gap_y_ratio = gap_m / self.m_per_x, gap_m / self.m_per_y
+    def expand(self, rect: Rect, gap_mm: float) -> Rect:
+        gap_x_ratio, gap_y_ratio = gap_mm / self.mm_per_x, gap_mm / self.m_per_y
         return (
             rect[0] - gap_x_ratio,
             rect[1] - gap_y_ratio,
@@ -263,10 +263,10 @@ _DOORLIKE_KINDS: frozenset[OpeningKind] = frozenset({"door", "passage", "entry-d
 
 
 def _door_clear_rects(
-    plan: FloorplanGeometry, heights: HeightRules, room_name: str, m_per_x: float, m_per_y: float
+    plan: FloorplanGeometry, heights: HeightRules, room_name: str, mm_per_x: float, m_per_y: float
 ) -> list[Rect]:
     """这间房挨着的每个门洞，往房间里留一圈不许摆家具的矩形。"""
-    clear_x_ratio, clear_y_ratio = DOOR_CLEARANCE_M / m_per_x, DOOR_CLEARANCE_M / m_per_y
+    clear_x_ratio, clear_y_ratio = DOOR_CLEARANCE_MM / mm_per_x, DOOR_CLEARANCE_MM / m_per_y
     rects: list[Rect] = []
     for opening in plan.openings:
         if room_name not in opening.connects:
@@ -325,41 +325,41 @@ def _place_against_wall(
     frame: _RoomFrame,
     occupied: list[Rect],
     walls: tuple[str, ...],
-    width_m: float,
-    depth_m: float,
+    width_mm: float,
+    depth_mm: float,
 ) -> _Slot | None:
     """按 `walls` 给的次序试贴墙，每面墙再按 `_OFFSET_FRACTIONS` 试位置，
     取第一个不挡门、不撞 `occupied` 里已摆家具的槽位。找不到就是这一步摆不下，返回 `None`
     ——不降级摆到墙外，也不无视碰撞硬摆。
     """
     for wall in walls:
-        along_avail_m = frame.width_m if wall in ("top", "bottom") else frame.depth_m
-        across_avail_m = frame.depth_m if wall in ("top", "bottom") else frame.width_m
-        if depth_m + 2 * WALL_CLEARANCE_M > across_avail_m:
+        along_avail_mm = frame.width_mm if wall in ("top", "bottom") else frame.depth_mm
+        across_avail_mm = frame.depth_mm if wall in ("top", "bottom") else frame.width_mm
+        if depth_mm + 2 * WALL_CLEARANCE_MM > across_avail_mm:
             continue
-        low_m = WALL_CLEARANCE_M + width_m / 2
-        high_m = along_avail_m - WALL_CLEARANCE_M - width_m / 2
-        if low_m > high_m:
+        low_mm = WALL_CLEARANCE_MM + width_mm / 2
+        high_mm = along_avail_mm - WALL_CLEARANCE_MM - width_mm / 2
+        if low_mm > high_mm:
             continue
         for fraction in _OFFSET_FRACTIONS:
-            along_m = low_m + fraction * (high_m - low_m)
-            across_m = (
-                WALL_CLEARANCE_M + depth_m / 2
+            along_mm = low_mm + fraction * (high_mm - low_mm)
+            across_mm = (
+                WALL_CLEARANCE_MM + depth_mm / 2
                 if wall in ("top", "left")
-                else across_avail_m - WALL_CLEARANCE_M - depth_m / 2
+                else across_avail_mm - WALL_CLEARANCE_MM - depth_mm / 2
             )
-            local_x_m, local_y_m = (
-                (along_m, across_m) if wall in ("top", "bottom") else (across_m, along_m)
+            local_x_mm, local_y_mm = (
+                (along_mm, across_mm) if wall in ("top", "bottom") else (across_mm, along_mm)
             )
-            half_x_m, half_y_m = (
-                (width_m / 2, depth_m / 2)
+            half_x_mm, half_y_mm = (
+                (width_mm / 2, depth_mm / 2)
                 if wall in ("top", "bottom")
-                else (depth_m / 2, width_m / 2)
+                else (depth_mm / 2, width_mm / 2)
             )
-            footprint = frame.footprint_ratio(local_x_m, local_y_m, half_x_m, half_y_m)
+            footprint = frame.footprint_ratio(local_x_mm, local_y_mm, half_x_mm, half_y_mm)
             if any(_rects_overlap(footprint, blocker) for blocker in occupied):
                 continue
-            ratio_x, ratio_y = frame.to_ratio(local_x_m, local_y_m)
+            ratio_x, ratio_y = frame.to_ratio(local_x_mm, local_y_mm)
             return _Slot(ratio_x, ratio_y, _WALL_YAW_DEG[wall], footprint, wall)
     return None
 
@@ -376,29 +376,31 @@ _CENTER_SHIFT_FRACTIONS: tuple[tuple[float, float], ...] = (
 
 
 def _place_centered(
-    frame: _RoomFrame, occupied: list[Rect], width_m: float, depth_m: float
+    frame: _RoomFrame, occupied: list[Rect], width_mm: float, depth_mm: float
 ) -> _Slot | None:
-    half_x_m, half_y_m = width_m / 2, depth_m / 2
+    half_x_mm, half_y_mm = width_mm / 2, depth_mm / 2
     if (
-        width_m + 2 * WALL_CLEARANCE_M > frame.width_m
-        or depth_m + 2 * WALL_CLEARANCE_M > frame.depth_m
+        width_mm + 2 * WALL_CLEARANCE_MM > frame.width_mm
+        or depth_mm + 2 * WALL_CLEARANCE_MM > frame.depth_mm
     ):
         return None
     for shift_x_frac, shift_y_frac in _CENTER_SHIFT_FRACTIONS:
-        local_x_m = frame.width_m / 2 + shift_x_frac * frame.width_m
-        local_y_m = frame.depth_m / 2 + shift_y_frac * frame.depth_m
+        local_x_mm = frame.width_mm / 2 + shift_x_frac * frame.width_mm
+        local_y_mm = frame.depth_mm / 2 + shift_y_frac * frame.depth_mm
         in_bounds = (
-            WALL_CLEARANCE_M + half_x_m <= local_x_m <= frame.width_m - WALL_CLEARANCE_M - half_x_m
-            and WALL_CLEARANCE_M + half_y_m
-            <= local_y_m
-            <= frame.depth_m - WALL_CLEARANCE_M - half_y_m
+            WALL_CLEARANCE_MM + half_x_mm
+            <= local_x_mm
+            <= frame.width_mm - WALL_CLEARANCE_MM - half_x_mm
+            and WALL_CLEARANCE_MM + half_y_mm
+            <= local_y_mm
+            <= frame.depth_mm - WALL_CLEARANCE_MM - half_y_mm
         )
         if not in_bounds:
             continue
-        footprint = frame.footprint_ratio(local_x_m, local_y_m, half_x_m, half_y_m)
+        footprint = frame.footprint_ratio(local_x_mm, local_y_mm, half_x_mm, half_y_mm)
         if any(_rects_overlap(footprint, blocker) for blocker in occupied):
             continue
-        ratio_x, ratio_y = frame.to_ratio(local_x_m, local_y_m)
+        ratio_x, ratio_y = frame.to_ratio(local_x_mm, local_y_mm)
         return _Slot(ratio_x, ratio_y, 0.0, footprint, "center")
     return None
 
@@ -412,12 +414,14 @@ def _placement(
     room_name: str,
     category: str,
     slot: _Slot,
-    width_m: float,
-    depth_m: float,
-    height_m: float,
+    width_mm: int,
+    depth_mm: int,
+    height_mm: int,
     *,
     id_suffix: str = "",
 ) -> FurnishingPlacement:
+    """摆一件家具。**尺寸收 `int`**：家具尺寸是整数毫米的数据（同 estate-svc 资产表），
+    浮点毫米只可能是"米忘了换算"或一个没有来源的半毫米精度，让类型把它挡在外面。"""
     suffix = f":{id_suffix}" if id_suffix else ""
     return FurnishingPlacement(
         id=f"mock-furn:{room_name}:{category}{suffix}",
@@ -425,9 +429,9 @@ def _placement(
         room=room_name,
         center_x_ratio=slot.ratio_x,
         center_y_ratio=slot.ratio_y,
-        width_m=width_m,
-        depth_m=depth_m,
-        height_m=height_m,
+        width_mm=width_mm,
+        depth_mm=depth_mm,
+        height_mm=height_mm,
         yaw_deg=slot.yaw_deg,
     )
 
@@ -449,17 +453,17 @@ def _bedroom(
     skipped: list[str] = []
     occupied = list(doors)
 
-    bed_slot = _place_against_wall(frame, occupied, _DEFAULT_WALL_ORDER, BED_WIDTH_M, BED_DEPTH_M)
+    bed_slot = _place_against_wall(frame, occupied, _DEFAULT_WALL_ORDER, BED_WIDTH_MM, BED_DEPTH_MM)
     if bed_slot is None:
         skipped.append(f"{room_name}:bed")
     else:
         placements.append(
-            _placement(room_name, "bed", bed_slot, BED_WIDTH_M, BED_DEPTH_M, BED_HEIGHT_M)
+            _placement(room_name, "bed", bed_slot, BED_WIDTH_MM, BED_DEPTH_MM, BED_HEIGHT_MM)
         )
-        occupied.append(frame.expand(bed_slot.footprint, ITEM_GAP_M))
+        occupied.append(frame.expand(bed_slot.footprint, ITEM_GAP_MM))
         # 床头柜必须贴床所在那面墙——它答的是"床头两侧"这个位置关系，摆到别的墙就不是床头柜了
         nightstand_slot = _place_against_wall(
-            frame, occupied, (bed_slot.wall,), NIGHTSTAND_WIDTH_M, NIGHTSTAND_DEPTH_M
+            frame, occupied, (bed_slot.wall,), NIGHTSTAND_WIDTH_MM, NIGHTSTAND_DEPTH_MM
         )
         if nightstand_slot is None:
             skipped.append(f"{room_name}:nightstand")
@@ -469,16 +473,16 @@ def _bedroom(
                     room_name,
                     "nightstand",
                     nightstand_slot,
-                    NIGHTSTAND_WIDTH_M,
-                    NIGHTSTAND_DEPTH_M,
-                    NIGHTSTAND_HEIGHT_M,
+                    NIGHTSTAND_WIDTH_MM,
+                    NIGHTSTAND_DEPTH_MM,
+                    NIGHTSTAND_HEIGHT_MM,
                 )
             )
-            occupied.append(frame.expand(nightstand_slot.footprint, ITEM_GAP_M))
+            occupied.append(frame.expand(nightstand_slot.footprint, ITEM_GAP_MM))
 
     wardrobe_walls = _deprioritize(bed_slot.wall) if bed_slot is not None else _DEFAULT_WALL_ORDER
     wardrobe_slot = _place_against_wall(
-        frame, occupied, wardrobe_walls, WARDROBE_WIDTH_M, WARDROBE_DEPTH_M
+        frame, occupied, wardrobe_walls, WARDROBE_WIDTH_MM, WARDROBE_DEPTH_MM
     )
     if wardrobe_slot is None:
         skipped.append(f"{room_name}:wardrobe")
@@ -488,9 +492,9 @@ def _bedroom(
                 room_name,
                 "wardrobe",
                 wardrobe_slot,
-                WARDROBE_WIDTH_M,
-                WARDROBE_DEPTH_M,
-                WARDROBE_HEIGHT_M,
+                WARDROBE_WIDTH_MM,
+                WARDROBE_DEPTH_MM,
+                WARDROBE_HEIGHT_MM,
             )
         )
     return placements, skipped
@@ -512,16 +516,16 @@ def _living_room(
     occupied = list(doors)
 
     sofa_slot = _place_against_wall(
-        frame, occupied, _DEFAULT_WALL_ORDER, SOFA_WIDTH_M, SOFA_DEPTH_M
+        frame, occupied, _DEFAULT_WALL_ORDER, SOFA_WIDTH_MM, SOFA_DEPTH_MM
     )
     if sofa_slot is None:
         skipped.append(f"{room_name}:sofa")
         tv_walls = _DEFAULT_WALL_ORDER
     else:
         placements.append(
-            _placement(room_name, "sofa", sofa_slot, SOFA_WIDTH_M, SOFA_DEPTH_M, SOFA_HEIGHT_M)
+            _placement(room_name, "sofa", sofa_slot, SOFA_WIDTH_MM, SOFA_DEPTH_MM, SOFA_HEIGHT_MM)
         )
-        occupied.append(frame.expand(sofa_slot.footprint, ITEM_GAP_M))
+        occupied.append(frame.expand(sofa_slot.footprint, ITEM_GAP_MM))
         # 电视柜要摆在沙发对面墙——沙发才"面向电视墙"；对面墙摆不下再退回随便一面墙
         opposite = _OPPOSITE_WALL[sofa_slot.wall]
         tv_walls = (
@@ -529,7 +533,9 @@ def _living_room(
             *(w for w in _DEFAULT_WALL_ORDER if w not in (opposite, sofa_slot.wall)),
         )
 
-    tv_slot = _place_against_wall(frame, occupied, tv_walls, TV_CABINET_WIDTH_M, TV_CABINET_DEPTH_M)
+    tv_slot = _place_against_wall(
+        frame, occupied, tv_walls, TV_CABINET_WIDTH_MM, TV_CABINET_DEPTH_MM
+    )
     if tv_slot is None:
         skipped.append(f"{room_name}:tv-cabinet")
     else:
@@ -538,14 +544,14 @@ def _living_room(
                 room_name,
                 "tv-cabinet",
                 tv_slot,
-                TV_CABINET_WIDTH_M,
-                TV_CABINET_DEPTH_M,
-                TV_CABINET_HEIGHT_M,
+                TV_CABINET_WIDTH_MM,
+                TV_CABINET_DEPTH_MM,
+                TV_CABINET_HEIGHT_MM,
             )
         )
-        occupied.append(frame.expand(tv_slot.footprint, ITEM_GAP_M))
+        occupied.append(frame.expand(tv_slot.footprint, ITEM_GAP_MM))
 
-    coffee_slot = _place_centered(frame, occupied, COFFEE_TABLE_WIDTH_M, COFFEE_TABLE_DEPTH_M)
+    coffee_slot = _place_centered(frame, occupied, COFFEE_TABLE_WIDTH_MM, COFFEE_TABLE_DEPTH_MM)
     if coffee_slot is None:
         skipped.append(f"{room_name}:coffee-table")
     else:
@@ -554,9 +560,9 @@ def _living_room(
                 room_name,
                 "coffee-table",
                 coffee_slot,
-                COFFEE_TABLE_WIDTH_M,
-                COFFEE_TABLE_DEPTH_M,
-                COFFEE_TABLE_HEIGHT_M,
+                COFFEE_TABLE_WIDTH_MM,
+                COFFEE_TABLE_DEPTH_MM,
+                COFFEE_TABLE_HEIGHT_MM,
             )
         )
     return placements, skipped
@@ -568,34 +574,34 @@ _CHAIR_SIDES: tuple[str, ...] = ("top", "bottom", "left", "right")
 
 
 def _chair_beside_table(
-    frame: _RoomFrame, occupied: list[Rect], table_x_m: float, table_y_m: float, side: str
+    frame: _RoomFrame, occupied: list[Rect], table_x_mm: float, table_y_mm: float, side: str
 ) -> _Slot | None:
-    half_table_w_m, half_table_d_m = DINING_TABLE_WIDTH_M / 2, DINING_TABLE_DEPTH_M / 2
-    offset_m = ITEM_GAP_M + DINING_CHAIR_DEPTH_M / 2
+    half_table_w_mm, half_table_d_mm = DINING_TABLE_WIDTH_MM / 2, DINING_TABLE_DEPTH_MM / 2
+    offset_mm = ITEM_GAP_MM + DINING_CHAIR_DEPTH_MM / 2
     if side == "top":
-        local_x_m, local_y_m = table_x_m, table_y_m - half_table_d_m - offset_m
+        local_x_mm, local_y_mm = table_x_mm, table_y_mm - half_table_d_mm - offset_mm
     elif side == "bottom":
-        local_x_m, local_y_m = table_x_m, table_y_m + half_table_d_m + offset_m
+        local_x_mm, local_y_mm = table_x_mm, table_y_mm + half_table_d_mm + offset_mm
     elif side == "left":
-        local_x_m, local_y_m = table_x_m - half_table_w_m - offset_m, table_y_m
+        local_x_mm, local_y_mm = table_x_mm - half_table_w_mm - offset_mm, table_y_mm
     else:
-        local_x_m, local_y_m = table_x_m + half_table_w_m + offset_m, table_y_m
+        local_x_mm, local_y_mm = table_x_mm + half_table_w_mm + offset_mm, table_y_mm
 
-    half_x_m, half_y_m = (
-        (DINING_CHAIR_WIDTH_M / 2, DINING_CHAIR_DEPTH_M / 2)
+    half_x_mm, half_y_mm = (
+        (DINING_CHAIR_WIDTH_MM / 2, DINING_CHAIR_DEPTH_MM / 2)
         if side in ("top", "bottom")
-        else (DINING_CHAIR_DEPTH_M / 2, DINING_CHAIR_WIDTH_M / 2)
+        else (DINING_CHAIR_DEPTH_MM / 2, DINING_CHAIR_WIDTH_MM / 2)
     )
     in_bounds = (
-        half_x_m <= local_x_m <= frame.width_m - half_x_m
-        and half_y_m <= local_y_m <= frame.depth_m - half_y_m
+        half_x_mm <= local_x_mm <= frame.width_mm - half_x_mm
+        and half_y_mm <= local_y_mm <= frame.depth_mm - half_y_mm
     )
     if not in_bounds:
         return None
-    footprint = frame.footprint_ratio(local_x_m, local_y_m, half_x_m, half_y_m)
+    footprint = frame.footprint_ratio(local_x_mm, local_y_mm, half_x_mm, half_y_mm)
     if any(_rects_overlap(footprint, blocker) for blocker in occupied):
         return None
-    ratio_x, ratio_y = frame.to_ratio(local_x_m, local_y_m)
+    ratio_x, ratio_y = frame.to_ratio(local_x_mm, local_y_mm)
     return _Slot(ratio_x, ratio_y, _WALL_YAW_DEG[side], footprint, side)
 
 
@@ -606,7 +612,7 @@ def _dining_room(
     skipped: list[str] = []
     occupied = list(doors)
 
-    table_slot = _place_centered(frame, occupied, DINING_TABLE_WIDTH_M, DINING_TABLE_DEPTH_M)
+    table_slot = _place_centered(frame, occupied, DINING_TABLE_WIDTH_MM, DINING_TABLE_DEPTH_MM)
     if table_slot is None:
         skipped.append(f"{room_name}:dining-table")
         skipped.extend(f"{room_name}:dining-chair:{side}" for side in _CHAIR_SIDES)
@@ -617,16 +623,16 @@ def _dining_room(
             room_name,
             "dining-table",
             table_slot,
-            DINING_TABLE_WIDTH_M,
-            DINING_TABLE_DEPTH_M,
-            DINING_TABLE_HEIGHT_M,
+            DINING_TABLE_WIDTH_MM,
+            DINING_TABLE_DEPTH_MM,
+            DINING_TABLE_HEIGHT_MM,
         )
     )
-    occupied.append(frame.expand(table_slot.footprint, ITEM_GAP_M))
-    table_x_m, table_y_m = frame.to_local(table_slot.ratio_x, table_slot.ratio_y)
+    occupied.append(frame.expand(table_slot.footprint, ITEM_GAP_MM))
+    table_x_mm, table_y_mm = frame.to_local(table_slot.ratio_x, table_slot.ratio_y)
 
     for side in _CHAIR_SIDES:
-        chair_slot = _chair_beside_table(frame, occupied, table_x_m, table_y_m, side)
+        chair_slot = _chair_beside_table(frame, occupied, table_x_mm, table_y_mm, side)
         if chair_slot is None:
             skipped.append(f"{room_name}:dining-chair:{side}")
             continue
@@ -635,13 +641,13 @@ def _dining_room(
                 room_name,
                 "dining-chair",
                 chair_slot,
-                DINING_CHAIR_WIDTH_M,
-                DINING_CHAIR_DEPTH_M,
-                DINING_CHAIR_HEIGHT_M,
+                DINING_CHAIR_WIDTH_MM,
+                DINING_CHAIR_DEPTH_MM,
+                DINING_CHAIR_HEIGHT_MM,
                 id_suffix=side,
             )
         )
-        occupied.append(frame.expand(chair_slot.footprint, ITEM_GAP_M))
+        occupied.append(frame.expand(chair_slot.footprint, ITEM_GAP_MM))
     return placements, skipped
 
 
@@ -649,7 +655,7 @@ def _kitchen(
     room_name: str, frame: _RoomFrame, doors: list[Rect]
 ) -> tuple[list[FurnishingPlacement], list[str]]:
     slot = _place_against_wall(
-        frame, list(doors), _DEFAULT_WALL_ORDER, KITCHEN_CABINET_WIDTH_M, KITCHEN_CABINET_DEPTH_M
+        frame, list(doors), _DEFAULT_WALL_ORDER, KITCHEN_CABINET_WIDTH_MM, KITCHEN_CABINET_DEPTH_MM
     )
     if slot is None:
         return [], [f"{room_name}:kitchen-cabinet"]
@@ -657,9 +663,9 @@ def _kitchen(
         room_name,
         "kitchen-cabinet",
         slot,
-        KITCHEN_CABINET_WIDTH_M,
-        KITCHEN_CABINET_DEPTH_M,
-        KITCHEN_CABINET_HEIGHT_M,
+        KITCHEN_CABINET_WIDTH_MM,
+        KITCHEN_CABINET_DEPTH_MM,
+        KITCHEN_CABINET_HEIGHT_MM,
     )
     return [placement], []
 
@@ -668,7 +674,11 @@ def _bathroom(
     room_name: str, frame: _RoomFrame, doors: list[Rect]
 ) -> tuple[list[FurnishingPlacement], list[str]]:
     slot = _place_against_wall(
-        frame, list(doors), _DEFAULT_WALL_ORDER, BATHROOM_FIXTURE_WIDTH_M, BATHROOM_FIXTURE_DEPTH_M
+        frame,
+        list(doors),
+        _DEFAULT_WALL_ORDER,
+        BATHROOM_FIXTURE_WIDTH_MM,
+        BATHROOM_FIXTURE_DEPTH_MM,
     )
     if slot is None:
         return [], [f"{room_name}:bathroom-fixture"]
@@ -676,9 +686,9 @@ def _bathroom(
         room_name,
         "bathroom-fixture",
         slot,
-        BATHROOM_FIXTURE_WIDTH_M,
-        BATHROOM_FIXTURE_DEPTH_M,
-        BATHROOM_FIXTURE_HEIGHT_M,
+        BATHROOM_FIXTURE_WIDTH_MM,
+        BATHROOM_FIXTURE_DEPTH_MM,
+        BATHROOM_FIXTURE_HEIGHT_MM,
     )
     return [placement], []
 
@@ -691,20 +701,20 @@ def _study(
     occupied = list(doors)
 
     desk_slot = _place_against_wall(
-        frame, occupied, _DEFAULT_WALL_ORDER, DESK_WIDTH_M, DESK_DEPTH_M
+        frame, occupied, _DEFAULT_WALL_ORDER, DESK_WIDTH_MM, DESK_DEPTH_MM
     )
     if desk_slot is None:
         skipped.append(f"{room_name}:desk")
         bookshelf_walls = _DEFAULT_WALL_ORDER
     else:
         placements.append(
-            _placement(room_name, "desk", desk_slot, DESK_WIDTH_M, DESK_DEPTH_M, DESK_HEIGHT_M)
+            _placement(room_name, "desk", desk_slot, DESK_WIDTH_MM, DESK_DEPTH_MM, DESK_HEIGHT_MM)
         )
-        occupied.append(frame.expand(desk_slot.footprint, ITEM_GAP_M))
+        occupied.append(frame.expand(desk_slot.footprint, ITEM_GAP_MM))
         bookshelf_walls = _deprioritize(desk_slot.wall)
 
     bookshelf_slot = _place_against_wall(
-        frame, occupied, bookshelf_walls, BOOKSHELF_WIDTH_M, BOOKSHELF_DEPTH_M
+        frame, occupied, bookshelf_walls, BOOKSHELF_WIDTH_MM, BOOKSHELF_DEPTH_MM
     )
     if bookshelf_slot is None:
         skipped.append(f"{room_name}:bookshelf")
@@ -714,9 +724,9 @@ def _study(
                 room_name,
                 "bookshelf",
                 bookshelf_slot,
-                BOOKSHELF_WIDTH_M,
-                BOOKSHELF_DEPTH_M,
-                BOOKSHELF_HEIGHT_M,
+                BOOKSHELF_WIDTH_MM,
+                BOOKSHELF_DEPTH_MM,
+                BOOKSHELF_HEIGHT_MM,
             )
         )
     return placements, skipped
@@ -726,12 +736,12 @@ def _balcony(
     room_name: str, frame: _RoomFrame, doors: list[Rect]
 ) -> tuple[list[FurnishingPlacement], list[str]]:
     slot = _place_against_wall(
-        frame, list(doors), _DEFAULT_WALL_ORDER, WASHER_WIDTH_M, WASHER_DEPTH_M
+        frame, list(doors), _DEFAULT_WALL_ORDER, WASHER_WIDTH_MM, WASHER_DEPTH_MM
     )
     if slot is None:
         return [], [f"{room_name}:washer"]
     placement = _placement(
-        room_name, "washer", slot, WASHER_WIDTH_M, WASHER_DEPTH_M, WASHER_HEIGHT_M
+        room_name, "washer", slot, WASHER_WIDTH_MM, WASHER_DEPTH_MM, WASHER_HEIGHT_MM
     )
     return [placement], []
 
@@ -770,8 +780,8 @@ def build_mock_furnishings(package: DesignPackage) -> MockFurnishingReport:
     调用方（`cli.py`）自己决定要不要拿 `report.placements` 去替换 `package.furnishings`。
     """
     plan = package.plan
-    m_per_x = mesh.metre_per_unit(plan, package.scale)
-    m_per_y = m_per_x * plan.frame_height_px / plan.frame_width_px
+    mm_per_x = mesh.mm_per_unit(plan, package.scale)
+    m_per_y = mm_per_x * plan.frame_height_px / plan.frame_width_px
 
     placements: list[FurnishingPlacement] = []
     unrecognized_rooms: list[str] = []
@@ -786,8 +796,8 @@ def build_mock_furnishings(package: DesignPackage) -> MockFurnishingReport:
         if rect is None:
             skipped_items.append(f"{room.name}:(没有 boxes，摆不了)")
             continue
-        frame = _RoomFrame(rect=rect, m_per_x=m_per_x, m_per_y=m_per_y)
-        doors = _door_clear_rects(plan, package.heights, room.name, m_per_x, m_per_y)
+        frame = _RoomFrame(rect=rect, mm_per_x=mm_per_x, m_per_y=m_per_y)
+        doors = _door_clear_rects(plan, package.heights, room.name, mm_per_x, m_per_y)
         room_placements, room_skipped = _RECIPES[category](room.name, frame, doors)
         placements.extend(room_placements)
         skipped_items.extend(room_skipped)

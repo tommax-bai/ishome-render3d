@@ -1,6 +1,6 @@
 """2D 户型几何 + 一把尺子 + 高度规则 → 三角网格。**确定性，零模型调用。**
 
-这一层回答的问题只有一个：**归一化的平面，怎么变成米制的体块**。它不认识材质、
+这一层回答的问题只有一个：**归一化的平面，怎么变成毫米制的体块**。它不认识材质、
 不认识相机、不知道场景包长什么样——那些是编场景包（`scene_compile`）的事。
 
 三条口径写死在这儿，别处不再复述：
@@ -18,7 +18,7 @@
    在洞处本来就断开（洞落在两段墙之间的空隙里，什么也不用切、但缺过梁和窗下墙）。
    判据与做法见 :func:`_layout_openings`。
 
-坐标系：米制右手系，x 向右、y 向里、z 向上，地面 z=0（models.py :class:`Mesh` 写死）。
+坐标系：毫米制右手系，x 向右、y 向里、z 向上，地面 z=0（models.py :class:`Mesh` 写死）。
 平面图的"下"（y_ratio 增大）就是三维的 +y。
 
 **缺的数不在这儿编。** 尺寸一律来自输入包，缺了、是 0、自相矛盾就抛
@@ -55,15 +55,22 @@ _SAME_LINE_TOLERANCE_RATIO = 0.006
 `plan_master._SAME_LINE_TOLERANCE`）：外轮廓给的是墙带中心线，与网格投票出来的线
 差半个墙厚是常态，不给容差就没有一个洞落得到外墙上。"""
 
-_MIN_SEGMENT_M = 1e-4
+_MIN_SEGMENT_MM = 0.1
 """比 0.1 毫米还短的段不是墙，是切段留下的数值残渣——不出网格。
 
 **这不是"多小算小"的阈值**（那种要真跑数据才敢定），是浮点残差的下界：洞正好开在
-墙头时，"洞左"那一段的长度理论上就是 0。"""
+墙头时，"洞左"那一段的长度理论上就是 0。
 
-_COORD_DECIMALS = 6
-"""顶点坐标留到微米。再往下的位数是浮点残差不是几何，留着只会让两次编译的
-JSON 差在末位——确定性是这一层的红线。"""
+量纲改毫米那一轮（2026-09-08）值由 `1e-4`（米）× 1000 得来，**判据一个字没变**：
+原来写的就是"比 0.1 毫米还短"。"""
+
+_COORD_DECIMALS = 3
+"""顶点坐标留到微米（毫米的三位小数）。再往下的位数是浮点残差不是几何，留着只会让
+两次编译的 JSON 差在末位——确定性是这一层的红线。
+
+量纲改毫米那一轮（2026-09-08）由 6 位改 3 位：**留的物理精度没变**，还是微米——
+坐标本身放大了 1000 倍，小数位就要少三位才是同一个粒度。位数跟着量纲走，不然
+"留到微米"这句话会跟着单位一起漂。"""
 
 _KIND_ORDER: tuple[OpeningKind, ...] = ("door", "window", "passage", "entry-door")
 """洞的种类在报数时的固定次序（同产出侧闭集的次序）。次序写死是为了同一份输入数出来的
@@ -80,7 +87,7 @@ class MeshBuildError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# 一、尺子：归一化 → 米
+# 一、尺子：归一化 → 毫米
 # ---------------------------------------------------------------------------
 
 
@@ -92,7 +99,7 @@ def usable_area_sqm(scale: PlanScale) -> float:
     """
     if scale.building_area_sqm <= 0:
         raise MeshBuildError(
-            f"建筑面积是 {scale.building_area_sqm}㎡：尺子由面积反推，没有面积就没有米"
+            f"建筑面积是 {scale.building_area_sqm}㎡：尺子由面积反推，没有面积就没有毫米"
         )
     if scale.usable_area_percent <= 0:
         raise MeshBuildError(f"得房率是 {scale.usable_area_percent}%：套内面积会算成 0，量不出尺子")
@@ -198,12 +205,20 @@ def scale_anchor(plan: FloorplanGeometry) -> ScaleAnchor:
     return ScaleAnchor("plan-box", box_area_x_units_sq)
 
 
-class _Ruler:
-    """归一化平面坐标 → 米。**全仓唯一的换算处。**
+_MM_PER_METRE = 1000.0
+"""**全仓唯一一处米→毫米的换算系数**，只给 :class:`_Ruler` 用。
 
-    `metre_per_unit` 的口径：**x 方向归一化 1.0（整张图的宽）等于多少米**。y 方向的
-    1.0 不等于同一个数——它等于 `metre_per_unit × frame_height_px / frame_width_px`。
-    两轴分母不同这件事只在这个类里存在，出了这个类全是米。
+尺子由面积反推，而面积的量纲是平方米（`building_area_sqm`，上游直给、不在毫米射程内），
+所以开方出来的天然是米/单位——毫米制的入口就卡在这一乘上。写成有名字的常量而不是
+一个裸 1000：这个数是量纲边界，不是随手的倍率，改它等于改全仓的单位。"""
+
+
+class _Ruler:
+    """归一化平面坐标 → 毫米。**全仓唯一的换算处。**
+
+    `mm_per_unit` 的口径：**x 方向归一化 1.0（整张图的宽）等于多少毫米**。y 方向的
+    1.0 不等于同一个数——它等于 `mm_per_unit × frame_height_px / frame_width_px`。
+    两轴分母不同这件事只在这个类里存在，出了这个类全是毫米。
 
     原点仍是 `plan_box` 的左上角——**锚点换了不等于原点换了**：锚点决定一格有多大，
     原点只决定从哪儿起算，换原点会白白把所有坐标平移一遍。
@@ -220,37 +235,38 @@ class _Ruler:
         self.anchor = scale_anchor(plan)
         if self.anchor.area_x_units_sq <= 0:
             raise MeshBuildError(f"锚不到面积：外轮廓围不出一块地，外接框 {plan.plan_box} 也是空的")
-        self.metre_per_unit = math.sqrt(self.usable_area_sqm / self.anchor.area_x_units_sq)
+        metre_per_unit = math.sqrt(self.usable_area_sqm / self.anchor.area_x_units_sq)
+        self.mm_per_unit = metre_per_unit * _MM_PER_METRE
 
-    def x_m(self, x_ratio: float) -> float:
-        """图上的 x 归一化坐标 → 米（图幅左边缘为 0）。"""
-        return (x_ratio - self._left_ratio) * self.metre_per_unit
+    def x_mm(self, x_ratio: float) -> float:
+        """图上的 x 归一化坐标 → 毫米（图幅左边缘为 0）。"""
+        return (x_ratio - self._left_ratio) * self.mm_per_unit
 
-    def y_m(self, y_ratio: float) -> float:
-        """图上的 y 归一化坐标 → 米（图幅上边缘为 0，往下为 +y）。"""
-        return (y_ratio - self._top_ratio) * self._y_units_per_x_unit * self.metre_per_unit
+    def y_mm(self, y_ratio: float) -> float:
+        """图上的 y 归一化坐标 → 毫米（图幅上边缘为 0，往下为 +y）。"""
+        return (y_ratio - self._top_ratio) * self._y_units_per_x_unit * self.mm_per_unit
 
-    def across_x_m(self, ratio: float) -> float:
-        """按图宽归一的长度（竖墙的厚度）→ 米。"""
-        return ratio * self.metre_per_unit
+    def across_x_mm(self, ratio: float) -> float:
+        """按图宽归一的长度（竖墙的厚度）→ 毫米。"""
+        return ratio * self.mm_per_unit
 
-    def across_y_m(self, ratio: float) -> float:
-        """按图高归一的长度（横墙的厚度）→ 米。"""
-        return ratio * self._y_units_per_x_unit * self.metre_per_unit
+    def across_y_mm(self, ratio: float) -> float:
+        """按图高归一的长度（横墙的厚度）→ 毫米。"""
+        return ratio * self._y_units_per_x_unit * self.mm_per_unit
 
-    def along_m(self, axis: PlanAxis, ratio: float) -> float:
-        """沿墙走向的归一化坐标 → 米（竖墙沿 y、横墙沿 x）。"""
-        return self.y_m(ratio) if axis == "vertical" else self.x_m(ratio)
+    def along_mm(self, axis: PlanAxis, ratio: float) -> float:
+        """沿墙走向的归一化坐标 → 毫米（竖墙沿 y、横墙沿 x）。"""
+        return self.y_mm(ratio) if axis == "vertical" else self.x_mm(ratio)
 
 
-def metre_per_unit(plan: FloorplanGeometry, scale: PlanScale) -> float:
-    """归一化 1.0（整张图的宽）等于多少米。
+def mm_per_unit(plan: FloorplanGeometry, scale: PlanScale) -> float:
+    """归一化 1.0（整张图的宽）等于多少毫米。
 
     由面积反推：套内建筑面积 ÷ 锚那块地的归一化面积（按 `frame_*_px` 修正长宽比后）再开方。
     锚是外轮廓中心线围的那块，理由与退路见 :func:`scale_anchor`。比例尺不是模型能给的数，
     面积才是上游真有的数（匿名画像带建筑面积与得房率）。
     """
-    return _Ruler(plan, scale).metre_per_unit
+    return _Ruler(plan, scale).mm_per_unit
 
 
 # ---------------------------------------------------------------------------
@@ -309,15 +325,15 @@ def _signed_area_sqm(base_xy: list[tuple[float, float]]) -> float:
     return total / 2
 
 
-def _prism_faces(base_xy: list[tuple[float, float]], z_bottom_m: float, z_top_m: float) -> _Faces:
+def _prism_faces(base_xy: list[tuple[float, float]], z_bottom_mm: float, z_top_mm: float) -> _Faces:
     """底面四边形沿 z 拉伸成长方体（底面可以是旋转过的矩形）。
 
     先把底面摆正成从 +z 看去的逆时针序：侧面的外法向是从边的走向推出来的
     （边 (dx,dy) 的外法向 = (dy,-dx)），底面倒了侧面就全朝里。
     """
     corners = base_xy if _signed_area_sqm(base_xy) >= 0 else list(reversed(base_xy))
-    bottom = [(x, y, z_bottom_m) for x, y in corners]
-    top = [(x, y, z_top_m) for x, y in corners]
+    bottom = [(x, y, z_bottom_mm) for x, y in corners]
+    top = [(x, y, z_top_mm) for x, y in corners]
     faces = _Faces()
     faces.add_quad(bottom, (0.0, 0.0, -1.0))
     faces.add_quad(top, (0.0, 0.0, 1.0))
@@ -340,28 +356,28 @@ def _mesh_of(mesh_id: str, semantic: MeshSemantic, room: str | None, faces: _Fac
     )
 
 
-def _axis_xy(axis: PlanAxis, along_m: float, across_m: float) -> tuple[float, float]:
+def _axis_xy(axis: PlanAxis, along_mm: float, across_mm: float) -> tuple[float, float]:
     """沿墙、跨墙两个量 → 平面坐标。竖墙横墙只差一次 x/y 对调，对调只写在这一处。"""
     if axis == "vertical":
-        return (across_m, along_m)
-    return (along_m, across_m)
+        return (across_mm, along_mm)
+    return (along_mm, across_mm)
 
 
 def _axis_point(
-    axis: PlanAxis, along_m: float, across_m: float, z_m: float
+    axis: PlanAxis, along_mm: float, across_mm: float, z_mm: float
 ) -> tuple[float, float, float]:
-    x_m, y_m = _axis_xy(axis, along_m, across_m)
-    return (x_m, y_m, z_m)
+    x_mm, y_mm = _axis_xy(axis, along_mm, across_mm)
+    return (x_mm, y_mm, z_mm)
 
 
 def _axis_base_xy(
-    axis: PlanAxis, along0_m: float, along1_m: float, across0_m: float, across1_m: float
+    axis: PlanAxis, along0_mm: float, along1_mm: float, across0_mm: float, across1_mm: float
 ) -> list[tuple[float, float]]:
     return [
-        _axis_xy(axis, along0_m, across0_m),
-        _axis_xy(axis, along1_m, across0_m),
-        _axis_xy(axis, along1_m, across1_m),
-        _axis_xy(axis, along0_m, across1_m),
+        _axis_xy(axis, along0_mm, across0_mm),
+        _axis_xy(axis, along1_mm, across0_mm),
+        _axis_xy(axis, along1_mm, across1_mm),
+        _axis_xy(axis, along0_mm, across1_mm),
     ]
 
 
@@ -402,32 +418,32 @@ def opening_kind(opening: PlanOpening, heights: HeightRules) -> OpeningKind:
 
 
 def _opening_z_range(kind: OpeningKind, heights: HeightRules) -> tuple[float, float]:
-    """一种洞竖向占的那一段（米）。入户门按门起体；过口按过口净高、落地、无窗台。"""
+    """一种洞竖向占的那一段（毫米）。入户门按门起体；过口按过口净高、落地、无窗台。"""
     if kind in ("door", "entry-door"):
-        return (0.0, heights.door_height_m)
+        return (0.0, heights.door_height_mm)
     if kind == "passage":
-        return (0.0, heights.pass_height_m)
+        return (0.0, heights.pass_height_mm)
     if kind == "window":
-        return (heights.window_sill_height_m, heights.window_head_height_m)
+        return (heights.window_sill_height_mm, heights.window_head_height_mm)
     raise MeshBuildError(f"洞的种类是 {kind}：没有这一种的高度档位，起不了体")
 
 
 def _check_heights(heights: HeightRules) -> None:
     """竖向那几个数自相矛盾就当场炸。它们是常识档位，错了通常是包填错而不是这户特别。"""
-    ceiling = heights.ceiling_height_m
+    ceiling = heights.ceiling_height_mm
     if ceiling <= 0:
         raise MeshBuildError(f"层高是 {ceiling}m：墙拉不起来")
-    for name, height in (("门高", heights.door_height_m), ("过口高", heights.pass_height_m)):
+    for name, height in (("门高", heights.door_height_mm), ("过口高", heights.pass_height_mm)):
         if height <= 0 or height > ceiling:
             raise MeshBuildError(f"{name} {height}m 不在 (0, 层高 {ceiling}m] 内")
-    if heights.window_sill_height_m < 0:
-        raise MeshBuildError(f"窗台高 {heights.window_sill_height_m}m 是负的")
-    if heights.window_head_height_m <= heights.window_sill_height_m:
+    if heights.window_sill_height_mm < 0:
+        raise MeshBuildError(f"窗台高 {heights.window_sill_height_mm}m 是负的")
+    if heights.window_head_height_mm <= heights.window_sill_height_mm:
         raise MeshBuildError(
-            f"窗顶 {heights.window_head_height_m}m 不高于窗台 {heights.window_sill_height_m}m"
+            f"窗顶 {heights.window_head_height_mm}m 不高于窗台 {heights.window_sill_height_mm}m"
         )
-    if heights.window_head_height_m > ceiling:
-        raise MeshBuildError(f"窗顶 {heights.window_head_height_m}m 高过层高 {ceiling}m")
+    if heights.window_head_height_mm > ceiling:
+        raise MeshBuildError(f"窗顶 {heights.window_head_height_mm}m 高过层高 {ceiling}m")
 
 
 @dataclass(frozen=True)
@@ -444,15 +460,15 @@ class _WallLine:
 
 @dataclass(frozen=True)
 class _Cut:
-    """一道墙上的一个洞：沿墙的起讫（归一化）+ 竖向的起讫（米）。"""
+    """一道墙上的一个洞：沿墙的起讫（归一化）+ 竖向的起讫（毫米）。"""
 
     opening_index: int
     kind: OpeningKind
     kind_source: OpeningKindSource
     start_ratio: float
     end_ratio: float
-    z_bottom_m: float
-    z_top_m: float
+    z_bottom_mm: float
+    z_top_mm: float
 
 
 @dataclass(frozen=True)
@@ -472,8 +488,8 @@ class _GapFill:
     position_ratio: float
     thickness_ratio: float
     anchor_id: str
-    z_bottom_m: float
-    z_top_m: float
+    z_bottom_mm: float
+    z_top_mm: float
 
 
 @dataclass(frozen=True)
@@ -508,11 +524,11 @@ def _is_degenerate(line: _WallLine, ruler: _Ruler) -> bool:
     所以**跳过、计数、不静默**：跳了哪几段随场景包带出去
     （:attr:`ScenePackage.degenerate_wall_count`），数目异常就是上游那一步坏了，看得见。
     """
-    ends_m = (
-        ruler.along_m(line.wall.axis, line.wall.start_ratio),
-        ruler.along_m(line.wall.axis, line.wall.end_ratio),
+    ends_mm = (
+        ruler.along_mm(line.wall.axis, line.wall.start_ratio),
+        ruler.along_mm(line.wall.axis, line.wall.end_ratio),
     )
-    return abs(ends_m[1] - ends_m[0]) <= _MIN_SEGMENT_M
+    return abs(ends_mm[1] - ends_mm[0]) <= _MIN_SEGMENT_MM
 
 
 def degenerate_wall_ids(plan: FloorplanGeometry, scale: PlanScale) -> list[str]:
@@ -552,7 +568,7 @@ def _cuts_on_line(line: _WallLine, openings: list[PlanOpening], heights: HeightR
         if end_ratio <= start_ratio:
             continue
         resolved = resolve_opening_kind(opening, heights)
-        z_bottom_m, z_top_m = _opening_z_range(resolved.kind, heights)
+        z_bottom_mm, z_top_mm = _opening_z_range(resolved.kind, heights)
         found.append(
             _Cut(
                 index,
@@ -560,8 +576,8 @@ def _cuts_on_line(line: _WallLine, openings: list[PlanOpening], heights: HeightR
                 resolved.source,
                 start_ratio,
                 end_ratio,
-                z_bottom_m,
-                z_top_m,
+                z_bottom_mm,
+                z_top_mm,
             )
         )
     found.sort(key=lambda cut: (cut.start_ratio, cut.end_ratio, cut.opening_index))
@@ -640,7 +656,7 @@ def _layout_openings(
             unplaced.append(index)
             continue
         resolved = resolve_opening_kind(opening, heights)
-        z_bottom_m, z_top_m = _opening_z_range(resolved.kind, heights)
+        z_bottom_mm, z_top_mm = _opening_z_range(resolved.kind, heights)
         start_ratio, end_ratio = sorted((opening.start_ratio, opening.end_ratio))
         fills.append(
             _GapFill(
@@ -653,8 +669,8 @@ def _layout_openings(
                 position_ratio=anchor.wall.position_ratio,
                 thickness_ratio=anchor.wall.thickness_ratio,
                 anchor_id=f"{anchor.source}:{anchor.index}",
-                z_bottom_m=z_bottom_m,
-                z_top_m=z_top_m,
+                z_bottom_mm=z_bottom_mm,
+                z_top_mm=z_top_mm,
             )
         )
     return _OpeningLayout(lines, cuts_per_line, fills, unplaced)
@@ -712,17 +728,17 @@ def _floor_and_ceiling(plan: FloorplanGeometry, ruler: _Ruler, heights: HeightRu
     for room in plan.rooms:
         for index, box in enumerate(room.boxes):
             left, top, right, bottom = box
-            x0_m, x1_m = ruler.x_m(left), ruler.x_m(right)
-            y0_m, y1_m = ruler.y_m(top), ruler.y_m(bottom)
-            if abs(x1_m - x0_m) <= _MIN_SEGMENT_M or abs(y1_m - y0_m) <= _MIN_SEGMENT_M:
+            x0_mm, x1_mm = ruler.x_mm(left), ruler.x_mm(right)
+            y0_mm, y1_mm = ruler.y_mm(top), ruler.y_mm(bottom)
+            if abs(x1_mm - x0_mm) <= _MIN_SEGMENT_MM or abs(y1_mm - y0_mm) <= _MIN_SEGMENT_MM:
                 continue
-            corners = [(x0_m, y0_m), (x1_m, y0_m), (x1_m, y1_m), (x0_m, y1_m)]
+            corners = [(x0_mm, y0_mm), (x1_mm, y0_mm), (x1_mm, y1_mm), (x0_mm, y1_mm)]
             floor = _Faces()
             floor.add_quad([(x, y, 0.0) for x, y in corners], (0.0, 0.0, 1.0))
             meshes.append(_mesh_of(f"floor:{room.name}:{index}", "floor", room.name, floor))
             ceiling = _Faces()
             ceiling.add_quad(
-                [(x, y, heights.ceiling_height_m) for x, y in corners], (0.0, 0.0, -1.0)
+                [(x, y, heights.ceiling_height_mm) for x, y in corners], (0.0, 0.0, -1.0)
             )
             meshes.append(_mesh_of(f"ceiling:{room.name}:{index}", "ceiling", room.name, ceiling))
     return meshes
@@ -731,10 +747,10 @@ def _floor_and_ceiling(plan: FloorplanGeometry, ruler: _Ruler, heights: HeightRu
 def _reveal_mesh(
     line: _WallLine,
     cut: _Cut,
-    along0_m: float,
-    along1_m: float,
-    across0_m: float,
-    across1_m: float,
+    along0_mm: float,
+    along1_mm: float,
+    across0_mm: float,
+    across1_mm: float,
 ) -> Mesh:
     """洞壁：两侧洞口套 + 洞顶（过梁底面），窗还多一块窗台面。
 
@@ -743,67 +759,67 @@ def _reveal_mesh(
     """
     axis = line.wall.axis
     faces = _Faces()
-    z0_m, z1_m = cut.z_bottom_m, cut.z_top_m
-    for along_m, toward_sign in ((along0_m, 1.0), (along1_m, -1.0)):
+    z0_mm, z1_mm = cut.z_bottom_mm, cut.z_top_mm
+    for along_mm, toward_sign in ((along0_mm, 1.0), (along1_mm, -1.0)):
         faces.add_quad(
             [
-                _axis_point(axis, along_m, across0_m, z0_m),
-                _axis_point(axis, along_m, across1_m, z0_m),
-                _axis_point(axis, along_m, across1_m, z1_m),
-                _axis_point(axis, along_m, across0_m, z1_m),
+                _axis_point(axis, along_mm, across0_mm, z0_mm),
+                _axis_point(axis, along_mm, across1_mm, z0_mm),
+                _axis_point(axis, along_mm, across1_mm, z1_mm),
+                _axis_point(axis, along_mm, across0_mm, z1_mm),
             ],
             _axis_point(axis, toward_sign, 0.0, 0.0),
         )
 
-    def horizontal_face(z_m: float, toward: tuple[float, float, float]) -> None:
+    def horizontal_face(z_mm: float, toward: tuple[float, float, float]) -> None:
         faces.add_quad(
             [
-                _axis_point(axis, along0_m, across0_m, z_m),
-                _axis_point(axis, along1_m, across0_m, z_m),
-                _axis_point(axis, along1_m, across1_m, z_m),
-                _axis_point(axis, along0_m, across1_m, z_m),
+                _axis_point(axis, along0_mm, across0_mm, z_mm),
+                _axis_point(axis, along1_mm, across0_mm, z_mm),
+                _axis_point(axis, along1_mm, across1_mm, z_mm),
+                _axis_point(axis, along0_mm, across1_mm, z_mm),
             ],
             toward,
         )
 
-    horizontal_face(z1_m, (0.0, 0.0, -1.0))
-    if z0_m > _MIN_SEGMENT_M:
-        horizontal_face(z0_m, (0.0, 0.0, 1.0))
+    horizontal_face(z1_mm, (0.0, 0.0, -1.0))
+    if z0_mm > _MIN_SEGMENT_MM:
+        horizontal_face(z0_mm, (0.0, 0.0, 1.0))
     mesh_id = f"reveal:{cut.kind}:{line.source}:{line.index}:{cut.opening_index}"
     return _mesh_of(mesh_id, "reveal", None, faces)
 
 
-def _across_band_m(
+def _across_band_mm(
     axis: PlanAxis, position_ratio: float, thickness_ratio: float, ruler: _Ruler, what: str
 ) -> tuple[float, float]:
-    """一道墙线跨墙方向占的那一条带（米）。**切出来的块与补出来的块都走这一处**——
+    """一道墙线跨墙方向占的那一条带（毫米）。**切出来的块与补出来的块都走这一处**——
     共面对齐靠的就是"位置与厚度经同一段算式"，各算各的迟早差半个厚度。"""
-    thickness_m = (
-        ruler.across_x_m(thickness_ratio)
+    thickness_mm = (
+        ruler.across_x_mm(thickness_ratio)
         if axis == "vertical"
-        else ruler.across_y_m(thickness_ratio)
+        else ruler.across_y_mm(thickness_ratio)
     )
-    if thickness_m <= 0:
+    if thickness_mm <= 0:
         raise MeshBuildError(
             f"{what} 的厚度是 {thickness_ratio}：没有厚度的墙起不了体，也不在这儿替它编一个厚度"
         )
-    center_m = ruler.x_m(position_ratio) if axis == "vertical" else ruler.y_m(position_ratio)
-    return center_m - thickness_m / 2, center_m + thickness_m / 2
+    center_mm = ruler.x_mm(position_ratio) if axis == "vertical" else ruler.y_mm(position_ratio)
+    return center_mm - thickness_mm / 2, center_mm + thickness_mm / 2
 
 
 def _wall_solid(
     mesh_id: str,
     axis: PlanAxis,
-    along_span_m: tuple[float, float],
-    across_span_m: tuple[float, float],
-    z_span_m: tuple[float, float],
+    along_span_mm: tuple[float, float],
+    across_span_mm: tuple[float, float],
+    z_span_mm: tuple[float, float],
 ) -> Mesh | None:
     """一块墙体长方体。薄到只剩残渣的（沿墙或竖向）不出网格，返回 None。"""
-    (along0_m, along1_m), (z0_m, z1_m) = along_span_m, z_span_m
-    if along1_m - along0_m <= _MIN_SEGMENT_M or z1_m - z0_m <= _MIN_SEGMENT_M:
+    (along0_mm, along1_mm), (z0_mm, z1_mm) = along_span_mm, z_span_mm
+    if along1_mm - along0_mm <= _MIN_SEGMENT_MM or z1_mm - z0_mm <= _MIN_SEGMENT_MM:
         return None
-    base = _axis_base_xy(axis, along0_m, along1_m, across_span_m[0], across_span_m[1])
-    return _mesh_of(mesh_id, "wall", None, _prism_faces(base, z0_m, z1_m))
+    base = _axis_base_xy(axis, along0_mm, along1_mm, across_span_mm[0], across_span_mm[1])
+    return _mesh_of(mesh_id, "wall", None, _prism_faces(base, z0_mm, z1_mm))
 
 
 def _wall_pieces(
@@ -815,42 +831,49 @@ def _wall_pieces(
     最后收尾那段再起一块。全是加减法，没有布尔运算。
     """
     wall = line.wall
-    across_span_m = _across_band_m(
+    across_span_mm = _across_band_mm(
         wall.axis,
         wall.position_ratio,
         wall.thickness_ratio,
         ruler,
         f"{line.source} 第 {line.index} 道墙",
     )
-    ends_m = (ruler.along_m(wall.axis, wall.start_ratio), ruler.along_m(wall.axis, wall.end_ratio))
-    along0_m, along1_m = min(ends_m), max(ends_m)
+    ends_mm = (
+        ruler.along_mm(wall.axis, wall.start_ratio),
+        ruler.along_mm(wall.axis, wall.end_ratio),
+    )
+    along0_mm, along1_mm = min(ends_mm), max(ends_mm)
     # 零长的退化段在 build_shell 就跳掉了（判据 `_is_degenerate` 只写在那一处）
 
-    ceiling_m = heights.ceiling_height_m
+    ceiling_mm = heights.ceiling_height_mm
     pieces: list[Mesh] = []
     span_count = 0
 
-    def solid(along_from_m: float, along_to_m: float, z0_m: float, z1_m: float, part: str) -> None:
+    def solid(
+        along_from_mm: float, along_to_mm: float, z0_mm: float, z1_mm: float, part: str
+    ) -> None:
         nonlocal span_count
         mesh_id = f"wall:{line.source}:{line.index}:{part}:{span_count}"
         block = _wall_solid(
-            mesh_id, wall.axis, (along_from_m, along_to_m), across_span_m, (z0_m, z1_m)
+            mesh_id, wall.axis, (along_from_mm, along_to_mm), across_span_mm, (z0_mm, z1_mm)
         )
         if block is None:
             return
         pieces.append(block)
         span_count += 1
 
-    cursor_m = along0_m
+    cursor_mm = along0_mm
     for cut in cuts:
-        cut0_m = max(along0_m, ruler.along_m(wall.axis, cut.start_ratio))
-        cut1_m = min(along1_m, ruler.along_m(wall.axis, cut.end_ratio))
-        solid(cursor_m, cut0_m, 0.0, ceiling_m, "span")
-        solid(cut0_m, cut1_m, cut.z_top_m, ceiling_m, "lintel")
-        solid(cut0_m, cut1_m, 0.0, cut.z_bottom_m, "sill")
-        pieces.append(_reveal_mesh(line, cut, cut0_m, cut1_m, across_span_m[0], across_span_m[1]))
-        cursor_m = max(cursor_m, cut1_m)
-    solid(cursor_m, along1_m, 0.0, ceiling_m, "span")
+        cut0_mm = max(along0_mm, ruler.along_mm(wall.axis, cut.start_ratio))
+        cut1_mm = min(along1_mm, ruler.along_mm(wall.axis, cut.end_ratio))
+        solid(cursor_mm, cut0_mm, 0.0, ceiling_mm, "span")
+        solid(cut0_mm, cut1_mm, cut.z_top_mm, ceiling_mm, "lintel")
+        solid(cut0_mm, cut1_mm, 0.0, cut.z_bottom_mm, "sill")
+        pieces.append(
+            _reveal_mesh(line, cut, cut0_mm, cut1_mm, across_span_mm[0], across_span_mm[1])
+        )
+        cursor_mm = max(cursor_mm, cut1_mm)
+    solid(cursor_mm, along1_mm, 0.0, ceiling_mm, "span")
     return pieces
 
 
@@ -859,31 +882,31 @@ def _fill_pieces(fill: _GapFill, ruler: _Ruler, heights: HeightRules) -> list[Me
 
     这儿只补洞上下那两块，不补洞本身那一段整墙——洞就是要空着的地方。洞壁不补，理由见
     :func:`_layout_openings`（邻墙的端面就是洞壁）。位置与厚度全部来自 `fill`，而 `fill`
-    抄的是邻墙，所以补出来的块与邻墙经的是同一段算式（:func:`_across_band_m`），共面。
+    抄的是邻墙，所以补出来的块与邻墙经的是同一段算式（:func:`_across_band_mm`），共面。
     """
-    across_span_m = _across_band_m(
+    across_span_mm = _across_band_mm(
         fill.axis,
         fill.position_ratio,
         fill.thickness_ratio,
         ruler,
         f"补洞 {fill.opening_index} 依据的墙 {fill.anchor_id}",
     )
-    along_span_m = (
-        ruler.along_m(fill.axis, fill.start_ratio),
-        ruler.along_m(fill.axis, fill.end_ratio),
+    along_span_mm = (
+        ruler.along_mm(fill.axis, fill.start_ratio),
+        ruler.along_mm(fill.axis, fill.end_ratio),
     )
     parts = (
-        ("lintel", (fill.z_top_m, heights.ceiling_height_m)),
-        ("sill", (0.0, fill.z_bottom_m)),
+        ("lintel", (fill.z_top_mm, heights.ceiling_height_mm)),
+        ("sill", (0.0, fill.z_bottom_mm)),
     )
     pieces: list[Mesh] = []
-    for part, z_span_m in parts:
+    for part, z_span_mm in parts:
         block = _wall_solid(
             f"wall:fill:{fill.opening_index}:{part}",
             fill.axis,
-            along_span_m,
-            across_span_m,
-            z_span_m,
+            along_span_mm,
+            across_span_mm,
+            z_span_mm,
         )
         if block is not None:
             pieces.append(block)
@@ -932,29 +955,29 @@ def build_furnishings(
     _check_heights(heights)
     meshes: list[Mesh] = []
     for placement in placements:
-        sizes = (placement.width_m, placement.depth_m, placement.height_m)
+        sizes = (placement.width_mm, placement.depth_mm, placement.height_mm)
         if min(sizes) <= 0:
             raise MeshBuildError(f"家具 {placement.id} 的尺寸有非正数：{sizes}m")
-        if placement.height_m > heights.ceiling_height_m:
+        if placement.height_mm > heights.ceiling_height_mm:
             raise MeshBuildError(
-                f"家具 {placement.id} 高 {placement.height_m}m，超过层高 "
-                f"{heights.ceiling_height_m}m：多半是尺寸的单位填错了"
+                f"家具 {placement.id} 高 {placement.height_mm}m，超过层高 "
+                f"{heights.ceiling_height_mm}m：多半是尺寸的单位填错了"
             )
-        center_x_m = ruler.x_m(placement.center_x_ratio)
-        center_y_m = ruler.y_m(placement.center_y_ratio)
+        center_x_mm = ruler.x_mm(placement.center_x_ratio)
+        center_y_mm = ruler.y_mm(placement.center_y_ratio)
         yaw_rad = math.radians(placement.yaw_deg)
         cos_yaw, sin_yaw = math.cos(yaw_rad), math.sin(yaw_rad)
-        half_width_m, half_depth_m = placement.width_m / 2, placement.depth_m / 2
+        half_width_mm, half_depth_mm = placement.width_mm / 2, placement.depth_mm / 2
         local = [
-            (-half_width_m, -half_depth_m),
-            (half_width_m, -half_depth_m),
-            (half_width_m, half_depth_m),
-            (-half_width_m, half_depth_m),
+            (-half_width_mm, -half_depth_mm),
+            (half_width_mm, -half_depth_mm),
+            (half_width_mm, half_depth_mm),
+            (-half_width_mm, half_depth_mm),
         ]
         base = [
-            (center_x_m + x * cos_yaw - y * sin_yaw, center_y_m + x * sin_yaw + y * cos_yaw)
+            (center_x_mm + x * cos_yaw - y * sin_yaw, center_y_mm + x * sin_yaw + y * cos_yaw)
             for x, y in local
         ]
-        faces = _prism_faces(base, 0.0, placement.height_m)
+        faces = _prism_faces(base, 0.0, placement.height_mm)
         meshes.append(_mesh_of(placement.id, "furnishing", placement.room, faces))
     return meshes

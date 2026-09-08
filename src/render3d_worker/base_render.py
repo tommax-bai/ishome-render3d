@@ -9,7 +9,7 @@
 ====== ================== ================== =============================================
 路     图像形态            背景（没打到几何）  下游怎么读它
 ====== ================== ================== =============================================
-深度   16 位灰度 PNG       0                  **当数据读**：值是米（1..65535 归一化，两端随包带出）
+深度   16 位灰度 PNG       0                  **当数据读**：毫米（1..65535 归一化，两端随包带出）
 遮罩   16 位灰度索引 PNG   0                  **当数据读**：索引 ≡ 网格下标 +1，回指网格身份
 线稿   8 位灰度 PNG        0（黑底白线）      **当数据读**：像素要么是几何事实边、要么不是
 几何   8 位 RGB PNG        柔和中性底          **当图看**：给写实化当色彩/形体参考，也给人调试看
@@ -112,13 +112,13 @@ from render3d_worker.raster import (
 # 口径常量：这一节的每个数都决定"图长什么样"，集中在一处，代码里不再散着写。
 # ---------------------------------------------------------------------------
 
-NEAR_CLIP_M: float = 0.05
-"""近裁剪面（米）。取 5 厘米：室内机位贴着墙也留得出余量，而比这更近的东西没有取景意义。
-深度精度**不受它影响**——本仓的深度是视空间米数，不走 NDC z（见 :func:`perspective_matrix`）。"""
+NEAR_CLIP_MM: float = 50.0
+"""近裁剪面（毫米）。取 50 毫米：室内机位贴着墙也留得出余量，而比这更近的东西没有取景意义。
+深度精度**不受它影响**——本仓的深度是视空间毫米数，不走 NDC z（见 :func:`perspective_matrix`）。"""
 
 FAR_CLIP_DIAGONAL_RATIO: float = 4.0
-FAR_CLIP_MIN_M: float = 50.0
-"""远裁剪面 = max(场景包围盒对角线 × 4, 50 米)。远平面不参与裁剪也不参与深度归一化，
+FAR_CLIP_MIN_MM: float = 50_000.0
+"""远裁剪面 = max(场景包围盒对角线 × 4, 50 000 毫米)。远平面不参与裁剪也不参与深度归一化，
 只是投影矩阵要一个数；给得宽松就不会有人因为它被切掉。"""
 
 BIRD_FRAMING_MARGIN_RATIO: float = 1.06
@@ -140,12 +140,12 @@ ROOM_PITCH_DEG: float = 0.0
 """``room`` 机位固定**平视**。``CameraSpec.pitch_deg`` 只对 ``bird`` 生效：站在房间里低头，
 画面全是地板、形体读不出来，条件图就废了。要改室内俯仰改这一个常量。"""
 
-ROOM_TARGET_DISTANCE_M: float = 1.0
-"""``room`` 机位的注视点取眼前 1 米——只用来定视线方向，远近不影响透视。"""
+ROOM_TARGET_DISTANCE_MM: float = 1000.0
+"""``room`` 机位的注视点取眼前 1000 毫米——只用来定视线方向，远近不影响透视。"""
 
-ROOM_EYE_WALL_MARGIN_M: float = 0.35
-"""室内机位退到房间边缘时离墙留的余量（米）。墙有厚度、镜头也有物理宽度，贴着地板边界
-站会让近裁剪面（:data:`NEAR_CLIP_M` 5 厘米）咬穿墙面；0.35 米是室内摄影"背几乎靠墙但不贴
+ROOM_EYE_WALL_MARGIN_MM: float = 350.0
+"""室内机位退到房间边缘时离墙留的余量（毫米）。墙有厚度、镜头也有物理宽度，贴着地板边界
+站会让近裁剪面（:data:`NEAR_CLIP_MM` 50 毫米）咬穿墙面；350 毫米是室内摄影"背几乎靠墙但不贴
 墙"的量级，也留够近裁剪面十倍以上的冗余。"""
 
 ROOM_VIEW_RETREAT_DIRECTION_COUNT: int = 16
@@ -186,24 +186,24 @@ ROOM_VIEW_MIN_DOMINANCE_RATIO: float = 0.5
 足迹里"另量了一遍（含墙），客厅老机位 0.91、主卧 0.99、书房 0.93、阳台 0.66，同样分不开
 （数在 run.md）。D2 今天没有能用的判据，留给用户定。"""
 
-_ROOM_VIEW_EYE_DEDUPE_M: float = 0.01
-"""两个候选位置相距不到 1 厘米就当同一个位置（小房间里往几个方向退会退到同一处）。
-1 厘米远小于任何取景意义上的差别，只是去重复。"""
+_ROOM_VIEW_EYE_DEDUPE_MM: float = 10.0
+"""两个候选位置相距不到 10 毫米就当同一个位置（小房间里往几个方向退会退到同一处）。
+10 毫米远小于任何取景意义上的差别，只是去重复。"""
 
-_ROOM_FLOOR_TOUCH_TOLERANCE_M: float = 1e-3
+_ROOM_FLOOR_TOUCH_TOLERANCE_MM: float = 1.0
 """两块地板矩形的边相距不到 1 毫米就算相接（同一间房的连通判据）。网格顶点留到微米
 （mesh ``_COORD_DECIMALS``），相接的块共享的是同一个坐标，1 毫米只是留给浮点的余量。"""
 
-ROOM_EYE_FURNISHING_MARGIN_M: float = 0.40
-"""室内机位退景时离任何家具至少留这么多距离（米）。**只按地板边界退是不够的**——真跑
-这份仓的拟真户型包时，卫生间那台机位退到了离洗手台只有 0.2 米的地方（近裁剪几乎糊在
+ROOM_EYE_FURNISHING_MARGIN_MM: float = 400.0
+"""室内机位退景时离任何家具至少留这么多距离（毫米）。**只按地板边界退是不够的**——真跑
+这份仓的拟真户型包时，卫生间那台机位退到了离洗手台只有 200 毫米的地方（近裁剪几乎糊在
 台面上），小房间里家具能占掉大半张地板，只避墙不避家具，镜头照样怼进柜子里。
-0.40 米比 :data:`ROOM_EYE_WALL_MARGIN_M` 更大：墙是一整片竖直平面，贴近了好歹还能拍全，
+400 毫米比 :data:`ROOM_EYE_WALL_MARGIN_MM` 更大：墙是一整片竖直平面，贴近了好歹还能拍全，
 家具是个有厚度的体块，镜头贴上去大概率是拍它的一个面，糊得更明显。"""
 
 _ROOM_BOUNDARY_SEARCH_STEPS: int = 256
-"""退景边界沿射线走的采样步数。典型房间（对角线 5～10 米）下给到 2～4 厘米的分辨率，
-比 :data:`ROOM_EYE_WALL_MARGIN_M` 精细一个数量级，不会让退墙距离被采样步长本身吃掉。"""
+"""退景边界沿射线走的采样步数。典型房间（对角线 5000～10 000 毫米）下给到 20～40 毫米的分辨率，
+比 :data:`ROOM_EYE_WALL_MARGIN_MM` 精细一个数量级，不会让退墙距离被采样步长本身吃掉。"""
 
 LINE_BACKGROUND_U8: int = 0
 LINE_FOREGROUND_U8: int = 255
@@ -213,7 +213,7 @@ LINE_FOREGROUND_U8: int = 255
 LINE_DEPTH_TOLERANCE_RATIO: float = 0.02
 """线稿的深度不连续判据：实测深度与**按法向外推的预测深度**差超过 2% 才算断开。
 
-为什么不是"相邻像素深度差超过 X 米/X%"那种阈值：掠射的地板相邻两像素本来就能差好几个
+为什么不是"相邻像素深度差超过 X 毫米/X%"那种阈值：掠射的地板相邻两像素本来就能差好几个
 百分点，定低了满屏假线、定高了近处的边丢掉，怎么定都不对。本仓所有几何都是三角面（平面），
 所以"同一张面继续下去应该是多深"是**能精确算出来**的——连续面上残差恒为 0，只有真跨过
 遮挡边界或折角才跳起来。2% 只是留给浮点误差的余量，不是靠调它来分边缘。"""
@@ -249,20 +249,20 @@ SKETCH_SYMBOL_SCHEMES: tuple[SketchSymbolScheme, ...] = (
 )
 """控制稿门窗符号方案闭集。所有方案：确定性、同编码（黑底白线）、门与窗的符号互不相同、
 过口不画符号、门不在地面上画门槛线。**外框**＝洞口边界在墙厚中心平面上的矩形（门三边、
-窗四边），**内框**＝外框向内缩 :data:`SKETCH_FRAME_INSET_M` 的矩形（窗才有，表示玻璃边）。
+窗四边），**内框**＝外框向内缩 :data:`SKETCH_FRAME_INSET_MM` 的矩形（窗才有，表示玻璃边）。
 
 - ``diagonal-cross``（2026-09-06 之前的默认，现在只作可选）：门＝洞内一条左下到右上的斜线；
   窗＝洞内十字（竖梃 + 横梃）。**留着是历史样本的复现依据**——2026-09-06 之前跑出来的图全
   是这个方案的稿，删了就复现不出来；新图不用它（模型常把斜线当成真东西，见
   :data:`DEFAULT_SKETCH_SYMBOLS` 那条的数据）。
-- ``frame-sill``：窗＝外框 + 内框 + 窗台线（洞下沿再向下 :data:`SKETCH_SILL_DROP_M`、两端各
-  伸出 :data:`SKETCH_SILL_OVERHANG_M`，画在朝相机那一侧的墙面上），不画十字；门＝外框 +
-  门扇线（洞内一条通高竖线，离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_M`，
+- ``frame-sill``：窗＝外框 + 内框 + 窗台线（洞下沿再向下 :data:`SKETCH_SILL_DROP_MM`、两端各
+  伸出 :data:`SKETCH_SILL_OVERHANG_MM`，画在朝相机那一侧的墙面上），不画十字；门＝外框 +
+  门扇线（洞内一条通高竖线，离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_MM`，
   表示开着的门扇的可见边），不画斜线。
 - ``glazing-hatch``：窗＝外框 + 内框 + 三条 45° 斜向短划（玻璃反光；起点在内框宽 18%/34%/50%、
   内框高 55% 处，长 :data:`SKETCH_HATCH_LENGTH_RATIO` × 内框短边，左下向右上），不画十字、
-  不画窗台线；门＝外框 + 门把手（离沿墙坐标大的那侧洞边 :data:`SKETCH_DOOR_HANDLE_EDGE_M`、
-  长 :data:`SKETCH_DOOR_HANDLE_LENGTH_M`、高 :data:`SKETCH_DOOR_HANDLE_HEIGHT_M` 的一条短横）。
+  不画窗台线；门＝外框 + 门把手（离沿墙坐标大的那侧洞边 :data:`SKETCH_DOOR_HANDLE_EDGE_MM`、
+  长 :data:`SKETCH_DOOR_HANDLE_LENGTH_MM`、高 :data:`SKETCH_DOOR_HANDLE_HEIGHT_MM` 的一条短横）。
 - ``leaf-swing``：门＝外框 + 一扇朝相机这一侧开到 :data:`SKETCH_DOOR_SWING_DEG` 的门扇（铰链在
   沿墙坐标小的那侧洞边；画门扇的顶边、底边、自由竖边三条线，是三维里的线段、不在墙面上）；
   窗＝外框 + 内框 + 窗台线 + 中竖梃（双扇平开窗的分扇线），不画横梃。
@@ -295,24 +295,24 @@ DEFAULT_SKETCH_SYMBOLS: SketchSymbolScheme = "frame-handle"
 :data:`SKETCH_SYMBOL_SCHEMES` 里作可选：2026-09-06 之前的图都是它渲的稿，它是那批历史样本的
 复现依据。"""
 
-SKETCH_FRAME_INSET_M: float = 0.08
-"""内框向内缩的量：窗框型材可见宽 6～8 厘米的常规档位。"""
+SKETCH_FRAME_INSET_MM: float = 80.0
+"""内框向内缩的量：窗框型材可见宽 60～80 毫米的常规档位。"""
 
-SKETCH_SILL_DROP_M: float = 0.06
-SKETCH_SILL_OVERHANG_M: float = 0.04
-"""窗台线离洞下沿的距离与两端伸出洞宽的量：窗台板厚 5～6 厘米、两端各出 3～5 厘米的常规档位。"""
+SKETCH_SILL_DROP_MM: float = 60.0
+SKETCH_SILL_OVERHANG_MM: float = 40.0
+"""窗台线离洞下沿的距离与两端伸出洞宽的量：窗台板厚 50～60 毫米、两端各出 30～50 毫米的常规档位。"""
 
-SKETCH_DOOR_LEAF_OFFSET_M: float = 0.12
+SKETCH_DOOR_LEAF_OFFSET_MM: float = 120.0
 """``frame-sill`` 的门扇线离洞边的距离：门扇开到八成时从正面看到的门扇投影宽的量级。"""
 
 SKETCH_HATCH_LENGTH_RATIO: float = 0.30
 """``glazing-hatch`` 每条短划的长度 ＝ 内框短边 × 它；三条起点按内框尺寸定比例，所以短划
 永远落在内框里（起点最远在宽 50%/高 55%，加 0.30 × 短边 × cos45° 仍不出框）。"""
 
-SKETCH_DOOR_HANDLE_HEIGHT_M: float = 1.00
-SKETCH_DOOR_HANDLE_LENGTH_M: float = 0.12
-SKETCH_DOOR_HANDLE_EDGE_M: float = 0.06
-"""门把手：离地 1 米、执手长 12 厘米、离门扇自由边 6 厘米的常规档位。"""
+SKETCH_DOOR_HANDLE_HEIGHT_MM: float = 1000.0
+SKETCH_DOOR_HANDLE_LENGTH_MM: float = 120.0
+SKETCH_DOOR_HANDLE_EDGE_MM: float = 60.0
+"""门把手：离地 1000 毫米、执手长 120 毫米、离门扇自由边 60 毫米的常规档位。"""
 
 SKETCH_DOOR_SWING_DEG: float = 45.0
 """``leaf-swing`` 门扇开到的角度（从墙面量）：斜视机位下门扇既伸进房间、又看得出洞宽。"""
@@ -323,8 +323,8 @@ DEPTH_MAX_U16: int = 65535
 """深度图把 0 让给背景，几何像素落在 1..65535。这样"有没有几何"从深度图单独就答得出来，
 不必再取一次遮罩；代价是丢掉 65536 分之一的动态范围，换一条能自查的一致性。"""
 
-DEPTH_MIN_SPAN_M: float = 1e-6
-"""深度归一化两端之间的最小跨度，防 ``far_m == near_m`` 时除零（整幅画只有一个深度）。"""
+DEPTH_MIN_SPAN_MM: float = 1e-3
+"""深度归一化两端之间的最小跨度，防 ``far_mm == near_mm`` 时除零（整幅画只有一个深度）。"""
 
 MASK_MAX_INDEX: int = 65535
 """遮罩用 16 位索引图：网格数上不封顶（每段墙、每个门窗套、每件家具都是一块），
@@ -344,7 +344,7 @@ GEOMETRY_SUPERSAMPLE_FACTOR: int = 2
 从 2 级抬到 5 级，阶梯感已经压掉大半；3 倍到 10 级，1024px 幅面上肉眼分不出来，
 每台相机却要多花两秒半。
 
-**只有几何这一路超采样**：另外三路是被当数据读的（深度是米、遮罩是索引、线稿是几何
+**只有几何这一路超采样**：另外三路是被当数据读的（深度是毫米、遮罩是索引、线稿是几何
 事实边），降采样会在轮廓上造出现实中不存在的值。所以它们照旧只走 1 倍那一次光栅——
 不是"降采样时把它们跳过"，是**根本不参与这次超采样光栅**。"""
 
@@ -385,13 +385,13 @@ GEOMETRY_BACKGROUND_RGB_U8: tuple[int, int, int] = (46, 50, 56)
 剪下来贴上去的。抬到这一档，轮廓仍然一眼分得出来（与最暗的家具也差着好几档），
 边缘却不再扎眼。**不取浅底**：浅底会跟墙面撞在一起，"这块是墙还是空"就分不出来了。"""
 
-SSAO_RADIUS_M: float = 0.55
-"""环境光遮蔽的采样半径（米）。按室内实物的尺度定：墙角的阴角、家具与地面的接缝、
-柜门与柜体的缝，量级都在几十厘米以内。给大了整间房都被压暗（远处的墙会算成遮挡物），
+SSAO_RADIUS_MM: float = 550.0
+"""环境光遮蔽的采样半径（毫米）。按室内实物的尺度定：墙角的阴角、家具与地面的接缝、
+柜门与柜体的缝，量级都在几百毫米以内。给大了整间房都被压暗（远处的墙会算成遮挡物），
 给小了只在一两个像素宽的边上有效果，看着像描了一圈黑边。"""
 
-SSAO_BIAS_M: float = 0.02
-"""判遮挡时先把采样点往外推 2 厘米。不推的话同一张平面会自己遮自己（深度缓冲是离散的，
+SSAO_BIAS_MM: float = 20.0
+"""判遮挡时先把采样点往外推 20 毫米。不推的话同一张平面会自己遮自己（深度缓冲是离散的，
 邻近像素的深度差落在采样点前后都有可能），出来的是满屏细密条纹。"""
 
 SSAO_STRENGTH_RATIO: float = 0.85
@@ -448,7 +448,7 @@ _SSAO_AXIS_SWAP_COS: float = 0.9
 """法向与世界 z 轴的夹角余弦超过它，切线的参考轴就换成 x。叉积在两向量平行时退化成
 零向量，切空间基就散了——地板与天花的法向正好贴着 z 轴，不换轴每一张水平面都会中招。"""
 
-_SSAO_MIN_SAMPLE_DEPTH_M: float = 1e-4
+_SSAO_MIN_SAMPLE_DEPTH_MM: float = 0.1
 """采样点落到相机平面之后（深度 ≤ 0）就没法投回屏幕，直接判不遮挡。"""
 
 SHADOW_CASTER_SEMANTICS: frozenset[MeshSemantic] = frozenset({"furnishing"})
@@ -463,18 +463,18 @@ SHADOW_CASTER_SEMANTICS: frozenset[MeshSemantic] = frozenset({"furnishing"})
 
 SHADOW_MAP_PX: int = 2048
 """从光源那一侧渲的深度图边长。整户（本仓实测约 11 米宽）铺在 2048 上是 5 毫米一格——
-室内机位凑到 1.5 米看，一格约合画面上 3 个像素，影子边缘的台阶再经几何路的超采样
+室内机位凑到 1500 毫米看，一格约合画面上 3 个像素，影子边缘的台阶再经几何路的超采样
 一平均就压掉了。给到 4096 只是把这台阶压到 1.5 像素，代价却是四倍的图；给到 1024
-则是两厘米一格，室内机位上看得见明显的锯齿边。"""
+则是 20 毫米一格，室内机位上看得见明显的锯齿边。"""
 
-SHADOW_BIAS_M: float = 0.012
-"""比深度图里记的再近 1.2 厘米才算被挡住。**没有它就是满屏摩尔纹**：深度图是离散的，
+SHADOW_BIAS_MM: float = 12.0
+"""比深度图里记的再近 12 毫米才算被挡住。**没有它就是满屏摩尔纹**：深度图是离散的，
 一块平面上每个格子记的是格子中心那一点的深度，边上的点自然一半在前一半在后，
-于是这块平面自己把自己遮成条纹。取 1.2 厘米是按 :data:`SHADOW_MAP_PX` 那一格的
+于是这块平面自己把自己遮成条纹。取 12 毫米是按 :data:`SHADOW_MAP_PX` 那一格的
 斜掠误差量级定的——比它小压不住条纹，比它大影子会从物体底下浮起来一道缝。"""
 
-_SHADOW_FIT_MARGIN_M: float = 0.05
-"""光源那一侧的取景框往外放 5 厘米。框正好贴着包围盒时，最外圈的三角形会被裁掉半个像素，
+_SHADOW_FIT_MARGIN_MM: float = 50.0
+"""光源那一侧的取景框往外放 50 毫米。框正好贴着包围盒时，最外圈的三角形会被裁掉半个像素，
 影子边上于是缺一道。"""
 
 
@@ -497,12 +497,12 @@ class CameraPose:
     :data:`BIRD_HIDDEN_SEMANTICS`），取景与绘制得用同一个判据，否则机位框住的东西
     和画出来的东西不是一回事。"""
 
-    eye_m: tuple[float, float, float]
-    target_m: tuple[float, float, float]
+    eye_mm: tuple[float, float, float]
+    target_mm: tuple[float, float, float]
     up_hint_xyz: tuple[float, float, float]
     fov_deg: float
-    near_clip_m: float
-    far_clip_m: float
+    near_clip_mm: float
+    far_clip_mm: float
     room_view: RoomViewCheck | None = None
     """``room`` 机位的取景自证数（自动取景时是选中那个候选的评估结果；上游显式给 yaw 时
     只量不判）。``bird`` 机位为 ``None``。"""
@@ -513,7 +513,7 @@ class _RoomViewJob:
     """一间房自动取景要的全部不变量：摊平的三角形、每块网格归不归目标房间、张角、画幅。
     攒一次，每个候选位姿只换视图矩阵——候选有上百个，这些东西不该算上百遍。"""
 
-    triangles_m: Float64Array
+    triangles_mm: Float64Array
     tri_mesh_ids: npt.NDArray[np.int32]
     target_floor_of_index: npt.NDArray[np.bool_]
     """(1 + 网格数,) 这个遮罩索引是不是目标房间的地板。0 号（背景）恒为 False。"""
@@ -524,8 +524,8 @@ class _RoomViewJob:
 
     fov_deg: float
     aspect_ratio: float
-    near_clip_m: float
-    far_clip_m: float
+    near_clip_mm: float
+    far_clip_mm: float
     width_px: int
     height_px: int
 
@@ -539,24 +539,24 @@ class _RasterJob:
     两次之间除了画幅没有任何差别，所以入参只该攒一次、由 :meth:`rasterize_at` 换个倍数取。
     """
 
-    triangles_m: Float64Array
+    triangles_mm: Float64Array
     tri_mesh_ids: npt.NDArray[np.int32]
     view_matrix: Float64Array
     proj_matrix: Float64Array
     width_px: int
     height_px: int
-    near_clip_m: float
+    near_clip_mm: float
 
     def rasterize_at(self, factor: int) -> RasterBuffers:
         """按 ``factor`` 倍画幅光栅一遍。投影矩阵不随倍数变——它只认宽高比。"""
         return rasterize(
-            self.triangles_m,
+            self.triangles_mm,
             self.tri_mesh_ids,
             self.view_matrix,
             self.proj_matrix,
             self.width_px * factor,
             self.height_px * factor,
-            self.near_clip_m,
+            self.near_clip_mm,
         )
 
 
@@ -569,11 +569,11 @@ class _ShadowMap:
     两处各算一次就会错开半格，影子会整体偏一点点。
     """
 
-    depth_m: Float32Array
+    depth_mm: Float32Array
     hit_mask: npt.NDArray[np.bool_]
     light_view_matrix: Float64Array
-    half_width_m: float
-    half_height_m: float
+    half_width_mm: float
+    half_height_mm: float
     size_px: int
 
 
@@ -582,12 +582,12 @@ class _ScreenGeometry:
     """逐像素的视空间量，环境光遮蔽与线稿两路共用，算一次传两处。"""
 
     ray_view_xyz: Float64Array
-    """(H, W, 3) 每个像素的视空间方向，z 恒为 -1——所以"沿射线走 t"里的 t 就是正深度（米）。"""
+    """(H, W, 3) 每个像素的视空间方向，z 恒为 -1——所以"沿射线走 t"里的 t 就是正深度（毫米）。"""
 
     normal_view_xyz: Float64Array
     """(H, W, 3) 视空间法向，**已按视线翻正**（上游绕序不保证一致，见 raster 不做背面剔除）。"""
 
-    position_view_m: Float64Array
+    position_view_mm: Float64Array
 
 
 def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float) -> CameraPose:
@@ -601,8 +601,8 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
 
       * ``camera.yaw_deg`` 是上游显式给出的（``model_fields_set`` 里有它，哪怕值恰好是默认
         的 0）：按它平视，机位沿 ``-forward_xy``（镜头背后）从地板质心退到离墙
-        :data:`ROOM_EYE_WALL_MARGIN_M` **且**离任何家具 :data:`ROOM_EYE_FURNISHING_MARGIN_M`
-        的最远处（:func:`_room_eye_xy_m`）——上游给了就听上游的，**不做候选评估、不判**，
+        :data:`ROOM_EYE_WALL_MARGIN_MM` **且**离任何家具 :data:`ROOM_EYE_FURNISHING_MARGIN_MM`
+        的最远处（:func:`_room_eye_xy_mm`）——上游给了就听上游的，**不做候选评估、不判**，
         只把取景自证数量出来随位姿带出（``room_view.passed`` 可以是 False）。
       * 没给：**确定性的候选评估**（:func:`_room_view_candidate_poses` 起那一节）。从这间房
         最大那块连通地板的质心出发，往 :data:`ROOM_VIEW_RETREAT_DIRECTION_COUNT` 个方向各退到
@@ -616,7 +616,7 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
 
       俯仰两条路都固定用 :data:`ROOM_PITCH_DEG`。
 
-    包围盒**按网格顶点现算**，不读 ``bounds_min_m``/``bounds_max_m``：那两个字段是场景包的
+    包围盒**按网格顶点现算**，不读 ``bounds_min_mm``/``bounds_max_mm``：那两个字段是场景包的
     自证数（编包那一侧填的），取景必须框住真正会被画出来的东西，两者万一不一致，以画得出来
     的为准。同理，取景只框**这台相机会画的那些网格**——bird 剔了天花，包围盒就不该再被
     天花撑着。
@@ -625,50 +625,52 @@ def resolve_camera_pose(scene: ScenePackage, camera_id: str, aspect_ratio: float
         raise BaseRenderError(f"宽高比必须为正：aspect_ratio={aspect_ratio}")
     camera = _find_camera(scene, camera_id)
     mesh_indices = _rendered_mesh_indices(scene, camera.kind)
-    min_xyz_m, max_xyz_m = _scene_bounds_m(scene, mesh_indices)
-    diagonal_m = float(np.linalg.norm(max_xyz_m - min_xyz_m))
-    far_clip_m = max(FAR_CLIP_MIN_M, diagonal_m * FAR_CLIP_DIAGONAL_RATIO)
+    min_xyz_mm, max_xyz_mm = _scene_bounds_mm(scene, mesh_indices)
+    diagonal_mm = float(np.linalg.norm(max_xyz_mm - min_xyz_mm))
+    far_clip_mm = max(FAR_CLIP_MIN_MM, diagonal_mm * FAR_CLIP_DIAGONAL_RATIO)
     room_view: RoomViewCheck | None = None
 
     if camera.kind == "bird":
-        center_m = (min_xyz_m + max_xyz_m) * 0.5
+        center_mm = (min_xyz_mm + max_xyz_mm) * 0.5
         forward = _yaw_pitch_direction(camera.yaw_deg, camera.pitch_deg)
         half_fov_v = math.radians(camera.fov_deg) * 0.5
         half_fov_h = math.atan(math.tan(half_fov_v) * aspect_ratio)
         half_fov_min = min(half_fov_v, half_fov_h)
-        radius_m = max(diagonal_m * 0.5, DEPTH_MIN_SPAN_M)
-        distance_m = radius_m / math.sin(half_fov_min) * BIRD_FRAMING_MARGIN_RATIO
-        eye_m = center_m - forward * distance_m
-        target_m = center_m
+        radius_mm = max(diagonal_mm * 0.5, DEPTH_MIN_SPAN_MM)
+        distance_mm = radius_mm / math.sin(half_fov_min) * BIRD_FRAMING_MARGIN_RATIO
+        eye_mm = center_mm - forward * distance_mm
+        target_mm = center_mm
     else:
         if camera.room is None:
             raise BaseRenderError(f"room 机位没有指定房间：camera_id={camera_id}")
-        centroid_xy_m, floor_z_m = _room_floor_anchor_m(scene, camera.room)
-        centroid_xy = np.asarray(centroid_xy_m, dtype=np.float64)
-        floor_triangles_xy = _room_floor_triangles_xy_m(scene, camera.room)
+        centroid_xy_mm, floor_z_mm = _room_floor_anchor_mm(scene, camera.room)
+        centroid_xy = np.asarray(centroid_xy_mm, dtype=np.float64)
+        floor_triangles_xy = _room_floor_triangles_xy_mm(scene, camera.room)
         job = _room_view_job(
-            scene, camera.room, mesh_indices, camera.fov_deg, aspect_ratio, far_clip_m
+            scene, camera.room, mesh_indices, camera.fov_deg, aspect_ratio, far_clip_mm
         )
-        eye_z_m = floor_z_m + camera.eye_height_m
+        eye_z_mm = floor_z_mm + camera.eye_height_mm
         if "yaw_deg" in camera.model_fields_set:
             forward_xy = _yaw_pitch_direction(camera.yaw_deg, ROOM_PITCH_DEG)[:2]
-            eye_xy = _room_eye_xy_m(scene, camera.room, floor_triangles_xy, centroid_xy, forward_xy)
-            room_view = _room_view_check(job, eye_xy, eye_z_m, camera.yaw_deg, candidate_count=1)
+            eye_xy = _room_eye_xy_mm(
+                scene, camera.room, floor_triangles_xy, centroid_xy, forward_xy
+            )
+            room_view = _room_view_check(job, eye_xy, eye_z_mm, camera.yaw_deg, candidate_count=1)
         else:
-            room_view = _room_view_pick(scene, camera.room, job, floor_triangles_xy, eye_z_m)
-        eye_m = np.asarray(room_view.eye_m, dtype=np.float64)
+            room_view = _room_view_pick(scene, camera.room, job, floor_triangles_xy, eye_z_mm)
+        eye_mm = np.asarray(room_view.eye_mm, dtype=np.float64)
         forward = _yaw_pitch_direction(room_view.yaw_deg, ROOM_PITCH_DEG)
-        target_m = eye_m + forward * ROOM_TARGET_DISTANCE_M
+        target_mm = eye_mm + forward * ROOM_TARGET_DISTANCE_MM
 
     return CameraPose(
         camera_id=camera.id,
         kind=camera.kind,
-        eye_m=(float(eye_m[0]), float(eye_m[1]), float(eye_m[2])),
-        target_m=(float(target_m[0]), float(target_m[1]), float(target_m[2])),
+        eye_mm=(float(eye_mm[0]), float(eye_mm[1]), float(eye_mm[2])),
+        target_mm=(float(target_mm[0]), float(target_mm[1]), float(target_mm[2])),
         up_hint_xyz=(0.0, 0.0, 1.0),
         fov_deg=camera.fov_deg,
-        near_clip_m=NEAR_CLIP_M,
-        far_clip_m=far_clip_m,
+        near_clip_mm=NEAR_CLIP_MM,
+        far_clip_mm=far_clip_mm,
         room_view=room_view,
     )
 
@@ -707,25 +709,27 @@ def render_base_views(
     aspect_ratio = width_px / height_px
     pose = resolve_camera_pose(scene, camera_id, aspect_ratio)
     mesh_indices = _rendered_mesh_indices(scene, pose.kind)
-    triangles_m, tri_mesh_ids = _flatten_meshes(scene, mesh_indices)
+    triangles_mm, tri_mesh_ids = _flatten_meshes(scene, mesh_indices)
     palette_ratio = _mesh_palette_ratio(scene)
     shadow = _build_shadow_map(scene, mesh_indices)
 
-    view_matrix = look_at_matrix(pose.eye_m, pose.target_m, pose.up_hint_xyz)
-    proj_matrix = perspective_matrix(pose.fov_deg, aspect_ratio, pose.near_clip_m, pose.far_clip_m)
+    view_matrix = look_at_matrix(pose.eye_mm, pose.target_mm, pose.up_hint_xyz)
+    proj_matrix = perspective_matrix(
+        pose.fov_deg, aspect_ratio, pose.near_clip_mm, pose.far_clip_mm
+    )
     job = _RasterJob(
-        triangles_m=triangles_m,
+        triangles_mm=triangles_mm,
         tri_mesh_ids=tri_mesh_ids,
         view_matrix=view_matrix,
         proj_matrix=proj_matrix,
         width_px=width_px,
         height_px=height_px,
-        near_clip_m=pose.near_clip_m,
+        near_clip_mm=pose.near_clip_mm,
     )
     buffers = job.rasterize_at(1)
     screen = _screen_geometry(buffers, view_matrix, pose, aspect_ratio)
 
-    near_m, far_m, depth_png = _encode_depth_png(buffers)
+    near_mm, far_mm, depth_png = _encode_depth_png(buffers)
     mask_png, mask_index = _encode_mask_png(buffers, scene)
     return BaseRenderViews(
         geometry_png=_encode_geometry_png(
@@ -742,8 +746,8 @@ def render_base_views(
         camera_id=pose.camera_id,
         mask_index=mask_index,
         covered_pixel_ratio=buffers.covered_pixel_ratio,
-        near_m=near_m,
-        far_m=far_m,
+        near_mm=near_mm,
+        far_mm=far_mm,
         room_view=pose.room_view,
     )
 
@@ -780,7 +784,7 @@ def _rendered_mesh_indices(scene: ScenePackage, camera_kind: CameraKind) -> list
     ]
 
 
-def _scene_bounds_m(
+def _scene_bounds_mm(
     scene: ScenePackage, mesh_indices: list[int]
 ) -> tuple[Float64Array, Float64Array]:
     """按网格顶点现算包围盒。一个顶点都没有就抛错——框不出画面的场景不该渲出一张黑图。"""
@@ -800,7 +804,7 @@ def _scene_bounds_m(
     return np.min(np.stack(lows), axis=0), np.max(np.stack(highs), axis=0)
 
 
-def _room_floor_anchor_m(scene: ScenePackage, room: str) -> tuple[tuple[float, float], float]:
+def _room_floor_anchor_mm(scene: ScenePackage, room: str) -> tuple[tuple[float, float], float]:
     """该房间地板的**面积加权**质心 (x, y) 与标高 z。
 
     面积加权而不是顶点平均：地板由若干矩形块三角化而来，块小的地方顶点密，顶点平均会把
@@ -827,9 +831,9 @@ def _room_floor_anchor_m(scene: ScenePackage, room: str) -> tuple[tuple[float, f
     return (float(anchor[0]), float(anchor[1])), float(anchor[2])
 
 
-def _room_floor_triangles_xy_m(scene: ScenePackage, room: str) -> Float64Array:
-    """(N, 3, 2) 该房间地板三角形在 xy 平面的顶点，供 :func:`_room_retreat_distance_m`
-    判"这一点还在地板上"。调用方保证房间有地板——:func:`_room_floor_anchor_m` 在这之前
+def _room_floor_triangles_xy_mm(scene: ScenePackage, room: str) -> Float64Array:
+    """(N, 3, 2) 该房间地板三角形在 xy 平面的顶点，供 :func:`_room_retreat_distance_mm`
+    判"这一点还在地板上"。调用方保证房间有地板——:func:`_room_floor_anchor_mm` 在这之前
     已经查过一遍同一个条件，这里不重复报错。
     """
     blocks: list[Float64Array] = []
@@ -842,8 +846,8 @@ def _room_floor_triangles_xy_m(scene: ScenePackage, room: str) -> Float64Array:
     return np.concatenate(blocks, axis=0)
 
 
-def _room_furnishing_triangles_xy_m(scene: ScenePackage, room: str) -> Float64Array:
-    """(N, 3, 2) 该房间家具三角形在 xy 平面的投影，供 :func:`_room_retreat_distance_m`
+def _room_furnishing_triangles_xy_mm(scene: ScenePackage, room: str) -> Float64Array:
+    """(N, 3, 2) 该房间家具三角形在 xy 平面的投影，供 :func:`_room_retreat_distance_mm`
     判"这一点离家具还有多远"。与地板不同，房间允许一件家具都没有——空场景返回
     ``(0, 3, 2)``，:func:`_min_distance_to_triangles_xy` 把它读成"没有障碍物"。
     """
@@ -859,14 +863,14 @@ def _room_furnishing_triangles_xy_m(scene: ScenePackage, room: str) -> Float64Ar
     return np.concatenate(blocks, axis=0)
 
 
-def _point_in_any_triangle_xy(triangles_xy_m: Float64Array, point_xy: Float64Array) -> bool:
-    """点是否落在 ``triangles_xy_m`` 里任意一个三角形内（含边界）。
+def _point_in_any_triangle_xy(triangles_xy_mm: Float64Array, point_xy: Float64Array) -> bool:
+    """点是否落在 ``triangles_xy_mm`` 里任意一个三角形内（含边界）。
 
     向量化的同号判据：点相对三角形每条边的有向面积同号（或为零）即在内部，一次比完全部
     三角形，不逐个三角形早退——房间的地板三角形数量级在几十到几百，向量化比早退循环快，
     也不必操心"先查哪个三角形"这种会牵出遍历序的问题。
     """
-    a, b, c = triangles_xy_m[:, 0], triangles_xy_m[:, 1], triangles_xy_m[:, 2]
+    a, b, c = triangles_xy_mm[:, 0], triangles_xy_mm[:, 1], triangles_xy_mm[:, 2]
 
     def _signed_area2(p: Float64Array, q: Float64Array, r: Float64Array) -> Float64Array:
         return (p[:, 0] - r[:, 0]) * (q[:, 1] - r[:, 1]) - (q[:, 0] - r[:, 0]) * (p[:, 1] - r[:, 1])
@@ -889,14 +893,14 @@ def _point_segment_distance_xy(
     return np.asarray(np.linalg.norm(point_xy - closest, axis=1), dtype=np.float64)
 
 
-def _min_distance_to_triangles_xy(triangles_xy_m: Float64Array, point_xy: Float64Array) -> float:
+def _min_distance_to_triangles_xy(triangles_xy_mm: Float64Array, point_xy: Float64Array) -> float:
     """点到一批三角形（边界，含内部记 0）的最短距离。三角形数组为空记 ``inf``——
     "没有障碍物"与"障碍物远在天边"在退景那一步是同一件事。"""
-    if triangles_xy_m.shape[0] == 0:
+    if triangles_xy_mm.shape[0] == 0:
         return math.inf
-    if _point_in_any_triangle_xy(triangles_xy_m, point_xy):
+    if _point_in_any_triangle_xy(triangles_xy_mm, point_xy):
         return 0.0
-    a, b, c = triangles_xy_m[:, 0], triangles_xy_m[:, 1], triangles_xy_m[:, 2]
+    a, b, c = triangles_xy_mm[:, 0], triangles_xy_mm[:, 1], triangles_xy_mm[:, 2]
     point = np.broadcast_to(point_xy, a.shape)
     edge_distances = np.minimum(
         _point_segment_distance_xy(point, a, b),
@@ -907,21 +911,21 @@ def _min_distance_to_triangles_xy(triangles_xy_m: Float64Array, point_xy: Float6
     return float(edge_distances.min())
 
 
-def _room_retreat_distance_m(
-    floor_triangles_xy_m: Float64Array,
-    furnishing_triangles_xy_m: Float64Array,
-    start_xy_m: Float64Array,
+def _room_retreat_distance_mm(
+    floor_triangles_xy_mm: Float64Array,
+    furnishing_triangles_xy_mm: Float64Array,
+    start_xy_mm: Float64Array,
     direction_xy: Float64Array,
 ) -> float:
-    """从 ``start_xy_m``（保证在地板内，通常是地板质心）沿单位向量 ``direction_xy`` 退，
-    退到**同时满足**"还在地板上，且离墙 :data:`ROOM_EYE_WALL_MARGIN_M`"与"离所有家具至少
-    :data:`ROOM_EYE_FURNISHING_MARGIN_M`"这两条的最远处（米）。
+    """从 ``start_xy_mm``（保证在地板内，通常是地板质心）沿单位向量 ``direction_xy`` 退，
+    退到**同时满足**"还在地板上，且离墙 :data:`ROOM_EYE_WALL_MARGIN_MM`"与"离所有家具至少
+    :data:`ROOM_EYE_FURNISHING_MARGIN_MM`"这两条的最远处（毫米）。
 
     两条判据一起扫、撞上哪条就停在哪条，且**墙距只在真撞上墙的时候才扣**：家具挡道时
     ``_min_distance_to_triangles_xy`` 量出来的已经是"离家具多远"本身，那个数已经满足
-    :data:`ROOM_EYE_FURNISHING_MARGIN_M` 的下限，不该再叠一层墙距去扣——这不是同一件事
+    :data:`ROOM_EYE_FURNISHING_MARGIN_MM` 的下限，不该再叠一层墙距去扣——这不是同一件事
     的两次计费，是两种障碍物各自的量尺。真跑数据验过反面：不分青红皂白统一扣墙距，
-    多数房间退不到 5 厘米就被判定"到头了"（家具往往就摆在退景方向上，原始可退距离本来
+    多数房间退不到 50 毫米就被判定"到头了"（家具往往就摆在退景方向上，原始可退距离本来
     就没比墙距大多少，再扣一次直接归零），整条退景形同虚设。
 
     按 :data:`_ROOM_BOUNDARY_SEARCH_STEPS` 个固定步长扫，不解析求交：地板允许是任意多边形
@@ -931,45 +935,45 @@ def _room_retreat_distance_m(
     一定还站得住"的下界——一撞到出界或者贴上家具就停，宁可少退一点，也不会把机位退到
     墙外面或者撞进柜子里。
     """
-    span_m = float(np.linalg.norm(np.ptp(floor_triangles_xy_m.reshape(-1, 2), axis=0)))
-    if span_m <= 0.0:
+    span_mm = float(np.linalg.norm(np.ptp(floor_triangles_xy_mm.reshape(-1, 2), axis=0)))
+    if span_mm <= 0.0:
         return 0.0
-    step_m = span_m / _ROOM_BOUNDARY_SEARCH_STEPS
-    farthest_m = 0.0
+    step_mm = span_mm / _ROOM_BOUNDARY_SEARCH_STEPS
+    farthest_mm = 0.0
     for step_index in range(1, _ROOM_BOUNDARY_SEARCH_STEPS + 1):
-        candidate_m = step_index * step_m
-        point_xy = start_xy_m + direction_xy * candidate_m
-        if not _point_in_any_triangle_xy(floor_triangles_xy_m, point_xy):
-            # 让给墙距：candidate_m 已经踩出地板了，退回 candidate_m - 墙距 才是"离墙还有
-            # 余量"的点；跟上一步已经验过安全的 farthest_m 取小，防着房间小到一步的采样
-            # 步长本身就比墙距还大，wall_safe_m 反而比上一步更远的极端情况。
-            wall_safe_m = max(0.0, candidate_m - ROOM_EYE_WALL_MARGIN_M)
-            farthest_m = min(farthest_m, wall_safe_m)
+        candidate_mm = step_index * step_mm
+        point_xy = start_xy_mm + direction_xy * candidate_mm
+        if not _point_in_any_triangle_xy(floor_triangles_xy_mm, point_xy):
+            # 让给墙距：candidate_mm 已经踩出地板了，退回 candidate_mm - 墙距 才是"离墙还有
+            # 余量"的点；跟上一步已经验过安全的 farthest_mm 取小，防着房间小到一步的采样
+            # 步长本身就比墙距还大，wall_safe_mm 反而比上一步更远的极端情况。
+            wall_safe_mm = max(0.0, candidate_mm - ROOM_EYE_WALL_MARGIN_MM)
+            farthest_mm = min(farthest_mm, wall_safe_mm)
             break
-        if _min_distance_to_triangles_xy(furnishing_triangles_xy_m, point_xy) < (
-            ROOM_EYE_FURNISHING_MARGIN_M
+        if _min_distance_to_triangles_xy(furnishing_triangles_xy_mm, point_xy) < (
+            ROOM_EYE_FURNISHING_MARGIN_MM
         ):
             break
-        farthest_m = candidate_m
+        farthest_mm = candidate_mm
     else:
-        # 扫完 _ROOM_BOUNDARY_SEARCH_STEPS 步都没撞墙也没撞家具：span_m 是地板包围盒的
+        # 扫完 _ROOM_BOUNDARY_SEARCH_STEPS 步都没撞墙也没撞家具：span_mm 是地板包围盒的
         # 对角线，从盒内一点沿任意方向走这么远必然已经出盒（多边形又整个落在盒里），
         # 正常情况下走不到这儿；真走到这儿说明浮点误差让最后一步刚好卡在边界上，同样
         # 按"撞墙"处理，让出墙距，不要把机位摆到搜索上限那个点上。
-        farthest_m = max(0.0, farthest_m - ROOM_EYE_WALL_MARGIN_M)
-    return farthest_m
+        farthest_mm = max(0.0, farthest_mm - ROOM_EYE_WALL_MARGIN_MM)
+    return farthest_mm
 
 
-def _room_eye_xy_m(
+def _room_eye_xy_mm(
     scene: ScenePackage,
     room: str,
-    floor_triangles_xy_m: Float64Array,
-    centroid_xy_m: Float64Array,
+    floor_triangles_xy_mm: Float64Array,
+    centroid_xy_mm: Float64Array,
     forward_xy: Float64Array,
 ) -> Float64Array:
     """机位退到哪儿：从地板质心沿 ``-forward_xy``（镜头背后那个方向）退，退到离墙
-    :data:`ROOM_EYE_WALL_MARGIN_M`、离家具 :data:`ROOM_EYE_FURNISHING_MARGIN_M` 处；
-    房间小到退不了那么多，就退到能退的最远处（:func:`_room_retreat_distance_m` 找不到
+    :data:`ROOM_EYE_WALL_MARGIN_MM`、离家具 :data:`ROOM_EYE_FURNISHING_MARGIN_MM` 处；
+    房间小到退不了那么多，就退到能退的最远处（:func:`_room_retreat_distance_mm` 找不到
     地方退时返回 0，机位留在质心上，不会退出房间，也不会撞进家具）。
 
     退的方向永远是**镜头背后**，不是"离家具最远"：家具决定的是看哪儿（``forward_xy``），
@@ -977,11 +981,11 @@ def _room_eye_xy_m(
     "站在房间这一头看那一头"，不是斜着站在屋子中间。
     """
     retreat_xy = -forward_xy
-    furnishing_triangles_xy_m = _room_furnishing_triangles_xy_m(scene, room)
-    eye_distance_m = _room_retreat_distance_m(
-        floor_triangles_xy_m, furnishing_triangles_xy_m, centroid_xy_m, retreat_xy
+    furnishing_triangles_xy_mm = _room_furnishing_triangles_xy_mm(scene, room)
+    eye_distance_mm = _room_retreat_distance_mm(
+        floor_triangles_xy_mm, furnishing_triangles_xy_mm, centroid_xy_mm, retreat_xy
     )
-    return centroid_xy_m + retreat_xy * eye_distance_m
+    return centroid_xy_mm + retreat_xy * eye_distance_mm
 
 
 # ---------------------------------------------------------------------------
@@ -995,11 +999,11 @@ def _room_view_job(
     mesh_indices: list[int],
     fov_deg: float,
     aspect_ratio: float,
-    far_clip_m: float,
+    far_clip_mm: float,
 ) -> _RoomViewJob:
     """攒一间房取景评估的不变量。画幅按 :data:`ROOM_VIEW_EVAL_HEIGHT_PX` 与最终宽高比定——
     评估用的张角与宽高比必须和最终那张图一样，否则量的是另一台相机的画面。"""
-    triangles_m, tri_mesh_ids = _flatten_meshes(scene, mesh_indices)
+    triangles_mm, tri_mesh_ids = _flatten_meshes(scene, mesh_indices)
     count = len(scene.meshes) + 1
     target_floor = np.zeros(count, dtype=np.bool_)
     target_room = np.zeros(count, dtype=np.bool_)
@@ -1015,26 +1019,26 @@ def _room_view_job(
     height_px = ROOM_VIEW_EVAL_HEIGHT_PX
     width_px = max(1, int(round(height_px * aspect_ratio)))
     return _RoomViewJob(
-        triangles_m=triangles_m,
+        triangles_mm=triangles_mm,
         tri_mesh_ids=tri_mesh_ids,
         target_floor_of_index=target_floor,
         target_room_of_index=target_room,
         other_room_of_index=other_room,
         fov_deg=fov_deg,
         aspect_ratio=aspect_ratio,
-        near_clip_m=NEAR_CLIP_M,
-        far_clip_m=far_clip_m,
+        near_clip_mm=NEAR_CLIP_MM,
+        far_clip_mm=far_clip_mm,
         width_px=width_px,
         height_px=height_px,
     )
 
 
 def _room_view_passes(
-    min_depth_m: float, target_floor_ratio: float, dominance_ratio: float
+    min_depth_mm: float, target_floor_ratio: float, dominance_ratio: float
 ) -> bool:
     """三条取景判据，只写在这一处：不贴墙、拍到了地板、画面主体是这间房。"""
     return (
-        min_depth_m >= ROOM_EYE_WALL_MARGIN_M
+        min_depth_mm >= ROOM_EYE_WALL_MARGIN_MM
         and target_floor_ratio >= ROOM_VIEW_MIN_TARGET_FLOOR_RATIO
         and dominance_ratio >= ROOM_VIEW_MIN_DOMINANCE_RATIO
     )
@@ -1042,8 +1046,8 @@ def _room_view_passes(
 
 def _room_view_check(
     job: _RoomViewJob,
-    eye_xy_m: Float64Array,
-    eye_z_m: float,
+    eye_xy_mm: Float64Array,
+    eye_z_mm: float,
     yaw_deg: float,
     candidate_count: int,
 ) -> RoomViewCheck:
@@ -1052,23 +1056,25 @@ def _room_view_check(
     量的就是最终那台相机会画的东西（同一批三角形、同一个张角与宽高比），只是画幅小——
     所以"评估说主体是这间房"与"最终图上主体是这间房"是同一件事，差的只是采样粒度。
     """
-    eye_m = np.array([eye_xy_m[0], eye_xy_m[1], eye_z_m], dtype=np.float64)
+    eye_mm = np.array([eye_xy_mm[0], eye_xy_mm[1], eye_z_mm], dtype=np.float64)
     forward = _yaw_pitch_direction(yaw_deg, ROOM_PITCH_DEG)
-    view_matrix = look_at_matrix(eye_m, eye_m + forward * ROOM_TARGET_DISTANCE_M)
-    proj_matrix = perspective_matrix(job.fov_deg, job.aspect_ratio, job.near_clip_m, job.far_clip_m)
+    view_matrix = look_at_matrix(eye_mm, eye_mm + forward * ROOM_TARGET_DISTANCE_MM)
+    proj_matrix = perspective_matrix(
+        job.fov_deg, job.aspect_ratio, job.near_clip_mm, job.far_clip_mm
+    )
     buffers = rasterize(
-        job.triangles_m,
+        job.triangles_mm,
         job.tri_mesh_ids,
         view_matrix,
         proj_matrix,
         job.width_px,
         job.height_px,
-        job.near_clip_m,
+        job.near_clip_mm,
     )
     total_px = float(job.width_px * job.height_px)
     hit = buffers.hit_mask
     hit_px = int(np.count_nonzero(hit))
-    min_depth_m = float(buffers.depth_m[hit].min()) if hit_px > 0 else math.inf
+    min_depth_mm = float(buffers.depth_mm[hit].min()) if hit_px > 0 else math.inf
     index = buffers.id_buffer + 1
     target_floor_ratio = float(np.count_nonzero(job.target_floor_of_index[index])) / total_px
     target_room_ratio = float(np.count_nonzero(job.target_room_of_index[index])) / total_px
@@ -1076,19 +1082,19 @@ def _room_view_check(
     attributed = target_room_ratio + other_room_ratio
     dominance_ratio = target_room_ratio / attributed if attributed > 0.0 else 0.0
     return RoomViewCheck(
-        eye_m=(float(eye_m[0]), float(eye_m[1]), float(eye_m[2])),
+        eye_mm=(float(eye_mm[0]), float(eye_mm[1]), float(eye_mm[2])),
         yaw_deg=float(yaw_deg),
-        min_depth_m=min_depth_m,
+        min_depth_mm=min_depth_mm,
         target_floor_ratio=target_floor_ratio,
         target_room_ratio=target_room_ratio,
         other_room_ratio=other_room_ratio,
         dominance_ratio=dominance_ratio,
         candidate_count=candidate_count,
-        passed=_room_view_passes(min_depth_m, target_floor_ratio, dominance_ratio),
+        passed=_room_view_passes(min_depth_mm, target_floor_ratio, dominance_ratio),
     )
 
 
-def _room_floor_boxes_m(scene: ScenePackage, room: str) -> list[tuple[float, float, float, float]]:
+def _room_floor_boxes_mm(scene: ScenePackage, room: str) -> list[tuple[float, float, float, float]]:
     """该房间每块地板网格的平面包围矩形 ``(x0, x1, y0, y1)``。地板网格一块就是一个矩形
     （mesh ``_floor_and_ceiling``），包围矩形就是它本身。次序跟着网格序。"""
     boxes: list[tuple[float, float, float, float]] = []
@@ -1107,19 +1113,19 @@ def _room_floor_boxes_m(scene: ScenePackage, room: str) -> list[tuple[float, flo
     return boxes
 
 
-def _room_view_start_xy_m(
-    scene: ScenePackage, room: str, floor_triangles_xy_m: Float64Array
+def _room_view_start_xy_mm(
+    scene: ScenePackage, room: str, floor_triangles_xy_mm: Float64Array
 ) -> Float64Array:
     """自动取景的起点：这间房**最大的那块连通地板**的面积加权质心；质心落在地板外
     （L 形）就退到那块连通地板里最大一块矩形的中心。
 
-    为什么不直接用整间房的质心（:func:`_room_floor_anchor_m`）：上游的房间遮罩会把同名的
+    为什么不直接用整间房的质心（:func:`_room_floor_anchor_mm`）：上游的房间遮罩会把同名的
     几块不相连的地板算成一间房（真户型 2026-09-05 实测："次卧"两处、"卫生间"三处），
     整间房的质心落在它们之间的墙里，从墙里出发退到哪儿都不是这间房。连通判据是矩形相接
-    （:data:`_ROOM_FLOOR_TOUCH_TOLERANCE_M`），地板网格一块就是一个矩形
+    （:data:`_ROOM_FLOOR_TOUCH_TOLERANCE_MM`），地板网格一块就是一个矩形
     （mesh ``_floor_and_ceiling``）。
     """
-    boxes = _room_floor_boxes_m(scene, room)
+    boxes = _room_floor_boxes_mm(scene, room)
     component_of = list(range(len(boxes)))
 
     def _root(index: int) -> int:
@@ -1128,7 +1134,7 @@ def _room_view_start_xy_m(
             index = component_of[index]
         return index
 
-    tolerance = _ROOM_FLOOR_TOUCH_TOLERANCE_M
+    tolerance = _ROOM_FLOOR_TOUCH_TOLERANCE_MM
     for i, (ax0, ax1, ay0, ay1) in enumerate(boxes):
         for j in range(i + 1, len(boxes)):
             bx0, bx1, by0, by1 = boxes[j]
@@ -1162,35 +1168,35 @@ def _room_view_start_xy_m(
         if area > largest_box_area:
             largest_box_area, largest_box_center = area, center
     centroid = weighted / total_area
-    if _point_in_any_triangle_xy(floor_triangles_xy_m, centroid):
+    if _point_in_any_triangle_xy(floor_triangles_xy_mm, centroid):
         return centroid
     return largest_box_center
 
 
 def _room_view_candidate_poses(
-    floor_triangles_xy_m: Float64Array,
-    furnishing_triangles_xy_m: Float64Array,
-    start_xy_m: Float64Array,
+    floor_triangles_xy_mm: Float64Array,
+    furnishing_triangles_xy_mm: Float64Array,
+    start_xy_mm: Float64Array,
 ) -> list[tuple[Float64Array, float]]:
     """候选位姿 ``(eye_xy, yaw_deg)``，次序写死：起点本身在前，然后按退让方向的角序；
     每个位置按朝向的角序。次序进了"同分取靠前"那条规则，所以它是结果的一部分。"""
-    eyes: list[Float64Array] = [start_xy_m]
+    eyes: list[Float64Array] = [start_xy_mm]
     for step in range(ROOM_VIEW_RETREAT_DIRECTION_COUNT):
         direction_xy = _yaw_pitch_direction(360.0 * step / ROOM_VIEW_RETREAT_DIRECTION_COUNT, 0.0)[
             :2
         ]
-        distance_m = _room_retreat_distance_m(
-            floor_triangles_xy_m, furnishing_triangles_xy_m, start_xy_m, direction_xy
+        distance_mm = _room_retreat_distance_mm(
+            floor_triangles_xy_mm, furnishing_triangles_xy_mm, start_xy_mm, direction_xy
         )
-        eye_xy = start_xy_m + direction_xy * distance_m
-        if any(float(np.linalg.norm(eye_xy - known)) < _ROOM_VIEW_EYE_DEDUPE_M for known in eyes):
+        eye_xy = start_xy_mm + direction_xy * distance_mm
+        if any(float(np.linalg.norm(eye_xy - known)) < _ROOM_VIEW_EYE_DEDUPE_MM for known in eyes):
             continue
         eyes.append(eye_xy)
 
     poses: list[tuple[Float64Array, float]] = []
     for eye_xy in eyes:
-        toward_start = start_xy_m - eye_xy
-        at_start = float(np.linalg.norm(toward_start)) < _ROOM_VIEW_EYE_DEDUPE_M
+        toward_start = start_xy_mm - eye_xy
+        at_start = float(np.linalg.norm(toward_start)) < _ROOM_VIEW_EYE_DEDUPE_MM
         for step in range(ROOM_VIEW_YAW_COUNT):
             yaw_deg = 360.0 * step / ROOM_VIEW_YAW_COUNT
             forward_xy = _yaw_pitch_direction(yaw_deg, 0.0)[:2]
@@ -1204,16 +1210,16 @@ def _room_view_pick(
     scene: ScenePackage,
     room: str,
     job: _RoomViewJob,
-    floor_triangles_xy_m: Float64Array,
-    eye_z_m: float,
+    floor_triangles_xy_mm: Float64Array,
+    eye_z_mm: float,
 ) -> RoomViewCheck:
     """评估全部候选，取达标里"地板占比 × 主体占比"最大的；一个都不达标就响亮失败。"""
-    start_xy = _room_view_start_xy_m(scene, room, floor_triangles_xy_m)
+    start_xy = _room_view_start_xy_mm(scene, room, floor_triangles_xy_mm)
     poses = _room_view_candidate_poses(
-        floor_triangles_xy_m, _room_furnishing_triangles_xy_m(scene, room), start_xy
+        floor_triangles_xy_mm, _room_furnishing_triangles_xy_mm(scene, room), start_xy
     )
     checks = [
-        _room_view_check(job, eye_xy, eye_z_m, yaw_deg, candidate_count=len(poses))
+        _room_view_check(job, eye_xy, eye_z_mm, yaw_deg, candidate_count=len(poses))
         for eye_xy, yaw_deg in poses
     ]
 
@@ -1233,10 +1239,10 @@ def _room_view_pick(
             closest = check
     raise BaseRenderError(
         f"房间 {room} 无法取景：{len(checks)} 个候选位姿没有一个达标"
-        f"（判据：最近深度 ≥ {ROOM_EYE_WALL_MARGIN_M} m、目标房间地板占比 ≥ "
+        f"（判据：最近深度 ≥ {ROOM_EYE_WALL_MARGIN_MM} m、目标房间地板占比 ≥ "
         f"{ROOM_VIEW_MIN_TARGET_FLOOR_RATIO}、主体占比 ≥ {ROOM_VIEW_MIN_DOMINANCE_RATIO}）；"
-        f"最接近的一个站在 ({closest.eye_m[0]:.2f}, {closest.eye_m[1]:.2f}) 朝 "
-        f"{closest.yaw_deg:.1f}°：最近深度 {closest.min_depth_m:.2f} m、地板占比 "
+        f"最接近的一个站在 ({closest.eye_mm[0]:.2f}, {closest.eye_mm[1]:.2f}) 朝 "
+        f"{closest.yaw_deg:.1f}°：最近深度 {closest.min_depth_mm:.2f} m、地板占比 "
         f"{closest.target_floor_ratio:.3f}、主体占比 {closest.dominance_ratio:.3f}"
     )
 
@@ -1337,7 +1343,7 @@ def _build_shadow_map(scene: ScenePackage, mesh_indices: list[int]) -> _ShadowMa
 
     取景框按投影体的包围盒在光空间里现算：正交投影没有"离多远"这回事，画幅只由要框住的
     东西定。相机站在包围盒往光源方向退开一个对角线的地方，保证所有投影体的深度为正
-    （:func:`rasterize` 要 ``near_m > 0``）。
+    （:func:`rasterize` 要 ``near_mm > 0``）。
 
     返回 ``None`` 而不是一张空图：没有投影体时"整幅不在影子里"是个确定的事实，让调用方
     直接跳过查表，比渲一张全 inf 的图再查一遍便宜，也少一处"空图算不算遮挡"的分支。
@@ -1349,45 +1355,45 @@ def _build_shadow_map(scene: ScenePackage, mesh_indices: list[int]) -> _ShadowMa
     ]
     if not caster_indices:
         return None
-    triangles_m, tri_mesh_ids = _flatten_meshes(scene, caster_indices)
-    if triangles_m.shape[0] == 0:
+    triangles_mm, tri_mesh_ids = _flatten_meshes(scene, caster_indices)
+    if triangles_mm.shape[0] == 0:
         return None
 
     light_from = np.asarray(KEY_LIGHT_FROM_DIR_XYZ, dtype=np.float64)
     light_from = light_from / float(np.linalg.norm(light_from))
-    min_xyz_m, max_xyz_m = _scene_bounds_m(scene, mesh_indices)
-    center_m = (min_xyz_m + max_xyz_m) * 0.5
-    span_m = float(np.linalg.norm(max_xyz_m - min_xyz_m))
-    eye_m = center_m + light_from * max(span_m, DEPTH_MIN_SPAN_M)
-    light_view = look_at_matrix(eye_m, center_m)
+    min_xyz_mm, max_xyz_mm = _scene_bounds_mm(scene, mesh_indices)
+    center_mm = (min_xyz_mm + max_xyz_mm) * 0.5
+    span_mm = float(np.linalg.norm(max_xyz_mm - min_xyz_mm))
+    eye_mm = center_mm + light_from * max(span_mm, DEPTH_MIN_SPAN_MM)
+    light_view = look_at_matrix(eye_mm, center_mm)
 
-    corners_m = np.stack(
-        np.meshgrid(*zip(min_xyz_m, max_xyz_m, strict=True), indexing="ij"), axis=-1
+    corners_mm = np.stack(
+        np.meshgrid(*zip(min_xyz_mm, max_xyz_mm, strict=True), indexing="ij"), axis=-1
     ).reshape(-1, 3)
-    corners_view = np.concatenate([corners_m, np.ones((corners_m.shape[0], 1))], axis=1) @ (
+    corners_view = np.concatenate([corners_mm, np.ones((corners_mm.shape[0], 1))], axis=1) @ (
         light_view.T
     )
-    half_width_m = float(np.abs(corners_view[:, 0]).max()) + _SHADOW_FIT_MARGIN_M
-    half_height_m = float(np.abs(corners_view[:, 1]).max()) + _SHADOW_FIT_MARGIN_M
-    depth_range_m = -corners_view[:, 2]
-    near_m = max(NEAR_CLIP_M, float(depth_range_m.min()) - _SHADOW_FIT_MARGIN_M)
-    far_m = float(depth_range_m.max()) + _SHADOW_FIT_MARGIN_M
+    half_width_mm = float(np.abs(corners_view[:, 0]).max()) + _SHADOW_FIT_MARGIN_MM
+    half_height_mm = float(np.abs(corners_view[:, 1]).max()) + _SHADOW_FIT_MARGIN_MM
+    depth_range_mm = -corners_view[:, 2]
+    near_mm = max(NEAR_CLIP_MM, float(depth_range_mm.min()) - _SHADOW_FIT_MARGIN_MM)
+    far_mm = float(depth_range_mm.max()) + _SHADOW_FIT_MARGIN_MM
 
     buffers = rasterize(
-        triangles_m,
+        triangles_mm,
         tri_mesh_ids,
         light_view,
-        orthographic_matrix(half_width_m, half_height_m, near_m, far_m),
+        orthographic_matrix(half_width_mm, half_height_mm, near_mm, far_mm),
         SHADOW_MAP_PX,
         SHADOW_MAP_PX,
-        near_m,
+        near_mm,
     )
     return _ShadowMap(
-        depth_m=buffers.depth_m,
+        depth_mm=buffers.depth_mm,
         hit_mask=buffers.hit_mask,
         light_view_matrix=light_view,
-        half_width_m=half_width_m,
-        half_height_m=half_height_m,
+        half_width_mm=half_width_mm,
+        half_height_mm=half_height_mm,
         size_px=SHADOW_MAP_PX,
     )
 
@@ -1405,7 +1411,7 @@ def _screen_geometry(
 ) -> _ScreenGeometry:
     """每个像素的视线方向、视空间位置、视空间法向与朝向符号。
 
-    位置能从深度反算出来，是因为深度存的是"沿相机前向的米数"而射线的 z 恒为 -1：
+    位置能从深度反算出来，是因为深度存的是"沿相机前向的毫米数"而射线的 z 恒为 -1：
     ``position_view = ray_view × depth``，一次乘法，不必在光栅里额外存一张位置缓冲。
     """
     height_px, width_px = buffers.id_buffer.shape
@@ -1420,8 +1426,8 @@ def _screen_geometry(
     ray_view[..., 2] = -1.0
 
     hit = buffers.hit_mask
-    depth_m = np.where(hit, buffers.depth_m, 0.0).astype(np.float64)
-    position_view = ray_view * depth_m[..., None]
+    depth_mm = np.where(hit, buffers.depth_mm, 0.0).astype(np.float64)
+    position_view = ray_view * depth_mm[..., None]
 
     normal_world = buffers.normal_unit_xyz.astype(np.float64)
     normal_view = np.einsum("ij,hwj->hwi", view_matrix[:3, :3], normal_world)
@@ -1432,7 +1438,7 @@ def _screen_geometry(
     return _ScreenGeometry(
         ray_view_xyz=ray_view,
         normal_view_xyz=normal_view,
-        position_view_m=position_view,
+        position_view_mm=position_view,
     )
 
 
@@ -1529,10 +1535,12 @@ def _shade_linear(
     )
     if shadow is not None:
         # 空像素的深度是 inf，乘出来是 inf/nan，投回光空间会一路污染到取整。它们反正
-        # 不着色，直接按 0 米算——落在相机自己那一点上，判出来的是"照得到"，无害。
-        depth_m = np.where(buffers.hit_mask, buffers.depth_m, np.float32(0.0))
-        position_world_m = np.asarray(pose.eye_m, dtype=np.float32) + ray_world * depth_m[..., None]
-        key_irradiance *= _sunlit_ratio(position_world_m, shadow)[..., None]
+        # 不着色，直接按 0 毫米算——落在相机自己那一点上，判出来的是"照得到"，无害。
+        depth_mm = np.where(buffers.hit_mask, buffers.depth_mm, np.float32(0.0))
+        position_world_mm = (
+            np.asarray(pose.eye_mm, dtype=np.float32) + ray_world * depth_mm[..., None]
+        )
+        key_irradiance *= _sunlit_ratio(position_world_mm, shadow)[..., None]
 
     albedo = palette_linear[buffers.id_buffer + 1] * buffers.hit_mask[..., None]
     return albedo * irradiance, albedo * key_irradiance
@@ -1553,7 +1561,7 @@ def _lambert(
 def _world_ray_xyz(
     buffers: RasterBuffers, view_matrix: Float64Array, fov_deg: float, aspect_ratio: float
 ) -> Float32Array:
-    """(H, W, 3) 每个像素的**世界系**视线方向，长度归一到"走一米深度前进一米"。
+    """(H, W, 3) 每个像素的**世界系**视线方向，长度归一到"走一毫米深度前进一毫米"。
 
     不走 :class:`_ScreenGeometry` 而另算一遍，是因为超采样那一遍的画幅是 N² 倍大：
     那个结构里三张 float64 缓冲在 2 倍超采样下就是两百多兆，而几何着色只要这一张。
@@ -1574,7 +1582,7 @@ def _world_ray_xyz(
     )
 
 
-def _sunlit_ratio(position_world_m: Float32Array, shadow: _ShadowMap) -> Float32Array:
+def _sunlit_ratio(position_world_mm: Float32Array, shadow: _ShadowMap) -> Float32Array:
     """(H, W) 主光照不照得到：1 ＝ 照得到，0 ＝ 被家具挡住。
 
     把世界点换进光空间、按正交画幅算出格子下标，跟深度图里那一格比：图里记的更近，
@@ -1582,19 +1590,19 @@ def _sunlit_ratio(position_world_m: Float32Array, shadow: _ShadowMap) -> Float32
     包围盒算的，框外就是没有投影体的地方，那儿本来就没有影子。
     """
     matrix = shadow.light_view_matrix.astype(np.float32)
-    x_m = np.einsum("hwi,i->hw", position_world_m, matrix[0, :3]) + matrix[0, 3]
-    y_m = np.einsum("hwi,i->hw", position_world_m, matrix[1, :3]) + matrix[1, 3]
-    depth_m = -(np.einsum("hwi,i->hw", position_world_m, matrix[2, :3]) + matrix[2, 3])
+    x_mm = np.einsum("hwi,i->hw", position_world_mm, matrix[0, :3]) + matrix[0, 3]
+    y_mm = np.einsum("hwi,i->hw", position_world_mm, matrix[1, :3]) + matrix[1, 3]
+    depth_mm = -(np.einsum("hwi,i->hw", position_world_mm, matrix[2, :3]) + matrix[2, 3])
 
-    column = np.floor((x_m / shadow.half_width_m + 1.0) * 0.5 * shadow.size_px).astype(np.int64)
-    row = np.floor((1.0 - y_m / shadow.half_height_m) * 0.5 * shadow.size_px).astype(np.int64)
+    column = np.floor((x_mm / shadow.half_width_mm + 1.0) * 0.5 * shadow.size_px).astype(np.int64)
+    row = np.floor((1.0 - y_mm / shadow.half_height_mm) * 0.5 * shadow.size_px).astype(np.int64)
     inside = (column >= 0) & (column < shadow.size_px) & (row >= 0) & (row < shadow.size_px)
     flat_index = np.clip(row, 0, shadow.size_px - 1) * shadow.size_px + np.clip(
         column, 0, shadow.size_px - 1
     )
-    caster_m = shadow.depth_m.reshape(-1)[flat_index]
+    caster_mm = shadow.depth_mm.reshape(-1)[flat_index]
     blocked = (
-        inside & shadow.hit_mask.reshape(-1)[flat_index] & (caster_m < depth_m - SHADOW_BIAS_M)
+        inside & shadow.hit_mask.reshape(-1)[flat_index] & (caster_mm < depth_mm - SHADOW_BIAS_MM)
     )
     return np.where(blocked, np.float32(0.0), np.float32(1.0))
 
@@ -1644,37 +1652,37 @@ def _ambient_occlusion_ratio(
         return np.ones((height_px, width_px), dtype=np.float32)
 
     normal = screen.normal_view_xyz.astype(np.float32)
-    position_m = screen.position_view_m.astype(np.float32)
+    position_mm = screen.position_view_mm.astype(np.float32)
     # 空像素在深度缓冲里是 inf，两个 inf 相减是 nan；这里把它们换成 0，判遮挡那一步
     # 本来就把空像素排除在外（``hit_flat``），换掉只是别让衰减那一步算出 nan 来。
-    depth_m = np.where(hit, buffers.depth_m, np.float32(0.0))
+    depth_mm = np.where(hit, buffers.depth_mm, np.float32(0.0))
     axis_u, axis_v = _tangent_frame(normal, height_px, width_px)
 
     tan_v = math.tan(math.radians(pose.fov_deg) * 0.5)
     tan_h = tan_v * aspect_ratio
-    depth_flat = depth_m.reshape(-1)
+    depth_flat = depth_mm.reshape(-1)
     hit_flat = hit.reshape(-1)
     occlusion = np.zeros((height_px, width_px), dtype=np.float32)
 
     for offset_u, offset_v, offset_n in SSAO_KERNEL_TANGENT:
-        sample_m = position_m + (
+        sample_mm = position_mm + (
             axis_u * np.float32(offset_u)
             + axis_v * np.float32(offset_v)
             + normal * np.float32(offset_n)
-        ) * np.float32(SSAO_RADIUS_M)
-        sample_depth_m = -sample_m[..., 2]
-        ahead = sample_depth_m > _SSAO_MIN_SAMPLE_DEPTH_M
-        safe_depth_m = np.where(ahead, sample_depth_m, 1.0)
-        x_px = (sample_m[..., 0] / (safe_depth_m * tan_h) + 1.0) * 0.5 * width_px
-        y_px = (1.0 - sample_m[..., 1] / (safe_depth_m * tan_v)) * 0.5 * height_px
+        ) * np.float32(SSAO_RADIUS_MM)
+        sample_depth_mm = -sample_mm[..., 2]
+        ahead = sample_depth_mm > _SSAO_MIN_SAMPLE_DEPTH_MM
+        safe_depth_mm = np.where(ahead, sample_depth_mm, 1.0)
+        x_px = (sample_mm[..., 0] / (safe_depth_mm * tan_h) + 1.0) * 0.5 * width_px
+        y_px = (1.0 - sample_mm[..., 1] / (safe_depth_mm * tan_v)) * 0.5 * height_px
         column = np.floor(x_px).astype(np.int64)
         row = np.floor(y_px).astype(np.int64)
         on_screen = ahead & (column >= 0) & (column < width_px) & (row >= 0) & (row < height_px)
         flat_index = np.clip(row, 0, height_px - 1) * width_px + np.clip(column, 0, width_px - 1)
-        occluder_m = depth_flat[flat_index]
-        blocked = on_screen & hit_flat[flat_index] & (occluder_m < sample_depth_m - SSAO_BIAS_M)
-        falloff = np.float32(SSAO_RADIUS_M) / np.maximum(
-            np.float32(SSAO_RADIUS_M), np.abs(depth_m - occluder_m)
+        occluder_mm = depth_flat[flat_index]
+        blocked = on_screen & hit_flat[flat_index] & (occluder_mm < sample_depth_mm - SSAO_BIAS_MM)
+        falloff = np.float32(SSAO_RADIUS_MM) / np.maximum(
+            np.float32(SSAO_RADIUS_MM), np.abs(depth_mm - occluder_mm)
         )
         occlusion += np.where(blocked, falloff, np.float32(0.0))
 
@@ -1728,23 +1736,23 @@ def _box_blur(image: Float32Array, half_px: int) -> Float32Array:
 
 
 def _encode_depth_png(buffers: RasterBuffers) -> tuple[float, float, bytes]:
-    """深度路：**近处亮、远处暗**的 16 位灰度 PNG，返回 ``(near_m, far_m, png)``。
+    """深度路：**近处亮、远处暗**的 16 位灰度 PNG，返回 ``(near_mm, far_mm, png)``。
 
     近亮远暗的理由：这张图是给写实化当深度条件用的，depth-anything / MiDaS 一系的深度
     ControlNet 通行的就是近白远黑，跟着它下游不用再反相；而且"近＝信号强"符合直觉——
     画面主体（贴近相机的家具与墙面）落在高位，量化误差先吃在无关紧要的远景上。
 
-    ``near_m``/``far_m`` 取的是**这一帧实际命中的最近/最远深度**（不是裁剪面）：把 16 位
+    ``near_mm``/``far_mm`` 取的是**这一帧实际命中的最近/最远深度**（不是裁剪面）：把 16 位
     全部铺在真正用到的那段量程上，精度最高。代价是两端随机位变，所以它们必须随
     :class:`~render3d_worker.models.BaseRenderViews` 带出去——没有这两个数，图只是相对
-    明暗，还原不回米。
+    明暗，还原不回毫米。
 
     还原公式（下游照抄）::
 
         v = png[y, x]                       # uint16
         有几何 = v >= 1
         brightness = (v - 1) / 65534.0
-        depth_m = near_m + (1 - brightness) * (far_m - near_m)
+        depth_mm = near_mm + (1 - brightness) * (far_mm - near_mm)
     """
     hit = buffers.hit_mask
     height_px, width_px = buffers.id_buffer.shape
@@ -1754,17 +1762,17 @@ def _encode_depth_png(buffers: RasterBuffers) -> tuple[float, float, bytes]:
         zeros = np.zeros((height_px, width_px), dtype=np.uint16)
         return 0.0, 0.0, _encode_png(Image.fromarray(zeros))
 
-    depth_m = buffers.depth_m.astype(np.float64)
-    near_m = float(depth_m[hit].min())
-    far_m = float(depth_m[hit].max())
-    if far_m - near_m < DEPTH_MIN_SPAN_M:
-        far_m = near_m + DEPTH_MIN_SPAN_M
+    depth_mm = buffers.depth_mm.astype(np.float64)
+    near_mm = float(depth_mm[hit].min())
+    far_mm = float(depth_mm[hit].max())
+    if far_mm - near_mm < DEPTH_MIN_SPAN_MM:
+        far_mm = near_mm + DEPTH_MIN_SPAN_MM
 
-    normalized = np.clip((depth_m - near_m) / (far_m - near_m), 0.0, 1.0)
+    normalized = np.clip((depth_mm - near_mm) / (far_mm - near_mm), 0.0, 1.0)
     span_u16 = float(DEPTH_MAX_U16 - DEPTH_MIN_U16)
     value = DEPTH_MIN_U16 + np.rint((1.0 - normalized) * span_u16)
     depth_u16 = np.where(hit, value, float(DEPTH_BACKGROUND_U16)).astype(np.uint16)
-    return near_m, far_m, _encode_png(Image.fromarray(depth_u16))
+    return near_mm, far_mm, _encode_png(Image.fromarray(depth_u16))
 
 
 def _encode_line_png(buffers: RasterBuffers, screen: _ScreenGeometry) -> bytes:
@@ -1785,7 +1793,7 @@ def _encode_line_png(buffers: RasterBuffers, screen: _ScreenGeometry) -> bytes:
     """
     id_buffer = buffers.id_buffer
     hit = buffers.hit_mask
-    depth_m = buffers.depth_m.astype(np.float64)
+    depth_mm = buffers.depth_mm.astype(np.float64)
     edge = np.zeros(id_buffer.shape, dtype=bool)
 
     edge[:, :-1] |= id_buffer[:, :-1] != id_buffer[:, 1:]
@@ -1793,16 +1801,16 @@ def _encode_line_png(buffers: RasterBuffers, screen: _ScreenGeometry) -> bytes:
 
     edge[:, :-1] |= _depth_break(
         screen.normal_view_xyz[:, :-1],
-        screen.position_view_m[:, :-1],
+        screen.position_view_mm[:, :-1],
         screen.ray_view_xyz[:, 1:],
-        depth_m[:, 1:],
+        depth_mm[:, 1:],
         hit[:, :-1] & hit[:, 1:],
     )
     edge[:-1, :] |= _depth_break(
         screen.normal_view_xyz[:-1, :],
-        screen.position_view_m[:-1, :],
+        screen.position_view_mm[:-1, :],
         screen.ray_view_xyz[1:, :],
-        depth_m[1:, :],
+        depth_mm[1:, :],
         hit[:-1, :] & hit[1:, :],
     )
 
@@ -1812,9 +1820,9 @@ def _encode_line_png(buffers: RasterBuffers, screen: _ScreenGeometry) -> bytes:
 
 def _depth_break(
     normal_view_xyz: Float64Array,
-    position_view_m: Float64Array,
+    position_view_mm: Float64Array,
     neighbour_ray_xyz: Float64Array,
-    neighbour_depth_m: Float64Array,
+    neighbour_depth_mm: Float64Array,
     both_hit: npt.NDArray[np.bool_],
 ) -> npt.NDArray[np.bool_]:
     """当前像素所在平面外推到邻居视线上，预测深度对不上就是断开。
@@ -1823,16 +1831,16 @@ def _depth_break(
     预测值发散，判为断开是对的，不是数值意外。
     """
     denom = np.einsum("hwi,hwi->hw", normal_view_xyz, neighbour_ray_xyz)
-    numer = np.einsum("hwi,hwi->hw", normal_view_xyz, position_view_m)
+    numer = np.einsum("hwi,hwi->hw", normal_view_xyz, position_view_mm)
     usable = np.abs(denom) > 1e-9
     with np.errstate(divide="ignore", invalid="ignore"):
-        predicted_m = np.where(usable, numer / np.where(usable, denom, 1.0), 0.0)
-    residual_m = np.abs(neighbour_depth_m - predicted_m)
+        predicted_mm = np.where(usable, numer / np.where(usable, denom, 1.0), 0.0)
+    residual_mm = np.abs(neighbour_depth_mm - predicted_mm)
     continuous = (
         usable
-        & (predicted_m > 0.0)
-        & np.isfinite(residual_m)
-        & (residual_m <= LINE_DEPTH_TOLERANCE_RATIO * neighbour_depth_m)
+        & (predicted_mm > 0.0)
+        & np.isfinite(residual_mm)
+        & (residual_mm <= LINE_DEPTH_TOLERANCE_RATIO * neighbour_depth_mm)
     )
     return np.asarray(both_hit & ~continuous, dtype=np.bool_)
 
@@ -1863,16 +1871,16 @@ class _OpeningFrame:
     along_axis: int
     """洞口宽度沿哪根世界轴：0 ＝ x、1 ＝ y。另一根轴就是墙厚方向。"""
 
-    along_m: tuple[float, float]
-    across_m: tuple[float, float]
+    along_mm: tuple[float, float]
+    across_mm: tuple[float, float]
     """墙厚方向上墙的两张面（洞壁沿墙厚的起讫）。符号大多画在两者的中点（墙厚中心平面），
     窗台线画在朝相机那一面上。"""
 
-    z_m: tuple[float, float]
+    z_mm: tuple[float, float]
 
     @property
-    def across_center_m(self) -> float:
-        return (self.across_m[0] + self.across_m[1]) * 0.5
+    def across_center_mm(self) -> float:
+        return (self.across_mm[0] + self.across_mm[1]) * 0.5
 
 
 _Segment = tuple[Float64Array, Float64Array]
@@ -1903,7 +1911,7 @@ def _encode_sketch_png(
     """
     semantic = _sketch_semantic_code_of_index(scene)[buffers.id_buffer + 1]
     hit = buffers.hit_mask
-    depth_m = buffers.depth_m.astype(np.float64)
+    depth_mm = buffers.depth_mm.astype(np.float64)
     canvas = np.zeros(buffers.id_buffer.shape, dtype=np.bool_)
 
     mark_a, mark_b = _sketch_pair_marks(
@@ -1911,12 +1919,12 @@ def _encode_sketch_png(
         semantic[:, 1:],
         hit[:, :-1],
         hit[:, 1:],
-        depth_m[:, :-1],
-        depth_m[:, 1:],
+        depth_mm[:, :-1],
+        depth_mm[:, 1:],
         screen.normal_view_xyz[:, :-1],
         screen.normal_view_xyz[:, 1:],
-        screen.position_view_m[:, :-1],
-        screen.position_view_m[:, 1:],
+        screen.position_view_mm[:, :-1],
+        screen.position_view_mm[:, 1:],
         screen.ray_view_xyz[:, :-1],
         screen.ray_view_xyz[:, 1:],
     )
@@ -1928,12 +1936,12 @@ def _encode_sketch_png(
         semantic[1:, :],
         hit[:-1, :],
         hit[1:, :],
-        depth_m[:-1, :],
-        depth_m[1:, :],
+        depth_mm[:-1, :],
+        depth_mm[1:, :],
         screen.normal_view_xyz[:-1, :],
         screen.normal_view_xyz[1:, :],
-        screen.position_view_m[:-1, :],
-        screen.position_view_m[1:, :],
+        screen.position_view_mm[:-1, :],
+        screen.position_view_mm[1:, :],
         screen.ray_view_xyz[:-1, :],
         screen.ray_view_xyz[1:, :],
     )
@@ -1947,22 +1955,22 @@ def _encode_sketch_png(
 
 def _plane_residual_ratio(
     normal_view_xyz: Float64Array,
-    position_view_m: Float64Array,
+    position_view_mm: Float64Array,
     neighbour_ray_xyz: Float64Array,
-    neighbour_depth_m: Float64Array,
+    neighbour_depth_mm: Float64Array,
     both_hit: npt.NDArray[np.bool_],
 ) -> Float64Array:
     """当前像素所在平面外推到邻居视线上，预测深度与邻居实测深度的相对残差；外推不成立
     （掠射、外推到相机背后、任一侧没打到几何）记 ``inf``。与 :func:`_depth_break` 是同一个
     几何量，只是这里要的是数不是布尔——控制稿要拿它分"相接"与"遮挡"。"""
     denom = np.einsum("hwi,hwi->hw", normal_view_xyz, neighbour_ray_xyz)
-    numer = np.einsum("hwi,hwi->hw", normal_view_xyz, position_view_m)
+    numer = np.einsum("hwi,hwi->hw", normal_view_xyz, position_view_mm)
     usable = both_hit & (np.abs(denom) > 1e-9)
     with np.errstate(divide="ignore", invalid="ignore"):
-        predicted_m = np.where(usable, numer / np.where(usable, denom, 1.0), 0.0)
-        safe_depth_m = np.where(both_hit & (neighbour_depth_m > 0.0), neighbour_depth_m, 1.0)
-        ratio = np.abs(neighbour_depth_m - predicted_m) / safe_depth_m
-    valid = usable & (predicted_m > 0.0) & np.isfinite(ratio)
+        predicted_mm = np.where(usable, numer / np.where(usable, denom, 1.0), 0.0)
+        safe_depth_mm = np.where(both_hit & (neighbour_depth_mm > 0.0), neighbour_depth_mm, 1.0)
+        ratio = np.abs(neighbour_depth_mm - predicted_mm) / safe_depth_mm
+    valid = usable & (predicted_mm > 0.0) & np.isfinite(ratio)
     return np.asarray(np.where(valid, ratio, np.inf), dtype=np.float64)
 
 
@@ -1971,12 +1979,12 @@ def _sketch_pair_marks(
     semantic_b: npt.NDArray[np.int8],
     hit_a: npt.NDArray[np.bool_],
     hit_b: npt.NDArray[np.bool_],
-    depth_a_m: Float64Array,
-    depth_b_m: Float64Array,
+    depth_a_mm: Float64Array,
+    depth_b_mm: Float64Array,
     normal_a_xyz: Float64Array,
     normal_b_xyz: Float64Array,
-    position_a_m: Float64Array,
-    position_b_m: Float64Array,
+    position_a_mm: Float64Array,
+    position_b_mm: Float64Array,
     ray_a_xyz: Float64Array,
     ray_b_xyz: Float64Array,
 ) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.bool_]]:
@@ -2003,8 +2011,12 @@ def _sketch_pair_marks(
     same_plane = both_hit & (
         np.einsum("hwi,hwi->hw", normal_a_xyz, normal_b_xyz) >= (SKETCH_SAME_PLANE_COS)
     )
-    residual_ab = _plane_residual_ratio(normal_a_xyz, position_a_m, ray_b_xyz, depth_b_m, both_hit)
-    residual_ba = _plane_residual_ratio(normal_b_xyz, position_b_m, ray_a_xyz, depth_a_m, both_hit)
+    residual_ab = _plane_residual_ratio(
+        normal_a_xyz, position_a_mm, ray_b_xyz, depth_b_mm, both_hit
+    )
+    residual_ba = _plane_residual_ratio(
+        normal_b_xyz, position_b_mm, ray_a_xyz, depth_a_mm, both_hit
+    )
     contiguous = both_hit & (
         (residual_ab <= SKETCH_CONTIGUITY_TOLERANCE_RATIO)
         | (residual_ba <= SKETCH_CONTIGUITY_TOLERANCE_RATIO)
@@ -2023,11 +2035,11 @@ def _sketch_pair_marks(
         | (occlusion & ~both_floor)
         | (fold & ~ceiling_involved & ~both_floor)
     )
-    choose_a = hit_a & (~hit_b | (depth_a_m <= depth_b_m))
+    choose_a = hit_a & (~hit_b | (depth_a_mm <= depth_b_mm))
     return np.asarray(draw & choose_a, dtype=np.bool_), np.asarray(draw & ~choose_a, dtype=np.bool_)
 
 
-def _reveal_along_axis(mesh_id: str, verts_m: Float64Array, triangles: Float64Array) -> int:
+def _reveal_along_axis(mesh_id: str, verts_mm: Float64Array, triangles: Float64Array) -> int:
     """洞口套框的宽度沿哪根轴：套框的两侧洞壁是竖直面、法向沿墙走向，找到一张竖直面即得。"""
     edge_a = triangles[:, 1] - triangles[:, 0]
     edge_b = triangles[:, 2] - triangles[:, 0]
@@ -2080,7 +2092,7 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
         parts = mesh.id.split(":")
         if not mesh.vertices or not mesh.triangles:
             continue
-        verts_m = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3)
+        verts_mm = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3)
         if parts[0] == "reveal" and len(parts) >= 2:
             id_kind = parts[1]
             if id_kind not in _OPENING_KINDS:
@@ -2089,54 +2101,54 @@ def _opening_frames(scene: ScenePackage) -> list[_OpeningFrame]:
                 )
             kind = _kind_from_table_or(scene_kinds, parts[-1], id_kind)
             index = np.asarray(mesh.triangles, dtype=np.int64).reshape(-1, 3)
-            along_axis = _reveal_along_axis(mesh.id, verts_m, verts_m[index])
+            along_axis = _reveal_along_axis(mesh.id, verts_mm, verts_mm[index])
             across_axis = 1 - along_axis
             frames.append(
                 _OpeningFrame(
                     kind=kind,
                     along_axis=along_axis,
-                    along_m=(
-                        float(verts_m[:, along_axis].min()),
-                        float(verts_m[:, along_axis].max()),
+                    along_mm=(
+                        float(verts_mm[:, along_axis].min()),
+                        float(verts_mm[:, along_axis].max()),
                     ),
-                    across_m=(
-                        float(verts_m[:, across_axis].min()),
-                        float(verts_m[:, across_axis].max()),
+                    across_mm=(
+                        float(verts_mm[:, across_axis].min()),
+                        float(verts_mm[:, across_axis].max()),
                     ),
-                    z_m=(float(verts_m[:, 2].min()), float(verts_m[:, 2].max())),
+                    z_mm=(float(verts_mm[:, 2].min()), float(verts_mm[:, 2].max())),
                 )
             )
         elif len(parts) >= 4 and parts[0] == "wall" and parts[1] == "fill":
-            fills.setdefault(parts[2], {})[parts[3]] = verts_m
+            fills.setdefault(parts[2], {})[parts[3]] = verts_mm
 
     for opening_index, blocks in fills.items():
-        lintel_m = blocks.get("lintel")
-        if lintel_m is None:
+        lintel_mm = blocks.get("lintel")
+        if lintel_mm is None:
             # 过梁块薄到没起体（洞顶就是天花）：这个洞从地面通到天花，没有框可挂符号，
             # 洞口轮廓本身照样由折边与遮挡边画出来。
             continue
-        extent_m = lintel_m.max(axis=0) - lintel_m.min(axis=0)
+        extent_mm = lintel_mm.max(axis=0) - lintel_mm.min(axis=0)
         # 过梁块的两条水平边里长的是洞宽、短的是墙厚——补出来的块厚度抄的是邻墙
         # （真户型实测墙厚 0.1～0.3 m，门洞宽 0.7～1.0 m），洞比墙厚是户型的常态。
-        along_axis = 0 if float(extent_m[0]) >= float(extent_m[1]) else 1
+        along_axis = 0 if float(extent_mm[0]) >= float(extent_mm[1]) else 1
         across_axis = 1 - along_axis
-        sill_m = blocks.get("sill")
-        z_bottom_m = float(sill_m[:, 2].max()) if sill_m is not None else 0.0
+        sill_mm = blocks.get("sill")
+        z_bottom_mm = float(sill_mm[:, 2].max()) if sill_mm is not None else 0.0
         frames.append(
             _OpeningFrame(
                 kind=_kind_from_table_or(
-                    scene_kinds, opening_index, "window" if sill_m is not None else "door"
+                    scene_kinds, opening_index, "window" if sill_mm is not None else "door"
                 ),
                 along_axis=along_axis,
-                along_m=(
-                    float(lintel_m[:, along_axis].min()),
-                    float(lintel_m[:, along_axis].max()),
+                along_mm=(
+                    float(lintel_mm[:, along_axis].min()),
+                    float(lintel_mm[:, along_axis].max()),
                 ),
-                across_m=(
-                    float(lintel_m[:, across_axis].min()),
-                    float(lintel_m[:, across_axis].max()),
+                across_mm=(
+                    float(lintel_mm[:, across_axis].min()),
+                    float(lintel_mm[:, across_axis].max()),
                 ),
-                z_m=(z_bottom_m, float(lintel_m[:, 2].min())),
+                z_mm=(z_bottom_mm, float(lintel_mm[:, 2].min())),
             )
         )
     return frames
@@ -2164,26 +2176,28 @@ def _opening_symbol_segments(
     raise BaseRenderError(f"洞口种类 {frame.kind} 没有控制稿符号；认得的：{_OPENING_KINDS}")
 
 
-def _frame_point(frame: _OpeningFrame, along_m: float, z_m: float, across_m: float) -> Float64Array:
+def _frame_point(
+    frame: _OpeningFrame, along_mm: float, z_mm: float, across_mm: float
+) -> Float64Array:
     xyz = np.zeros(3, dtype=np.float64)
-    xyz[frame.along_axis] = along_m
-    xyz[1 - frame.along_axis] = across_m
-    xyz[2] = z_m
+    xyz[frame.along_axis] = along_mm
+    xyz[1 - frame.along_axis] = across_mm
+    xyz[2] = z_mm
     return xyz
 
 
 def _rect_segments(
     frame: _OpeningFrame,
-    along_m: tuple[float, float],
-    z_m: tuple[float, float],
+    along_mm: tuple[float, float],
+    z_mm: tuple[float, float],
     with_bottom: bool,
 ) -> list[_Segment]:
     """墙厚中心平面上的矩形：两根竖边 + 顶边，``with_bottom`` 才有底边（门的底边在地面上，
     那是门槛线，不画）。矩形退化（宽或高不为正）就一条也不画。"""
-    (a0, a1), (z0, z1) = along_m, z_m
+    (a0, a1), (z0, z1) = along_mm, z_mm
     if a1 <= a0 or z1 <= z0:
         return []
-    c = frame.across_center_m
+    c = frame.across_center_mm
     segments: list[_Segment] = [
         (_frame_point(frame, a0, z0, c), _frame_point(frame, a0, z1, c)),
         (_frame_point(frame, a1, z0, c), _frame_point(frame, a1, z1, c)),
@@ -2194,96 +2208,98 @@ def _rect_segments(
     return segments
 
 
-def _inner_rect_m(
+def _inner_rect_mm(
     frame: _OpeningFrame,
 ) -> tuple[tuple[float, float], tuple[float, float]]:
-    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
-    inset = SKETCH_FRAME_INSET_M
+    (a0, a1), (z0, z1) = frame.along_mm, frame.z_mm
+    inset = SKETCH_FRAME_INSET_MM
     return (a0 + inset, a1 - inset), (z0 + inset, z1 - inset)
 
 
 def _sill_segment(frame: _OpeningFrame, viewer_across_sign: float) -> _Segment:
     """窗台线：洞下沿再向下一小段、两端各伸出洞宽一点，画在朝相机那一面的墙面上（画在墙厚
     中心平面会被窗下墙自己挡住）。"""
-    (a0, a1), z0 = frame.along_m, frame.z_m[0]
-    face_m = frame.across_m[1] if viewer_across_sign >= 0.0 else frame.across_m[0]
-    z_m = z0 - SKETCH_SILL_DROP_M
+    (a0, a1), z0 = frame.along_mm, frame.z_mm[0]
+    face_mm = frame.across_mm[1] if viewer_across_sign >= 0.0 else frame.across_mm[0]
+    z_mm = z0 - SKETCH_SILL_DROP_MM
     return (
-        _frame_point(frame, a0 - SKETCH_SILL_OVERHANG_M, z_m, face_m),
-        _frame_point(frame, a1 + SKETCH_SILL_OVERHANG_M, z_m, face_m),
+        _frame_point(frame, a0 - SKETCH_SILL_OVERHANG_MM, z_mm, face_mm),
+        _frame_point(frame, a1 + SKETCH_SILL_OVERHANG_MM, z_mm, face_mm),
     )
 
 
 def _window_symbol_segments(
     frame: _OpeningFrame, scheme: SketchSymbolScheme, viewer_across_sign: float
 ) -> list[_Segment]:
-    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
-    c = frame.across_center_m
+    (a0, a1), (z0, z1) = frame.along_mm, frame.z_mm
+    c = frame.across_center_mm
     if scheme == "diagonal-cross":
-        mid_along_m = (a0 + a1) * 0.5
-        mid_z_m = (z0 + z1) * 0.5
+        mid_along_mm = (a0 + a1) * 0.5
+        mid_z_mm = (z0 + z1) * 0.5
         return [
-            (_frame_point(frame, mid_along_m, z0, c), _frame_point(frame, mid_along_m, z1, c)),
-            (_frame_point(frame, a0, mid_z_m, c), _frame_point(frame, a1, mid_z_m, c)),
+            (_frame_point(frame, mid_along_mm, z0, c), _frame_point(frame, mid_along_mm, z1, c)),
+            (_frame_point(frame, a0, mid_z_mm, c), _frame_point(frame, a1, mid_z_mm, c)),
         ]
-    inner_along_m, inner_z_m = _inner_rect_m(frame)
-    segments = _rect_segments(frame, frame.along_m, frame.z_m, with_bottom=True)
-    segments += _rect_segments(frame, inner_along_m, inner_z_m, with_bottom=True)
+    inner_along_mm, inner_z_mm = _inner_rect_mm(frame)
+    segments = _rect_segments(frame, frame.along_mm, frame.z_mm, with_bottom=True)
+    segments += _rect_segments(frame, inner_along_mm, inner_z_mm, with_bottom=True)
     if scheme in ("frame-sill", "frame-handle"):
         segments.append(_sill_segment(frame, viewer_across_sign))
         return segments
     if scheme == "glazing-hatch":
-        (g0, g1), (gz0, gz1) = inner_along_m, inner_z_m
-        width_m, height_m = g1 - g0, gz1 - gz0
-        if width_m <= 0.0 or height_m <= 0.0:
+        (g0, g1), (gz0, gz1) = inner_along_mm, inner_z_mm
+        width_mm, height_mm = g1 - g0, gz1 - gz0
+        if width_mm <= 0.0 or height_mm <= 0.0:
             return segments
-        step_m = SKETCH_HATCH_LENGTH_RATIO * min(width_m, height_m) * math.cos(math.radians(45.0))
+        step_mm = (
+            SKETCH_HATCH_LENGTH_RATIO * min(width_mm, height_mm) * math.cos(math.radians(45.0))
+        )
         for along_ratio in (0.18, 0.34, 0.50):
-            start_along_m = g0 + width_m * along_ratio
-            start_z_m = gz0 + height_m * 0.55
+            start_along_mm = g0 + width_mm * along_ratio
+            start_z_mm = gz0 + height_mm * 0.55
             segments.append(
                 (
-                    _frame_point(frame, start_along_m, start_z_m, c),
-                    _frame_point(frame, start_along_m + step_m, start_z_m + step_m, c),
+                    _frame_point(frame, start_along_mm, start_z_mm, c),
+                    _frame_point(frame, start_along_mm + step_mm, start_z_mm + step_mm, c),
                 )
             )
         return segments
     if scheme == "leaf-swing":
         segments.append(_sill_segment(frame, viewer_across_sign))
-        mid_along_m = (a0 + a1) * 0.5
+        mid_along_mm = (a0 + a1) * 0.5
         segments.append(
-            (_frame_point(frame, mid_along_m, z0, c), _frame_point(frame, mid_along_m, z1, c))
+            (_frame_point(frame, mid_along_mm, z0, c), _frame_point(frame, mid_along_mm, z1, c))
         )
         return segments
     raise BaseRenderError(f"控制稿符号方案认不出：{scheme}；认得的：{SKETCH_SYMBOL_SCHEMES}")
 
 
 def _door_leaf_line_segments(frame: _OpeningFrame) -> list[_Segment]:
-    """门扇线：离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_M` 的一条通高竖线，
+    """门扇线：离沿墙坐标小的那侧洞边 :data:`SKETCH_DOOR_LEAF_OFFSET_MM` 的一条通高竖线，
     墙厚中心平面上；洞比这个偏移还窄就不画。"""
-    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
-    c = frame.across_center_m
-    leaf_along_m = a0 + SKETCH_DOOR_LEAF_OFFSET_M
-    if leaf_along_m >= a1:
+    (a0, a1), (z0, z1) = frame.along_mm, frame.z_mm
+    c = frame.across_center_mm
+    leaf_along_mm = a0 + SKETCH_DOOR_LEAF_OFFSET_MM
+    if leaf_along_mm >= a1:
         return []
-    return [(_frame_point(frame, leaf_along_m, z0, c), _frame_point(frame, leaf_along_m, z1, c))]
+    return [(_frame_point(frame, leaf_along_mm, z0, c), _frame_point(frame, leaf_along_mm, z1, c))]
 
 
 def _door_handle_segments(frame: _OpeningFrame) -> list[_Segment]:
-    """门把手：离沿墙坐标大的那侧洞边 :data:`SKETCH_DOOR_HANDLE_EDGE_M`、长
-    :data:`SKETCH_DOOR_HANDLE_LENGTH_M`、离地 :data:`SKETCH_DOOR_HANDLE_HEIGHT_M` 的一条短横，
+    """门把手：离沿墙坐标大的那侧洞边 :data:`SKETCH_DOOR_HANDLE_EDGE_MM`、长
+    :data:`SKETCH_DOOR_HANDLE_LENGTH_MM`、离地 :data:`SKETCH_DOOR_HANDLE_HEIGHT_MM` 的一条短横，
     墙厚中心平面上；洞太窄或太矮放不下就不画。"""
-    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
-    c = frame.across_center_m
-    handle_z_m = z0 + SKETCH_DOOR_HANDLE_HEIGHT_M
-    handle_to_m = a1 - SKETCH_DOOR_HANDLE_EDGE_M
-    handle_from_m = max(a0, handle_to_m - SKETCH_DOOR_HANDLE_LENGTH_M)
-    if handle_from_m >= handle_to_m or handle_z_m >= z1:
+    (a0, a1), (z0, z1) = frame.along_mm, frame.z_mm
+    c = frame.across_center_mm
+    handle_z_mm = z0 + SKETCH_DOOR_HANDLE_HEIGHT_MM
+    handle_to_mm = a1 - SKETCH_DOOR_HANDLE_EDGE_MM
+    handle_from_mm = max(a0, handle_to_mm - SKETCH_DOOR_HANDLE_LENGTH_MM)
+    if handle_from_mm >= handle_to_mm or handle_z_mm >= z1:
         return []
     return [
         (
-            _frame_point(frame, handle_from_m, handle_z_m, c),
-            _frame_point(frame, handle_to_m, handle_z_m, c),
+            _frame_point(frame, handle_from_mm, handle_z_mm, c),
+            _frame_point(frame, handle_to_mm, handle_z_mm, c),
         )
     ]
 
@@ -2291,11 +2307,11 @@ def _door_handle_segments(frame: _OpeningFrame) -> list[_Segment]:
 def _door_symbol_segments(
     frame: _OpeningFrame, scheme: SketchSymbolScheme, viewer_across_sign: float
 ) -> list[_Segment]:
-    (a0, a1), (z0, z1) = frame.along_m, frame.z_m
-    c = frame.across_center_m
+    (a0, a1), (z0, z1) = frame.along_mm, frame.z_mm
+    c = frame.across_center_mm
     if scheme == "diagonal-cross":
         return [(_frame_point(frame, a0, z0, c), _frame_point(frame, a1, z1, c))]
-    segments = _rect_segments(frame, frame.along_m, frame.z_m, with_bottom=False)
+    segments = _rect_segments(frame, frame.along_mm, frame.z_mm, with_bottom=False)
     if scheme in ("frame-sill", "frame-handle"):
         segments += _door_leaf_line_segments(frame)
     if scheme in ("glazing-hatch", "frame-handle"):
@@ -2303,15 +2319,15 @@ def _door_symbol_segments(
     if scheme in ("frame-sill", "glazing-hatch", "frame-handle"):
         return segments
     if scheme == "leaf-swing":
-        width_m = a1 - a0
+        width_mm = a1 - a0
         swing = math.radians(SKETCH_DOOR_SWING_DEG)
         sign = 1.0 if viewer_across_sign >= 0.0 else -1.0
-        free_along_m = a0 + width_m * math.cos(swing)
-        free_across_m = c + sign * width_m * math.sin(swing)
+        free_along_mm = a0 + width_mm * math.cos(swing)
+        free_across_mm = c + sign * width_mm * math.sin(swing)
         hinge_bottom = _frame_point(frame, a0, z0, c)
         hinge_top = _frame_point(frame, a0, z1, c)
-        free_bottom = _frame_point(frame, free_along_m, z0, free_across_m)
-        free_top = _frame_point(frame, free_along_m, z1, free_across_m)
+        free_bottom = _frame_point(frame, free_along_mm, z0, free_across_mm)
+        free_top = _frame_point(frame, free_along_mm, z1, free_across_mm)
         segments += [(hinge_bottom, free_bottom), (hinge_top, free_top), (free_bottom, free_top)]
         return segments
     raise BaseRenderError(f"控制稿符号方案认不出：{scheme}；认得的：{SKETCH_SYMBOL_SCHEMES}")
@@ -2327,22 +2343,22 @@ def _draw_opening_symbols(
     scheme: SketchSymbolScheme,
 ) -> None:
     for frame in _opening_frames(scene):
-        eye_across_m = float(pose.eye_m[1 - frame.along_axis])
-        viewer_across_sign = 1.0 if eye_across_m >= frame.across_center_m else -1.0
-        for start_m, end_m in _opening_symbol_segments(frame, scheme, viewer_across_sign):
+        eye_across_mm = float(pose.eye_mm[1 - frame.along_axis])
+        viewer_across_sign = 1.0 if eye_across_mm >= frame.across_center_mm else -1.0
+        for start_mm, end_mm in _opening_symbol_segments(frame, scheme, viewer_across_sign):
             _draw_segment(
-                canvas, start_m, end_m, view_matrix, proj_matrix, buffers, pose.near_clip_m
+                canvas, start_mm, end_mm, view_matrix, proj_matrix, buffers, pose.near_clip_mm
             )
 
 
 def _draw_segment(
     canvas: npt.NDArray[np.bool_],
-    start_m: Float64Array,
-    end_m: Float64Array,
+    start_mm: Float64Array,
+    end_mm: Float64Array,
     view_matrix: Float64Array,
     proj_matrix: Float64Array,
     buffers: RasterBuffers,
-    near_clip_m: float,
+    near_clip_mm: float,
 ) -> None:
     """把一条世界系线段画进画布：近平面裁剪 → 投影 → 按画幅裁剪 → 逐像素采样 → 深度测试。
 
@@ -2351,24 +2367,24 @@ def _draw_segment(
     采样步长一像素，点数由裁剪后的屏幕长度定，全程无随机。
     """
     height_px, width_px = canvas.shape
-    points_m = np.stack([start_m, end_m]).astype(np.float64)
-    homogeneous = np.concatenate([points_m, np.ones((2, 1), dtype=np.float64)], axis=1)
+    points_mm = np.stack([start_mm, end_mm]).astype(np.float64)
+    homogeneous = np.concatenate([points_mm, np.ones((2, 1), dtype=np.float64)], axis=1)
     view_xyz = (homogeneous @ view_matrix.T)[:, :3]
-    signed_m = -view_xyz[:, 2] - near_clip_m
-    inside = signed_m >= 0.0
+    signed_mm = -view_xyz[:, 2] - near_clip_mm
+    inside = signed_mm >= 0.0
     if not bool(inside.any()):
         return
     if not bool(inside.all()):
         kept, cut = (0, 1) if bool(inside[0]) else (1, 0)
-        ratio = float(signed_m[kept] / (signed_m[kept] - signed_m[cut]))
+        ratio = float(signed_mm[kept] / (signed_mm[kept] - signed_mm[cut]))
         view_xyz[cut] = view_xyz[kept] + ratio * (view_xyz[cut] - view_xyz[kept])
 
     clip = np.concatenate([view_xyz, np.ones((2, 1), dtype=np.float64)], axis=1) @ proj_matrix.T
-    w_m = clip[:, 3]
-    if not bool(np.all(w_m > 0.0)) or not bool(np.isfinite(clip).all()):
+    w_mm = clip[:, 3]
+    if not bool(np.all(w_mm > 0.0)) or not bool(np.isfinite(clip).all()):
         return
-    x_px = (clip[:, 0] / w_m + 1.0) * 0.5 * width_px
-    y_px = (1.0 - clip[:, 1] / w_m) * 0.5 * height_px
+    x_px = (clip[:, 0] / w_mm + 1.0) * 0.5 * width_px
+    y_px = (1.0 - clip[:, 1] / w_mm) * 0.5 * height_px
 
     # Liang–Barsky：把参数 t 裁到画幅内，裁剪后的 t 仍是屏幕空间的参数，1/w 照样按它线性插
     dx_px, dy_px = float(x_px[1] - x_px[0]), float(y_px[1] - y_px[0])
@@ -2396,12 +2412,12 @@ def _draw_segment(
     t = t_from + (t_to - t_from) * np.linspace(0.0, 1.0, sample_count, dtype=np.float64)
     column = np.clip(np.floor(x_px[0] + t * dx_px).astype(np.int64), 0, width_px - 1)
     row = np.clip(np.floor(y_px[0] + t * dy_px).astype(np.int64), 0, height_px - 1)
-    inverse_w = (1.0 - t) / w_m[0] + t / w_m[1]
-    sample_depth_m = 1.0 / inverse_w
+    inverse_w = (1.0 - t) / w_mm[0] + t / w_mm[1]
+    sample_depth_mm = 1.0 / inverse_w
 
-    buffer_depth_m = buffers.depth_m[row, column].astype(np.float64)
-    visible = ~np.isfinite(buffer_depth_m) | (
-        sample_depth_m <= buffer_depth_m * (1.0 + SKETCH_SYMBOL_DEPTH_TOLERANCE_RATIO)
+    buffer_depth_mm = buffers.depth_mm[row, column].astype(np.float64)
+    visible = ~np.isfinite(buffer_depth_mm) | (
+        sample_depth_mm <= buffer_depth_mm * (1.0 + SKETCH_SYMBOL_DEPTH_TOLERANCE_RATIO)
     )
     canvas[row[visible], column[visible]] = True
 

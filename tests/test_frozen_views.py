@@ -7,6 +7,22 @@
 四路一个字节都不许变：线稿是保真度尺子的输入，深度/遮罩是被当数据读的，几何是写实化的参考。
 控制稿是**另出的一路**，不是改出来的。这条测试红了，先问"是谁动了四路"，不是改基线；
 真要改判（比如几何路观感提档），改这儿的数并在提交信息里说清楚。
+
+## 2026-09-08 换过一次基线：只换 `depth` 一路，只因量纲改毫米
+
+用户裁决 2026-09-08 把内部数据的长度量纲从米改成毫米（*"我们所有的单位都改成毫米。
+除了给用户展示的部分"*）。**几何/线稿/遮罩三路 11 台相机全部逐字节不变**——形状、边、
+索引都不是浮点末位说了算的东西，量纲换了它们一个字节都没动，这也正是"这次只换了单位、
+没换几何"的证据。
+
+`depth` 那一路换了 5 台（本表 `cam-bird-overview` / `cam-room-厨房` / `cam-room-餐厅`，
+下表 `bird-整户` / `room-客厅-广角`）。原因：深度存的是 16 位归一化值，归一化的分子分母
+现在都是毫米制浮点，末位舍入跟米制时不同。**差多少量过**：改前改后逐像素比，不同的像素
+最多 0.65%，且每一个的差都**正好是 1**（量程 65535，即 0.0015%）。这是量化末位的抖动，
+不是几何变了——真变了形状，`line` 与 `mask` 不可能一个字节都不动。
+
+所以这次换基线是**记录一次已知的量纲改动**，不是放宽这条锁：往后这四路再红，仍然先问
+"是谁动了四路"。
 """
 
 from __future__ import annotations
@@ -36,7 +52,7 @@ FIXTURE_HEIGHT_PX = 240
 FIXTURE_BASELINE_SHA256: dict[str, tuple[str, str, str, str]] = {
     "cam-bird-overview": (
         "07247b1a45c40cd229b32642d39988d354526c21ff82f8f5f0a0e8c94e381084",
-        "502d1c6b5c56538b2f6338eea1c7dc8470f59a27d4556a862cfbcc9089987e93",
+        "fb07ea3bb6e6b63ace58df10dc71dd9a09c14138232a3f47769a9a6a303cb072",
         "43d5713321bb91d0e1276fd46b69098b2ddbbd0bf727b01a070e5abc26b45af9",
         "572acf2b50032eeee01f2283abf7c910b320f53352ae0a9d034a7585b6e869bd",
     ),
@@ -54,13 +70,13 @@ FIXTURE_BASELINE_SHA256: dict[str, tuple[str, str, str, str]] = {
     ),
     "cam-room-餐厅": (
         "8cc36b04fc671f23acc7aa34662b46961aec40c9740e7a218207b3eb67fcd75b",
-        "2921efe4678698f01584589dc32552a3c362bf4c52100f1e44ea260d2b4e71a4",
+        "6d971bb33a7d61c49c677057a0800177dd87e7e90ca629d41457e4b349d132b7",
         "ab67323144bbbed352ec73b02add201b09b9a9c905cf3a410ca64e1914a804a2",
         "caa1f4415df1e3f6090e8a727d6b403954f0383b7712a72763b595ebcc445206",
     ),
     "cam-room-厨房": (
         "d57334dbea4920b61d2b0d15009e4cb81a94c3ae09ccf0b2a45e9c8b765ed52f",
-        "dd000ade9517f3b5aebc10c272e0a90ea5bd1626c4eac435772dabf260c2fc78",
+        "8a909c2049f99b621cc4a9e3d3d3829c7fd0c6370f409562034ac0d0e9ec8186",
         "ba15dd4de13511816ba59258cd19b563eb029addc9b1ef1a216fd20571b51400",
         "721758c4897b91d9e3d075b4baffc25ccb56f9d469a251f121985c2c28ea3925",
     ),
@@ -88,7 +104,7 @@ FIXTURE_BASELINE_SHA256: dict[str, tuple[str, str, str, str]] = {
 TEST_SCENE_BASELINE_SHA256: dict[str, tuple[str, str, str, str]] = {
     BIRD_CAMERA_ID: (
         "4ca06e3b6d2255aac4d209b992bea0db3590450cc36ccabbf343ebc889291d0a",
-        "4f882f437783bcb710ed8e55e43b453ee78cbd3be1b63d79ab92ca422092bd13",
+        "68a54d872d5c7205ed14af3fa22b87fbf7837bf24f9b13f568b5975990592954",
         "aeab2dd41ed5492188e020321b34a2ceefd059f1fe31f07c60e2ff5c59d18a9e",
         "34cf0fe76a22647e3b023f893b887cb53cafe23468e22130dfc7be33715c7841",
     ),
@@ -100,7 +116,7 @@ TEST_SCENE_BASELINE_SHA256: dict[str, tuple[str, str, str, str]] = {
     ),
     ROOM_WIDE_CAMERA_ID: (
         "f0b77fedfcf0d94022c2eb8c180c6697ac89859edf1bd8e2ed3ecf2de1b37166",
-        "9a4e0122f86e94cfe0a309ab5827b24064eccf07492d2942ba2b4d92c7f03861",
+        "9654781c4e53b80c362684d031ff899c00b0442239b4256c27757097ea9933ba",
         "420aaa9fcbb5da0698090b46506d8d33a8167207faebd51e10a2e74221b6fc67",
         "3b62a6ea60eff08f721861123cf65972dfade3d90f2132531e6222baa6a5ef52",
     ),

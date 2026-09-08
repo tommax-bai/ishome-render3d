@@ -14,7 +14,7 @@
 2. 深度相等时**先来的赢**（严格 ``<`` 才覆盖），所以共面三角形谁盖住谁只由输入顺序决定；
 3. 全程无随机数、无时间戳、无浮点归约顺序不定的操作（不用 ``np.add.reduceat`` 那类）。
 
-坐标系（与 :class:`~render3d_worker.models.Mesh` 一致）：世界系米制右手系，x 向右、
+坐标系（与 :class:`~render3d_worker.models.Mesh` 一致）：世界系毫米制右手系，x 向右、
 y 向里、z 向上；视空间沿用 OpenGL 惯例——相机在原点、**看向 -z**，所以"正深度"＝ ``-z``。
 """
 
@@ -31,7 +31,7 @@ Float32Array = npt.NDArray[np.float32]
 Int32Array = npt.NDArray[np.int32]
 
 Vector3Like = npt.ArrayLike
-"""三维向量的入参形态：长度 3 的序列或 ndarray。单位由参数名带（``_m`` 即米）。"""
+"""三维向量的入参形态：长度 3 的序列或 ndarray。单位由参数名带（``_mm`` 即毫米）。"""
 
 MISS_MESH_INDEX: int = -1
 """``id_buffer`` 里"这个像素没打到任何几何"的值。取 -1 而不是 0：0 是合法的网格序号。"""
@@ -40,6 +40,20 @@ _DEGENERATE_AREA_PX2 = 1e-12
 """屏幕面积（像素平方）小于它就当退化三角形丢掉——它张不出一个像素，只会把重心坐标除爆。"""
 
 _PARALLEL_EPS = 1e-12
+"""两个方向向量平行（叉乘长度趋零）的判据。**无量纲**：这儿比的是单位向量的叉乘长度，
+不是世上任何一段长度，所以量纲改毫米那一轮（2026-09-08）它一个数量级都没动。"""
+
+_DEGENERATE_LENGTH_MM = 1e-9
+"""相机位置与目标点算作重合的下界（毫米）。
+
+**与 :data:`_PARALLEL_EPS` 分开写是 2026-09-08 量纲改毫米时拆的**：这两个判据原先共用
+一个 `1e-12`，可它们量纲不同——一个比的是无量纲的叉乘长度，一个比的是 `target_mm - eye_mm`
+这段**真实长度**。共用一个数时，长度那一侧跟着量纲一起漂：米制下 1e-12 米，毫米制下
+不拆就成了 1e-12 毫米，等于把判据收紧了一千倍。拆开后各自钉住自己的物理含义——
+1e-9 毫米就是原来的 1e-12 米，**阈值的实际大小一个字没变**。
+
+两个判据都远在任何真实几何之下，今天谁也不会被它们判到；拆开是为了下一次改量纲时
+不必再把这段推理重做一遍（量纲入名，《开发规范》§4.1）。"""
 
 
 @dataclass(frozen=True, eq=False)
@@ -50,8 +64,8 @@ class RasterBuffers:
     没有"相等"这个概念，要比就比具体那一张。
     """
 
-    depth_m: Float32Array
-    """(H, W) 沿相机前向的正深度（米）。**未命中为 ``np.inf``**——取 inf 不取 nan 的理由：
+    depth_mm: Float32Array
+    """(H, W) 沿相机前向的正深度（毫米）。**未命中为 ``np.inf``**——取 inf 不取 nan 的理由：
     z-test 是 ``candidate < existing``，inf 让"空像素永远输"这件事不需要额外分支。"""
 
     id_buffer: Int32Array
@@ -83,8 +97,8 @@ class RasterBuffers:
 
 
 def look_at_matrix(
-    eye_m: Vector3Like,
-    target_m: Vector3Like,
+    eye_mm: Vector3Like,
+    target_mm: Vector3Like,
     up_hint_xyz: Vector3Like = (0.0, 0.0, 1.0),
 ) -> Float64Array:
     """视图矩阵（世界系 → 视空间），OpenGL 惯例：相机落在原点、看向 -z、y 朝上。
@@ -96,13 +110,13 @@ def look_at_matrix(
     改用 **-y** 当提示——理由：那一刻画面就是一张户型图，让平面图的"上方"（-y，因为
     y 向里/在图上向下）落在画面上方，出来的俯视图与用户看惯的户型图朝向一致。
     """
-    eye = np.asarray(eye_m, dtype=np.float64).reshape(3)
-    target = np.asarray(target_m, dtype=np.float64).reshape(3)
+    eye = np.asarray(eye_mm, dtype=np.float64).reshape(3)
+    target = np.asarray(target_mm, dtype=np.float64).reshape(3)
     forward = target - eye
     forward_len = float(np.linalg.norm(forward))
-    if forward_len < _PARALLEL_EPS:
+    if forward_len < _DEGENERATE_LENGTH_MM:
         raise ValueError(
-            f"相机位置与目标点重合，定不出视线：eye_m={eye.tolist()} target_m={target.tolist()}"
+            f"相机位置与目标点重合，定不出视线：eye_mm={eye.tolist()} target_mm={target.tolist()}"
         )
     forward = forward / forward_len
 
@@ -127,123 +141,123 @@ def look_at_matrix(
 
 
 def perspective_matrix(
-    fov_deg: float, aspect_ratio: float, near_m: float, far_m: float
+    fov_deg: float, aspect_ratio: float, near_mm: float, far_mm: float
 ) -> Float64Array:
-    """透视投影矩阵（视空间 → 裁剪空间），OpenGL 惯例：``w = -z``，即 w 就是正深度（米）。
+    """透视投影矩阵（视空间 → 裁剪空间），OpenGL 惯例：``w = -z``，即 w 就是正深度（毫米）。
 
     ``fov_deg`` 是**竖直**张角。横向张角由 ``aspect_ratio`` 撑出来——两个方向除的不是同一个
     数，取景要"框得住"时必须按两者里小的那一个算（见 base_render 的 bird 机位）。
 
-    近平面只影响裁剪，**不影响深度精度**：本模块的深度是视空间米数（``-z``）直接透视校正
+    近平面只影响裁剪，**不影响深度精度**：本模块的深度是视空间毫米数（``-z``）直接透视校正
     插值出来的，不走 NDC 的 z，所以没有"近平面压死远处精度"那套 z-fighting 账。
     """
     if not 0.0 < fov_deg < 180.0:
         raise ValueError(f"竖直张角要落在 (0, 180) 度：fov_deg={fov_deg}")
     if aspect_ratio <= 0.0:
         raise ValueError(f"宽高比必须为正：aspect_ratio={aspect_ratio}")
-    if not 0.0 < near_m < far_m:
-        raise ValueError(f"裁剪面要满足 0 < near < far：near_m={near_m} far_m={far_m}")
+    if not 0.0 < near_mm < far_mm:
+        raise ValueError(f"裁剪面要满足 0 < near < far：near_mm={near_mm} far_mm={far_mm}")
 
     focal_ratio = 1.0 / math.tan(math.radians(fov_deg) * 0.5)
     proj = np.zeros((4, 4), dtype=np.float64)
     proj[0, 0] = focal_ratio / aspect_ratio
     proj[1, 1] = focal_ratio
-    proj[2, 2] = (far_m + near_m) / (near_m - far_m)
-    proj[2, 3] = 2.0 * far_m * near_m / (near_m - far_m)
+    proj[2, 2] = (far_mm + near_mm) / (near_mm - far_mm)
+    proj[2, 3] = 2.0 * far_mm * near_mm / (near_mm - far_mm)
     proj[3, 2] = -1.0
     return proj
 
 
 def orthographic_matrix(
-    half_width_m: float, half_height_m: float, near_m: float, far_m: float
+    half_width_mm: float, half_height_mm: float, near_mm: float, far_mm: float
 ) -> Float64Array:
-    """正交投影矩阵（视空间 → 裁剪空间），画幅以视轴为中心、半宽半高按米给。
+    """正交投影矩阵（视空间 → 裁剪空间），画幅以视轴为中心、半宽半高按毫米给。
 
     要它是因为**平行光没有位置只有方向**：从光源那一侧渲深度图时，透视投影会让阴影
     随"光源摆多远"变形，而平行光本来就摆不出一个远近。正交投影下 ``w`` 恒为 1，
     :func:`rasterize` 里那套透视校正插值退化成线性插值——正是正交该有的样子，
     所以这条路不需要另写一个光栅器。
 
-    没有 ``aspect_ratio`` 参数：半宽半高是两个独立的米数（由要框住的东西定），
+    没有 ``aspect_ratio`` 参数：半宽半高是两个独立的毫米数（由要框住的东西定），
     不是"一个张角配一个比例"。
     """
-    if half_width_m <= 0.0 or half_height_m <= 0.0:
-        raise ValueError(f"正交画幅必须为正：half_width_m={half_width_m} {half_height_m=}")
-    if not 0.0 < near_m < far_m:
-        raise ValueError(f"裁剪面要满足 0 < near < far：near_m={near_m} far_m={far_m}")
+    if half_width_mm <= 0.0 or half_height_mm <= 0.0:
+        raise ValueError(f"正交画幅必须为正：half_width_mm={half_width_mm} {half_height_mm=}")
+    if not 0.0 < near_mm < far_mm:
+        raise ValueError(f"裁剪面要满足 0 < near < far：near_mm={near_mm} far_mm={far_mm}")
 
     proj = np.zeros((4, 4), dtype=np.float64)
-    proj[0, 0] = 1.0 / half_width_m
-    proj[1, 1] = 1.0 / half_height_m
-    proj[2, 2] = -2.0 / (far_m - near_m)
-    proj[2, 3] = -(far_m + near_m) / (far_m - near_m)
+    proj[0, 0] = 1.0 / half_width_mm
+    proj[1, 1] = 1.0 / half_height_mm
+    proj[2, 2] = -2.0 / (far_mm - near_mm)
+    proj[2, 3] = -(far_mm + near_mm) / (far_mm - near_mm)
     proj[3, 3] = 1.0
     return proj
 
 
 def rasterize(
-    triangles_m: npt.ArrayLike,
+    triangles_mm: npt.ArrayLike,
     tri_mesh_ids: npt.ArrayLike,
     view_matrix: Float64Array,
     proj_matrix: Float64Array,
     width_px: int,
     height_px: int,
-    near_m: float,
+    near_mm: float,
 ) -> RasterBuffers:
-    """把三角形画进 z-buffer。``triangles_m`` 形状 (N, 3, 3)，``tri_mesh_ids`` 形状 (N,)。
+    """把三角形画进 z-buffer。``triangles_mm`` 形状 (N, 3, 3)，``tri_mesh_ids`` 形状 (N,)。
 
-    ``near_m`` 是显式参数而不是从 ``proj_matrix`` 反解出来的：反解要假定矩阵长成标准
+    ``near_mm`` 是显式参数而不是从 ``proj_matrix`` 反解出来的：反解要假定矩阵长成标准
     OpenGL 那样，一旦调用方换了投影就悄悄算错。宁可多传一个数。
 
     **近裁剪不是可选项**：相机站在室内时墙一定会穿过近平面，不裁就会有顶点落到 w ≤ 0,
     透视除法把它甩到画面另一侧——屏幕上出现一块翻面的巨大三角形盖住整幅图。这是室内
     软光栅最容易也最难查的一个错，所以裁剪写在最里层、每个三角形都过。
 
-    远平面**不裁**：深度是视空间米数，远处三角形照常光栅、照常写深度，没有必要为了一个
+    远平面**不裁**：深度是视空间毫米数，远处三角形照常光栅、照常写深度，没有必要为了一个
     只影响 NDC z 的常数把几何切掉。
     """
     if width_px <= 0 or height_px <= 0:
         raise ValueError(f"画幅必须为正：width_px={width_px} height_px={height_px}")
-    if near_m <= 0.0:
-        raise ValueError(f"近裁剪面必须为正：near_m={near_m}")
+    if near_mm <= 0.0:
+        raise ValueError(f"近裁剪面必须为正：near_mm={near_mm}")
 
-    tris_m = np.asarray(triangles_m, dtype=np.float64)
-    if tris_m.size == 0:
-        tris_m = tris_m.reshape(0, 3, 3)
-    if tris_m.ndim != 3 or tris_m.shape[1:] != (3, 3):
-        raise ValueError(f"triangles_m 形状必须是 (N, 3, 3)，收到 {tris_m.shape}")
+    tris_mm = np.asarray(triangles_mm, dtype=np.float64)
+    if tris_mm.size == 0:
+        tris_mm = tris_mm.reshape(0, 3, 3)
+    if tris_mm.ndim != 3 or tris_mm.shape[1:] != (3, 3):
+        raise ValueError(f"triangles_mm 形状必须是 (N, 3, 3)，收到 {tris_mm.shape}")
     mesh_ids = np.asarray(tri_mesh_ids, dtype=np.int32).reshape(-1)
-    if mesh_ids.shape[0] != tris_m.shape[0]:
+    if mesh_ids.shape[0] != tris_mm.shape[0]:
         raise ValueError(
-            f"三角形数与网格序号数对不上：triangles={tris_m.shape[0]} ids={mesh_ids.shape[0]}"
+            f"三角形数与网格序号数对不上：triangles={tris_mm.shape[0]} ids={mesh_ids.shape[0]}"
         )
 
-    depth_m = np.full((height_px, width_px), np.inf, dtype=np.float32)
+    depth_mm = np.full((height_px, width_px), np.inf, dtype=np.float32)
     id_buffer = np.full((height_px, width_px), MISS_MESH_INDEX, dtype=np.int32)
     normal_unit_xyz = np.zeros((height_px, width_px, 3), dtype=np.float32)
 
-    if tris_m.shape[0] > 0:
-        verts_view = _to_view_space(tris_m, view_matrix)
-        normals_world = _triangle_unit_normals(tris_m)
-        finite_tri = np.isfinite(tris_m).all(axis=(1, 2))
-        for tri_index in range(tris_m.shape[0]):
+    if tris_mm.shape[0] > 0:
+        verts_view = _to_view_space(tris_mm, view_matrix)
+        normals_world = _triangle_unit_normals(tris_mm)
+        finite_tri = np.isfinite(tris_mm).all(axis=(1, 2))
+        for tri_index in range(tris_mm.shape[0]):
             if not bool(finite_tri[tri_index]):
                 continue
             mesh_index = int(mesh_ids[tri_index])
             normal_u32 = normals_world[tri_index].astype(np.float32)
-            for piece_view in _clip_triangle_near(verts_view[tri_index], near_m):
+            for piece_view in _clip_triangle_near(verts_view[tri_index], near_mm):
                 _fill_triangle(
                     piece_view,
                     mesh_index,
                     normal_u32,
                     proj_matrix,
-                    depth_m,
+                    depth_mm,
                     id_buffer,
                     normal_unit_xyz,
                 )
 
     return RasterBuffers(
-        depth_m=depth_m,
+        depth_mm=depth_mm,
         id_buffer=id_buffer,
         normal_unit_xyz=normal_unit_xyz,
         width_px=width_px,
@@ -251,31 +265,31 @@ def rasterize(
     )
 
 
-def _to_view_space(tris_m: Float64Array, view_matrix: Float64Array) -> Float64Array:
+def _to_view_space(tris_mm: Float64Array, view_matrix: Float64Array) -> Float64Array:
     """(N, 3, 3) 世界坐标 → (N, 3, 3) 视空间坐标。一次矩阵乘打完，不在循环里逐点乘。"""
-    flat = tris_m.reshape(-1, 3)
+    flat = tris_mm.reshape(-1, 3)
     homogeneous = np.concatenate([flat, np.ones((flat.shape[0], 1), dtype=np.float64)], axis=1)
     view_flat: Float64Array = homogeneous @ view_matrix.T
-    return view_flat[:, :3].reshape(tris_m.shape)
+    return view_flat[:, :3].reshape(tris_mm.shape)
 
 
-def _triangle_unit_normals(tris_m: Float64Array) -> Float64Array:
+def _triangle_unit_normals(tris_mm: Float64Array) -> Float64Array:
     """(N, 3) 世界系单位法向；退化三角形（零面积）给 (0, 0, 0)，着色时只吃到环境光。"""
-    edge_a = tris_m[:, 1] - tris_m[:, 0]
-    edge_b = tris_m[:, 2] - tris_m[:, 0]
+    edge_a = tris_mm[:, 1] - tris_mm[:, 0]
+    edge_b = tris_mm[:, 2] - tris_mm[:, 0]
     raw: Float64Array = np.cross(edge_a, edge_b)
     length = np.linalg.norm(raw, axis=1, keepdims=True)
     safe_length = np.where(length > 0.0, length, 1.0)
     return raw / safe_length
 
 
-def _clip_triangle_near(tri_view: Float64Array, near_m: float) -> list[Float64Array]:
+def _clip_triangle_near(tri_view: Float64Array, near_mm: float) -> list[Float64Array]:
     """按近平面裁一个视空间三角形，返回 0~2 个三角形（Sutherland–Hodgman 后扇形三角化）。
 
-    保留的是 ``-z >= near_m`` 那一侧。顶点顺序与新顶点的插入位置全部写死（按边 0-1、1-2、
+    保留的是 ``-z >= near_mm`` 那一侧。顶点顺序与新顶点的插入位置全部写死（按边 0-1、1-2、
     2-0 走一圈），所以同一个输入永远切出同一组三角形——这是逐字节可复现的前提之一。
     """
-    signed_dist = -tri_view[:, 2] - near_m
+    signed_dist = -tri_view[:, 2] - near_mm
     inside = signed_dist >= 0.0
     inside_count = int(np.count_nonzero(inside))
     if inside_count == 3:
@@ -302,7 +316,7 @@ def _fill_triangle(
     mesh_index: int,
     normal_unit_xyz_tri: Float32Array,
     proj_matrix: Float64Array,
-    depth_m: Float32Array,
+    depth_mm: Float32Array,
     id_buffer: Int32Array,
     normal_unit_xyz: Float32Array,
 ) -> None:
@@ -314,14 +328,14 @@ def _fill_triangle(
     height_px, width_px = id_buffer.shape
     homogeneous = np.concatenate([tri_view, np.ones((3, 1), dtype=np.float64)], axis=1)
     clip = homogeneous @ proj_matrix.T
-    w_m = clip[:, 3]
-    if not bool(np.all(w_m > 0.0)) or not bool(np.isfinite(clip).all()):
+    w_mm = clip[:, 3]
+    if not bool(np.all(w_mm > 0.0)) or not bool(np.isfinite(clip).all()):
         return
 
-    ndc = clip[:, :3] / w_m[:, None]
+    ndc = clip[:, :3] / w_mm[:, None]
     x_px = (ndc[:, 0] + 1.0) * 0.5 * width_px
     y_px = (1.0 - ndc[:, 1]) * 0.5 * height_px
-    depth_vert_m = -tri_view[:, 2]
+    depth_vert_mm = -tri_view[:, 2]
     if not bool(np.isfinite(x_px).all()) or not bool(np.isfinite(y_px).all()):
         return
 
@@ -352,22 +366,22 @@ def _fill_triangle(
     if not bool(inside.any()):
         return
 
-    inv_w = lam0 / w_m[0] + lam1 / w_m[1] + lam2 / w_m[2]
+    inv_w = lam0 / w_mm[0] + lam1 / w_mm[1] + lam2 / w_mm[2]
     depth_over_w = (
-        lam0 * depth_vert_m[0] / w_m[0]
-        + lam1 * depth_vert_m[1] / w_m[1]
-        + lam2 * depth_vert_m[2] / w_m[2]
+        lam0 * depth_vert_mm[0] / w_mm[0]
+        + lam1 * depth_vert_mm[1] / w_mm[1]
+        + lam2 * depth_vert_mm[2] / w_mm[2]
     )
     with np.errstate(divide="ignore", invalid="ignore"):
-        candidate_m = (depth_over_w / inv_w).astype(np.float32)
-    inside &= np.isfinite(candidate_m) & (candidate_m > 0.0)
+        candidate_mm = (depth_over_w / inv_w).astype(np.float32)
+    inside &= np.isfinite(candidate_mm) & (candidate_mm > 0.0)
 
-    existing_m = depth_m[y_from : y_to + 1, x_from : x_to + 1]
+    existing_mm = depth_mm[y_from : y_to + 1, x_from : x_to + 1]
     # 严格 `<`：深度相等时**先来的赢**。共面三角形谁盖住谁于是只由输入顺序决定，
     # 而输入顺序是场景包写死的——这条就是"渲两次逐字节相同"里最容易漏掉的一半。
-    winners = inside & (candidate_m < existing_m)
+    winners = inside & (candidate_mm < existing_mm)
     if not bool(winners.any()):
         return
-    existing_m[winners] = candidate_m[winners]
+    existing_mm[winners] = candidate_mm[winners]
     id_buffer[y_from : y_to + 1, x_from : x_to + 1][winners] = mesh_index
     normal_unit_xyz[y_from : y_to + 1, x_from : x_to + 1][winners] = normal_unit_xyz_tri

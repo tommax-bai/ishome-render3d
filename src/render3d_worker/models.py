@@ -78,7 +78,7 @@ OpeningKind = Literal["door", "window", "passage", "entry-door", "unknown"]
 并把"猜了"这件事带进场景包（:attr:`ScenePackage.guessed_opening_count`）。
 
 版本对照：2026-09-05 之前本仓的闭集是 `door | window | pass`，`pass` 改名 `passage`
-（跟产出侧的字），`entry-door` 与 `unknown` 是同一天新加的。`HeightRules.pass_height_m`
+（跟产出侧的字），`entry-door` 与 `unknown` 是同一天新加的。`HeightRules.pass_height_mm`
 这个字段名**没改**：它是上游填的那半的字段，值的含义（过口净高）不变，改名只会让填包那侧
 再对一次表。
 """
@@ -157,11 +157,14 @@ class FloorplanGeometry(_Contract):
 
 
 class PlanScale(_Contract):
-    """把归一化几何换成米的那把尺子。
+    """把归一化几何换成毫米的那把尺子。
 
-    几何一个绝对尺寸都没有，而三维里"墙 2.8 米高"必须有米。尺子由**面积反推**：
-    套内面积 = 建筑面积 × 得房率，再与 `plan_box` 框住的归一化面积相除得米/单位。
+    几何一个绝对尺寸都没有，而三维里"墙 2800 毫米高"必须有毫米。尺子由**面积反推**：
+    套内面积 = 建筑面积 × 得房率，再与 `plan_box` 框住的归一化面积相除、换成毫米/单位。
     面积是上游真有的数（匿名画像带建筑面积与得房率），比例尺不是——**不许由模型给**。
+
+    `building_area_sqm` 仍是平方米：**面积不在毫米射程内**（《开发规范》§4.1 长度 `_mm`、
+    面积 `_sqm`，两个量纲各有各的后缀），且它是上游直给的数，换算等于自造一处漂移点。
 
     `usable_area_percent` 取百分数不取小数（80 不是 0.8），同 contracts 数据包那条口径：
     少一层换算就少一处会漂移的口径。
@@ -186,17 +189,22 @@ class HeightRules(_Contract):
     集中在包里的理由：换一户、换一个楼盘只换数据、代码不动；也让"这张图为什么是这个高度"
     答得出来。
 
-    单位口径**是净高不是层高**：`ceiling_height_m` 是地面完成面到天花完成面（三维里墙就起
-    这么高），层高还要加楼板与地面做法。上游给的若是层高，减掉 `slab_thickness_m` 与地面做法
+    单位口径**是净高不是层高**：`ceiling_height_mm` 是地面完成面到天花完成面（三维里墙就起
+    这么高），层高还要加楼板与地面做法。上游给的若是层高，减掉 `slab_thickness_mm` 与地面做法
     再进这个字段——**换算在填包那一侧做，不在本仓做**（本仓不认识"层高"这个词）。
+
+    **量纲整数毫米**（用户裁决 2026-09-08 *"我们所有的单位都改成毫米。除了给用户展示的部分"*，
+    与《开发规范》§4.1 一致）：这一族是**数据**不是中间量，写成 `int` 让"半毫米"这种没有来源的
+    精度进不来（同 estate-svc 家具资产表 2026-09-07 那批的口径）。给业主看的句子仍说"2.8 米"，
+    换算在展示那一层做。
     """
 
-    ceiling_height_m: float = 2.80
-    slab_thickness_m: float = 0.12
-    door_height_m: float = 2.05
-    pass_height_m: float = 2.20
-    window_sill_height_m: float = 0.90
-    window_head_height_m: float = 2.10
+    ceiling_height_mm: int = 2800
+    slab_thickness_mm: int = 120
+    door_height_mm: int = 2050
+    pass_height_mm: int = 2200
+    window_sill_height_mm: int = 900
+    window_head_height_mm: int = 2100
     outer_opening_kind: GuessedOpeningKind = "window"
     """产出侧给不出类型（`kind == "unknown"`）时，外墙上的洞按什么算；内墙洞按
     `inner_opening_kind`。**这是退路不是主路**：产出侧给了 `kind` 的洞不经这两条。"""
@@ -205,10 +213,15 @@ class HeightRules(_Contract):
 
 
 class FurnishingPlacement(_Contract):
-    """一件家具摆在哪儿：位置用归一化平面坐标，尺寸用米。
+    """一件家具摆在哪儿：位置用归一化平面坐标，尺寸用整数毫米。
 
-    位置跟着几何走（归一化），尺寸跟着现实走（米）——两套单位并存是有意的：布置是
+    位置跟着几何走（归一化），尺寸跟着现实走（毫米）——两套单位并存是有意的：布置是
     平面上的决定，体量是产品的事实。`yaw_deg` 绕竖轴，0 度朝屏幕下方（+y），逆时针为正。
+
+    尺寸三字段与 contracts `registries/furniture_assets.json`（estate-svc 家具资产表）
+    **同名同量纲**：那张表 2026-09-07 已是 `width_mm`/`depth_mm`/`height_mm` 整数毫米，
+    本仓 2026-09-08 跟上——同一件家具在两个仓两种单位、靠中间某处换算，
+    是这次改动要消掉的那个坏形态。
     """
 
     id: str
@@ -216,9 +229,9 @@ class FurnishingPlacement(_Contract):
     room: str
     center_x_ratio: float
     center_y_ratio: float
-    width_m: float
-    depth_m: float
-    height_m: float
+    width_mm: int
+    depth_mm: int
+    height_mm: int
     yaw_deg: float = 0.0
 
 
@@ -261,7 +274,7 @@ class CameraSpec(_Contract):
     id: str
     kind: CameraKind
     room: str | None = None
-    eye_height_m: float = 1.55
+    eye_height_mm: int = 1550
     yaw_deg: float = 0.0
     pitch_deg: float = -30.0
     fov_deg: float = 55.0
@@ -309,7 +322,7 @@ class SceneOpening(_Contract):
 
 
 class Mesh(_Contract):
-    """一块三角网格，米制右手系：x 向右、y 向里、z 向上。
+    """一块三角网格，毫米制右手系：x 向右、y 向里、z 向上。
 
     `semantic` 与 `room` 不是装饰——遮罩那一路按它们上色，交互引擎按它们分层。
     每块网格自带身份（`id`），底渲的遮罩索引表回指它，"图上这一块是什么"答得出来。
@@ -324,7 +337,7 @@ class Mesh(_Contract):
 
 
 class ScenePackage(_Contract):
-    """场景包：一户人家的三维形态 + 材质 + 机位，**米制、确定性、不含图像**。
+    """场景包：一户人家的三维形态 + 材质 + 机位，**毫米制、确定性、不含图像**。
 
     自证数（`floor_area_sqm` 起四个）是本仓自己算给自己看的：编出来的地板面积对不上
     输入面积，就是尺子或几何错了，早于出图暴露。**不设死阈值**——门槛要有真跑数据才定
@@ -332,12 +345,17 @@ class ScenePackage(_Contract):
     """
 
     revision_id: str
-    unit: Literal["m"] = "m"
+    unit: Literal["mm"] = "mm"
+    """场景包里每个坐标的量纲。**这个字段自己就是这次改动的落点**：值从 `"m"` 改成 `"mm"`
+    （用户裁决 2026-09-08 *"我们所有的单位都改成毫米。除了给用户展示的部分"*）。
+    保留成 `Literal` 而不是删掉：读包的人不必去翻文档就知道这些数是什么单位，
+    而闭集一个值让"包是老米制的还是新毫米制的"在解析时就炸出来，不静默按错单位起体。"""
+
     meshes: list[Mesh] = Field(default_factory=list)
     materials: list[SurfaceMaterial] = Field(default_factory=list)
     cameras: list[CameraSpec] = Field(default_factory=list)
-    bounds_min_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
-    bounds_max_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    bounds_min_mm: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    bounds_max_mm: tuple[float, float, float] = (0.0, 0.0, 0.0)
     heights_source: Literal["upstream", "mock-default"] = "mock-default"
     """竖向那些数字是上游给的，还是吃了 :class:`HeightRules` 的常规住宅档位。
 
@@ -355,8 +373,8 @@ class ScenePackage(_Contract):
     "这户的尺寸是按什么定的"。
     """
 
-    metre_per_unit: float = 0.0
-    """归一化 1.0 等于多少米（由 :class:`PlanScale` 反推）。换算只在编场景包时发生一次。"""
+    mm_per_unit: float = 0.0
+    """归一化 1.0 等于多少毫米（由 :class:`PlanScale` 反推）。换算只在编场景包时发生一次。"""
 
     floor_area_sqm: float = 0.0
     """所有地板网格加起来的面积——与输入套内面积的差距即 `area_match_ratio`。"""
@@ -414,10 +432,10 @@ class RoomViewCheck(_Contract):
     随产物带出的理由同其他自证数：一张室内图"是不是在拍这间房"要答得出来。
     """
 
-    eye_m: tuple[float, float, float]
+    eye_mm: tuple[float, float, float]
     yaw_deg: float
-    min_depth_m: float
-    """画面里最近的几何离镜头多远（米）。小于避墙距离就是站进了墙里或贴着墙。"""
+    min_depth_mm: float
+    """画面里最近的几何离镜头多远（毫米）。小于避墙距离就是站进了墙里或贴着墙。"""
 
     target_floor_ratio: float
     """目标房间**地板**像素占整幅的比例。"""
@@ -459,9 +477,9 @@ class BaseRenderViews(BaseModel):
     covered_pixel_ratio: float = 0.0
     """画面里被几何盖住的比例——整张几乎全空说明相机摆错了，失败要响亮。"""
 
-    near_m: float = 0.0
-    far_m: float = 0.0
-    """深度图的两端（米）。深度是 16 位归一化存的，没有这两个数就还原不回米。"""
+    near_mm: float = 0.0
+    far_mm: float = 0.0
+    """深度图的两端（毫米）。深度是 16 位归一化存的，没有这两个数就还原不回毫米。"""
 
     room_view: RoomViewCheck | None = None
     """``room`` 机位的取景自证数；``bird`` 机位为 ``None``。"""

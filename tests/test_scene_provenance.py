@@ -25,7 +25,7 @@ def test_不写高度那一段就是吃常规住宅档位() -> None:
     scene = compile_scene_package(_package("design-package-minimal"))
     assert scene.heights_source == "mock-default"
     # 吃的确实是契约里那档常规住宅的净高，墙就起这么高
-    assert scene.bounds_max_m[2] == HeightRules().ceiling_height_m
+    assert scene.bounds_max_mm[2] == HeightRules().ceiling_height_mm
 
 
 def test_上游写了高度就记成上游给的() -> None:

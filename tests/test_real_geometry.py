@@ -48,7 +48,7 @@ def test_the_real_package_still_compiles(package: DesignPackage) -> None:
     floors = [block for block in scene.meshes if block.semantic == "floor"]
     assert {block.room for block in floors} == {room.name for room in package.plan.rooms}
     assert scene.triangle_count > 0
-    assert scene.unit == "m"
+    assert scene.unit == "mm"
 
 
 def test_compiling_the_real_package_twice_is_byte_identical() -> None:
@@ -82,10 +82,10 @@ def test_openings_in_wall_gaps_get_their_lintels(package: DesignPackage) -> None
     scene = compile_scene_package(package)
     fills = [block for block in scene.meshes if block.id.startswith("wall:fill:")]
     assert len(fills) == 14
-    ceiling_m = package.heights.ceiling_height_m
+    ceiling_mm = package.heights.ceiling_height_mm
     for block in fills:
         z_values = [vertex[2] for vertex in block.vertices]
-        assert 0.0 <= min(z_values) < max(z_values) <= ceiling_m
+        assert 0.0 <= min(z_values) < max(z_values) <= ceiling_mm
 
 
 def test_the_ruler_anchors_on_the_real_outline(package: DesignPackage) -> None:
@@ -107,29 +107,33 @@ def test_the_ruler_anchors_on_the_real_outline(package: DesignPackage) -> None:
 
 
 def test_the_real_scene_is_the_size_of_a_92_sqm_flat(package: DesignPackage) -> None:
-    """整户的规模对得上一套 92㎡ 的房子：套内 73.6㎡，屋子九米见方上下，层高 2.8 米。
+    """整户的规模对得上一套 92㎡ 的房子：套内 73.6㎡，屋子九千毫米见方上下，净高 2800 毫米。
 
     这几条不是精确值而是量级——它们防的是"尺子整体错了一个数量级"那种坏法
     （单位当成厘米、长宽比没修正、锚点选错），那种错一眼看得出来，也只有这种数量级的
     断言拦得住，写死到小数点后四位反而会被无关的改动天天绊倒。
+
+    量纲改毫米那一轮（2026-09-08）跨度断言的数跟着 ×1000：**量级这件事本身没变**，
+    换的是它用什么单位说。这条断言正是"单位当成厘米"那类错的拦网，所以它必须跟着量纲走，
+    不能留在米上。
     """
     scene = compile_scene_package(package)
     assert mesh.usable_area_sqm(package.scale) == pytest.approx(73.6)
 
-    span_x_m = scene.bounds_max_m[0] - scene.bounds_min_m[0]
-    span_y_m = scene.bounds_max_m[1] - scene.bounds_min_m[1]
-    assert 7.0 < span_x_m < 9.0
-    assert 9.0 < span_y_m < 11.0
+    span_x_mm = scene.bounds_max_mm[0] - scene.bounds_min_mm[0]
+    span_y_mm = scene.bounds_max_mm[1] - scene.bounds_min_mm[1]
+    assert 7000.0 < span_x_mm < 9000.0
+    assert 9000.0 < span_y_mm < 11000.0
     # 长宽比对得上图幅，但不会分毫不差：墙有厚度，最外圈那几段会探出图幅一点点
-    # （这份包上最多探出一个源像素，约 1.5 厘米），所以留 1% 的余量而不是写死
+    # （这份包上最多探出一个源像素，约 15 毫米），所以留 1% 的余量而不是写死
     box = package.plan.plan_box
     box_aspect = (
         (box[2] - box[0])
         * package.plan.frame_width_px
         / ((box[3] - box[1]) * package.plan.frame_height_px)
     )
-    assert span_x_m / span_y_m == pytest.approx(box_aspect, rel=0.01)
-    assert scene.bounds_max_m[2] == pytest.approx(package.heights.ceiling_height_m)
+    assert span_x_mm / span_y_mm == pytest.approx(box_aspect, rel=0.01)
+    assert scene.bounds_max_mm[2] == pytest.approx(package.heights.ceiling_height_mm)
 
 
 def test_the_real_floor_area_is_short_of_the_usable_area(package: DesignPackage) -> None:

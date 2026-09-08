@@ -34,6 +34,13 @@ from render3d_worker.scene_compile import SceneCompileError, compile_scene_packa
 BUILDING_AREA_SQM = 100.0
 USABLE_AREA_PERCENT = 80.0
 USABLE_AREA_SQM = 80.0
+
+_MM_PER_METRE = 1000.0
+_SQMM_PER_SQM = _MM_PER_METRE * _MM_PER_METRE
+"""量纲改毫米（2026-09-08）之后，测试自己也要做这两步换算：尺子由平方米反推、
+产出是毫米，两个量纲在断言里碰面。写成常量而不是裸 1000／1e6，是为了让"面积换算是
+长度换算的平方"这件事在测试里也看得见——第一次改量纲时正是这一处漏掉，
+`area_match_ratio` 直接变成了 737280。"""
 """三个数摆在一起，是为了让"100㎡ 的房子按 80% 得房率就是 80㎡ 套内"这句话在测试里
 写得出来——尺子对不对，量的就是这一句。"""
 
@@ -169,9 +176,9 @@ def _two_bedroom_package(frame_width_px: int = 1200, frame_height_px: int = 800)
                 room="客厅",
                 center_x_ratio=0.20,
                 center_y_ratio=0.40,
-                width_m=2.2,
-                depth_m=0.9,
-                height_m=0.8,
+                width_mm=2200,
+                depth_mm=900,
+                height_mm=800,
             ),
             FurnishingPlacement(
                 id="furnishing:主卧:床",
@@ -179,9 +186,9 @@ def _two_bedroom_package(frame_width_px: int = 1200, frame_height_px: int = 800)
                 room="主卧",
                 center_x_ratio=0.75,
                 center_y_ratio=0.25,
-                width_m=1.8,
-                depth_m=2.0,
-                height_m=0.5,
+                width_mm=1800,
+                depth_mm=2000,
+                height_mm=500,
                 yaw_deg=90.0,
             ),
         ],
@@ -294,15 +301,23 @@ def test_bounds_keep_the_frame_aspect(frame_width_px: int, frame_height_px: int)
     横竖两种 frame 都量一遍，免得实现把长宽比写反了还能蒙对一边。
     """
     scene = compile_scene_package(_two_bedroom_package(frame_width_px, frame_height_px))
-    span_x_m = scene.bounds_max_m[0] - scene.bounds_min_m[0]
-    span_y_m = scene.bounds_max_m[1] - scene.bounds_min_m[1]
-    assert span_x_m / span_y_m == pytest.approx(frame_width_px / frame_height_px, rel=1e-4)
-    # 形状对了，面积也得对：外轮廓中心线围的那块地就是套内建筑面积
-    enclosed_sqm = (_OUTER_RIGHT - _OUTER_LEFT) * (_OUTER_BOTTOM - _OUTER_TOP) * span_x_m * span_y_m
+    span_x_mm = scene.bounds_max_mm[0] - scene.bounds_min_mm[0]
+    span_y_mm = scene.bounds_max_mm[1] - scene.bounds_min_mm[1]
+    assert span_x_mm / span_y_mm == pytest.approx(frame_width_px / frame_height_px, rel=1e-4)
+    # 形状对了，面积也得对：外轮廓中心线围的那块地就是套内建筑面积。
+    # 跨度是毫米、乘出来是平方毫米，除 _SQMM_PER_SQM 才跟平方米比得了
+    # （长度改一个量纲，面积改的是它的平方）。
+    enclosed_sqm = (
+        (_OUTER_RIGHT - _OUTER_LEFT)
+        * (_OUTER_BOTTOM - _OUTER_TOP)
+        * span_x_mm
+        * span_y_mm
+        / _SQMM_PER_SQM
+    )
     assert enclosed_sqm == pytest.approx(USABLE_AREA_SQM, rel=1e-4)
     # 包围盒框的是整幅（外接框），它必然比外轮廓围的那块大——尺子锚的是后者
-    assert span_x_m * span_y_m > USABLE_AREA_SQM
-    assert scene.bounds_max_m[2] == pytest.approx(HeightRules().ceiling_height_m)
+    assert span_x_mm * span_y_mm / _SQMM_PER_SQM > USABLE_AREA_SQM
+    assert scene.bounds_max_mm[2] == pytest.approx(HeightRules().ceiling_height_mm)
 
 
 # ---------------------------------------------------------------------------
@@ -328,7 +343,7 @@ def test_a_door_splits_the_wall_and_keeps_its_height() -> None:
     assert len(reveals) == 1
     z_values = [vertex[2] for vertex in reveals[0].vertices]
     assert min(z_values) == pytest.approx(0.0)
-    assert max(z_values) - min(z_values) == pytest.approx(heights.door_height_m)
+    assert max(z_values) - min(z_values) == pytest.approx(heights.door_height_mm)
     assert not [block for block in plain.meshes if block.semantic == "reveal"]
 
 
@@ -378,20 +393,20 @@ def test_yaw_turns_the_furnishing_block() -> None:
     """转 90 度之后，宽和进深在世界坐标里换个位置——体块是有朝向的，不是个球。"""
     scene = compile_scene_package(_two_bedroom_package())
     bed = next(block for block in scene.meshes if block.id == "furnishing:主卧:床")
-    span_x_m = max(v[0] for v in bed.vertices) - min(v[0] for v in bed.vertices)
-    span_y_m = max(v[1] for v in bed.vertices) - min(v[1] for v in bed.vertices)
-    assert span_x_m == pytest.approx(2.0)  # 进深转到了 x 上
-    assert span_y_m == pytest.approx(1.8)  # 宽转到了 y 上
+    span_x_mm = max(v[0] for v in bed.vertices) - min(v[0] for v in bed.vertices)
+    span_y_mm = max(v[1] for v in bed.vertices) - min(v[1] for v in bed.vertices)
+    assert span_x_mm == pytest.approx(2000.0)  # 进深转到了 x 上
+    assert span_y_mm == pytest.approx(1800.0)  # 宽转到了 y 上
 
 
 def test_metre_per_unit_is_the_frame_width_in_metres() -> None:
-    """`metre_per_unit` 的口径：归一化 1.0（整幅图宽）等于多少米。
+    """`mm_per_unit` 的口径：归一化 1.0（整幅图宽）等于多少米。
 
     这份几何取满整幅，所以它就该等于包围盒的 x 跨度。
     """
     scene = compile_scene_package(_two_bedroom_package())
-    span_x_m = scene.bounds_max_m[0] - scene.bounds_min_m[0]
-    assert scene.metre_per_unit == pytest.approx(span_x_m, rel=1e-5)
+    span_x_mm = scene.bounds_max_mm[0] - scene.bounds_min_mm[0]
+    assert scene.mm_per_unit == pytest.approx(span_x_mm, rel=1e-5)
 
 
 # ---------------------------------------------------------------------------
@@ -469,9 +484,13 @@ def test_the_ruler_anchors_on_the_outline_not_the_bounding_box() -> None:
     anchor = mesh.scale_anchor(plan)
     assert anchor.source == "outline"
     assert anchor.area_x_units_sq == pytest.approx(0.75)
-    assert mesh.metre_per_unit(plan, scale) == pytest.approx(math.sqrt(USABLE_AREA_SQM / 0.75))
+    assert mesh.mm_per_unit(plan, scale) == pytest.approx(
+        math.sqrt(USABLE_AREA_SQM / 0.75) * _MM_PER_METRE
+    )
     # 锚错了会得到这个数（外接框面积 1.0）——两者差 15%，分得开
-    assert mesh.metre_per_unit(plan, scale) != pytest.approx(math.sqrt(USABLE_AREA_SQM))
+    assert mesh.mm_per_unit(plan, scale) != pytest.approx(
+        math.sqrt(USABLE_AREA_SQM) * _MM_PER_METRE
+    )
 
 
 def test_the_ruler_falls_back_to_the_plan_box_and_says_so() -> None:
@@ -485,7 +504,9 @@ def test_the_ruler_falls_back_to_the_plan_box_and_says_so() -> None:
     anchor = mesh.scale_anchor(plan)
     assert anchor.source == "plan-box"
     assert anchor.area_x_units_sq == pytest.approx(1.0)
-    assert mesh.metre_per_unit(plan, scale) == pytest.approx(math.sqrt(USABLE_AREA_SQM))
+    assert mesh.mm_per_unit(plan, scale) == pytest.approx(
+        math.sqrt(USABLE_AREA_SQM) * _MM_PER_METRE
+    )
 
 
 def test_falling_back_to_the_plan_box_is_logged(
@@ -576,16 +597,16 @@ def test_an_opening_in_a_wall_gap_still_gets_a_lintel() -> None:
 
     lintel = fills[0]
     z_values = [vertex[2] for vertex in lintel.vertices]
-    assert min(z_values) == pytest.approx(heights.door_height_m)
-    assert max(z_values) == pytest.approx(heights.ceiling_height_m)
+    assert min(z_values) == pytest.approx(heights.door_height_mm)
+    assert max(z_values) == pytest.approx(heights.ceiling_height_mm)
 
     # 共面：过梁跨墙方向占的那一条带，与邻墙逐字相同
-    def across_span_m(block: Mesh) -> tuple[float, float]:
+    def across_span_mm(block: Mesh) -> tuple[float, float]:
         xs = [vertex[0] for vertex in block.vertices]
         return (min(xs), max(xs))
 
     neighbours = [block for block in walls if block not in fills]
-    assert {across_span_m(block) for block in neighbours} == {across_span_m(lintel)}
+    assert {across_span_mm(block) for block in neighbours} == {across_span_mm(lintel)}
 
 
 def test_an_opening_with_no_wall_on_its_line_is_not_counted() -> None:
@@ -613,5 +634,5 @@ def test_a_window_in_a_wall_gap_gets_both_a_lintel_and_a_sill() -> None:
     spans = sorted(
         (min(v[2] for v in block.vertices), max(v[2] for v in block.vertices)) for block in fills
     )
-    assert spans[0] == pytest.approx((0.0, heights.window_sill_height_m))
-    assert spans[1] == pytest.approx((heights.window_head_height_m, heights.ceiling_height_m))
+    assert spans[0] == pytest.approx((0.0, heights.window_sill_height_mm))
+    assert spans[1] == pytest.approx((heights.window_head_height_mm, heights.ceiling_height_mm))

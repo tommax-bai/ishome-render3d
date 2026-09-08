@@ -184,7 +184,7 @@ async def test_scene_compile_写场景包并回键与自证数() -> None:
     assert scene.revision_id == MINIMAL_REVISION
     assert receipt["mesh_count"] == len(scene.meshes) > 0
     assert receipt["triangle_count"] == scene.triangle_count > 0
-    assert receipt["metre_per_unit"] == scene.metre_per_unit > 0
+    assert receipt["mm_per_unit"] == scene.mm_per_unit > 0
     assert receipt["floor_area_sqm"] == scene.floor_area_sqm > 0
     assert receipt["area_match_ratio"] == scene.area_match_ratio > 0
     assert receipt["wall_segment_count"] == scene.wall_segment_count
@@ -238,7 +238,7 @@ async def test_全链_minimal包一台bird机位全渲() -> None:
     assert len(mask_index) == view["mask_entry_count"] > 0
     assert {"index", "meshId", "semantic", "pixelCount"} <= set(mask_index[0])
     assert 0.0 < view["covered_pixel_ratio"] <= 1.0
-    assert 0.0 < view["near_m"] < view["far_m"]
+    assert 0.0 < view["near_mm"] < view["far_mm"]
     assert view["elapsed_seconds"] >= 0.0
 
     # 第五路控制稿：合流后是纯库的必填产物，与其余四路一样必写、不许为 None
@@ -308,7 +308,7 @@ async def test_16位深度与遮罩逐字节保真() -> None:
     assert depth.mode == "I;16", "深度不再是 16 位：被转码了"
     assert mask.mode == "I;16", "遮罩不再是 16 位：被转码了"
     assert int(np.asarray(depth).max()) > 255, "16 位深度的值域该超出 8 位"
-    assert (view["near_m"], view["far_m"]) == (direct.near_m, direct.far_m)
+    assert (view["near_mm"], view["far_mm"]) == (direct.near_mm, direct.far_mm)
 
 
 def test_registry_绑定到装好桶的实现件上() -> None:

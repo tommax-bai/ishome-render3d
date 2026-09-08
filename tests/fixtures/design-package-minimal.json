@@ -1075,7 +1075,7 @@
     {
       "id": "cam-bird-overview",
       "kind": "bird",
-      "eyeHeightM": 12.0,
+      "eyeHeightMm": 12000,
       "yawDeg": 0.0,
       "pitchDeg": -90.0,
       "fovDeg": 50.0

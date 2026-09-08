@@ -113,7 +113,7 @@ class SceneCompileReceipt(BaseModel):
     revision_id: str
     mesh_count: int
     triangle_count: int
-    metre_per_unit: float
+    mm_per_unit: float
     floor_area_sqm: float
     area_match_ratio: float
     """编出来的地板面积对输入套内面积之比。**不判**——门槛要有真跑数据才定，先带出去。"""
@@ -149,8 +149,8 @@ class RenderedView(BaseModel):
     width_px: int
     height_px: int
     covered_pixel_ratio: float
-    near_m: float
-    far_m: float
+    near_mm: float
+    far_mm: float
     mask_entry_count: int
     room_view: dict[str, Any] | None
     elapsed_seconds: float

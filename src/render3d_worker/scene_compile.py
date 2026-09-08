@@ -130,9 +130,20 @@ def _check_unique_ids(meshes: list[Mesh]) -> None:
         seen.add(block.id)
 
 
-def _triangle_area_sqm(
+_SQMM_PER_SQM = 1_000_000.0
+"""平方毫米 → 平方米。**量纲改毫米那一轮（2026-09-08）新增的一处换算。**
+
+顶点是毫米，两条边叉乘出来就是平方毫米；而 `floor_area_sqm` 这个自证数的分母是
+`usable_area_sqm`（上游给的平方米，面积不在毫米射程内）。两个量纲不换算直接比，
+`area_match_ratio` 会变成 737280 这种数——真出现过：改量纲的第一次重渲就是这么照出来的。
+
+长度改一个量纲，面积改的是它的平方——这一条不写下来，下一个人只会记得乘 1000。"""
+
+
+def _triangle_area_sqmm(
     a: tuple[float, float, float], b: tuple[float, float, float], c: tuple[float, float, float]
 ) -> float:
+    """三个毫米制顶点围的三角形面积，单位平方毫米。"""
     ux, uy, uz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
     vx, vy, vz = c[0] - a[0], c[1] - a[1], c[2] - a[2]
     nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
@@ -140,18 +151,24 @@ def _triangle_area_sqm(
 
 
 def _floor_area_sqm(meshes: list[Mesh]) -> float:
-    """地板网格的面积和。按三角形实算而不是按矩形回推——回推等于信任建网格那一步，
-    而这个数存在的意义正是去查它。"""
-    total = 0.0
+    """地板网格的面积和，**换算成平方米**。按三角形实算而不是按矩形回推——回推等于
+    信任建网格那一步，而这个数存在的意义正是去查它。
+
+    顶点是毫米制，算出来是平方毫米，出这个函数之前除掉 :data:`_SQMM_PER_SQM`：
+    面积对外一律 `_sqm`（《开发规范》§4.1 面积后缀），拿它去跟上游的套内面积比才对得上。
+    """
+    total_sqmm = 0.0
     for block in meshes:
         if block.semantic != "floor":
             continue
         for i, j, k in block.triangles:
-            total += _triangle_area_sqm(block.vertices[i], block.vertices[j], block.vertices[k])
-    return total
+            total_sqmm += _triangle_area_sqmm(
+                block.vertices[i], block.vertices[j], block.vertices[k]
+            )
+    return total_sqmm / _SQMM_PER_SQM
 
 
-def _bounds_m(meshes: list[Mesh]) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+def _bounds_mm(meshes: list[Mesh]) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     points = [point for block in meshes for point in block.vertices]
     if not points:
         raise SceneCompileError("一个顶点都没有：编出来的是个空场景，不往下游传")
@@ -192,7 +209,7 @@ def compile_scene_package(package: DesignPackage) -> ScenePackage:
     _warn_if_scale_falls_back(plan)
 
     try:
-        unit_m = mesh.metre_per_unit(plan, package.scale)
+        unit_mm = mesh.mm_per_unit(plan, package.scale)
         blocks = [
             *mesh.build_shell(plan, package.scale, package.heights),
             *mesh.build_furnishings(package.furnishings, plan, package.scale, package.heights),
@@ -211,7 +228,7 @@ def compile_scene_package(package: DesignPackage) -> ScenePackage:
         raise SceneCompileError("编出来的地板面积是 0：房间遮罩要么是空的，要么被尺子压成了一个点")
 
     meshes, used_neutral = _assign_materials(blocks, package)
-    low_m, high_m = _bounds_m(meshes)
+    low_mm, high_mm = _bounds_mm(meshes)
     materials = list(package.surface_materials)
     if used_neutral:
         materials.append(NEUTRAL_MATERIAL)
@@ -224,9 +241,10 @@ def compile_scene_package(package: DesignPackage) -> ScenePackage:
         materials=materials,
         # 相机是输入不是产物：换个机位不该重编场景包，原样带过去
         cameras=list(package.cameras),
-        bounds_min_m=low_m,
-        bounds_max_m=high_m,
-        metre_per_unit=round(unit_m, 6),
+        bounds_min_mm=low_mm,
+        bounds_max_mm=high_mm,
+        # 位数跟着量纲走：米制那版留 6 位（微米），量纲改毫米后同一个物理粒度是 3 位。
+        mm_per_unit=round(unit_mm, 3),
         floor_area_sqm=round(floor_area_sqm, _REPORT_DECIMALS),
         area_match_ratio=round(floor_area_sqm / target_area_sqm, _REPORT_DECIMALS),
         wall_segment_count=sum(1 for block in meshes if block.semantic == "wall"),

@@ -9,9 +9,9 @@
 那一层起，"本地渲一张图不需要起编排"就只是一句承诺而不是结构。
 
 产出（每台相机一个子目录）：
-    scene-package.json          场景包（米制、含自证数）
+    scene-package.json          场景包（毫米制、含自证数）
     {camera_id}/geometry.png    几何：材质分色 + 固定方向明暗
-    {camera_id}/depth.png       深度：16 位，还原回米要用 near_m/far_m
+    {camera_id}/depth.png       深度：16 位，还原回毫米要用 near_mm/far_mm
     {camera_id}/line.png        线稿：几何事实边，保真度尺子的输入，不做图像滤波猜边
     {camera_id}/sketch.png      控制稿：给线稿生图控制通道画的（画法见 base_render 模块 docstring；
                                 门窗符号方案由 --sketch-symbols 选，默认 frame-handle
@@ -53,6 +53,28 @@ EXIT_BAD_INPUT = 2
 EXIT_COMPILE_FAILED = 3
 EXIT_RENDER_FAILED = 4
 
+_MM_PER_METRE = 1000.0
+"""**展示层换算：毫米 → 米，只在打印这一步做。**
+
+用户裁决 2026-09-08（*"我们所有的单位都改成毫米。除了给用户展示的部分"*）把射程切成两半：
+内部数据一律毫米（场景包、底渲回执、算法里的每一个中间量），**给人看的仍说米**。
+本仓唯一的展示面就是这个 CLI 打的那几行，所以换算只落在 :func:`_metres` 一处——
+散着写 `/1000` 就等于把量纲边界摊回全仓，那正是这次改动要消掉的东西。
+
+与 mesh 里那个同名常量分开写、不互相 import：那边是"米制面积 → 毫米制尺子"的入口
+（几何算的），这边是"毫米制数据 → 给人读的米"的出口（展示的）。两个方向各有各的理由，
+合成一个共享常量会让"改一处"变成同时改进出两条路。"""
+
+
+def _metres(value_mm: float) -> float:
+    """毫米 → 米。**除法不取整**：取整交给调用处的格式化串（`:.2f` / `:.4f`）。
+
+    为什么不在这儿四舍五入：取整位数是"这行字给人看时要多细"的决定，跟着每一处
+    print 走（深度给两位、尺子给四位）；在换算里先舍一次、格式化时再舍一次，
+    就成了两次取整，末位会往下掉一档。
+    """
+    return value_mm / _MM_PER_METRE
+
 
 def _load_package(path: Path) -> DesignPackage:
     with path.open(encoding="utf-8") as f:
@@ -80,7 +102,7 @@ def _print_scene_self_check(scene: ScenePackage) -> None:
     """把自证数打出来。**不判**——门槛要有真跑数据才定（《纪律·阈值有数据才定》）。"""
     print(f"场景包：{len(scene.meshes)} 块网格 / {scene.triangle_count} 个三角形")
     anchor = "外轮廓围合面积" if scene.scale_anchor_source == "outline" else "外接框（退路）"
-    print(f"  尺子：归一化 1.0 = {scene.metre_per_unit:.4f} 米，锚＝{anchor}")
+    print(f"  尺子：归一化 1.0 = {_metres(scene.mm_per_unit):.4f} 米，锚＝{anchor}")
     print(
         f"  地板面积：{scene.floor_area_sqm:.2f} ㎡"
         f"（与输入套内面积之比 {scene.area_match_ratio:.3f}）"
@@ -194,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"相机 {camera_id}：{views.width_px}×{views.height_px}，"
             f"几何盖住 {views.covered_pixel_ratio:.3f}，"
-            f"深度 {views.near_m:.2f}~{views.far_m:.2f} 米，"
+            f"深度 {_metres(views.near_mm):.2f}~{_metres(views.far_mm):.2f} 米，"
             f"遮罩 {len(views.mask_index)} 块"
         )
         if views.room_view is not None:
@@ -214,8 +236,9 @@ def _print_room_view_self_check(views: BaseRenderViews) -> None:
     assert check is not None
     verdict = "达标" if check.passed else "不达标（上游显式给的 yaw，只量不判）"
     print(
-        f"  取景：站在 ({check.eye_m[0]:.2f}, {check.eye_m[1]:.2f}) 朝 {check.yaw_deg:.1f}°，"
-        f"评估了 {check.candidate_count} 个候选；最近深度 {check.min_depth_m:.2f} 米，"
+        f"  取景：站在 ({_metres(check.eye_mm[0]):.2f}, {_metres(check.eye_mm[1]):.2f}) "
+        f"朝 {check.yaw_deg:.1f}°，"
+        f"评估了 {check.candidate_count} 个候选；最近深度 {_metres(check.min_depth_mm):.2f} 米，"
         f"目标房间地板占比 {check.target_floor_ratio:.3f}，"
         f"主体占比 {check.dominance_ratio:.3f}"
         f"（目标 {check.target_room_ratio:.3f} / 其他房间 {check.other_room_ratio:.3f}）——{verdict}"

@@ -1072,12 +1072,12 @@
     "usableAreaPercent": 80.0
   },
   "heights": {
-    "ceilingHeightM": 2.8,
-    "slabThicknessM": 0.12,
-    "doorHeightM": 2.05,
-    "passHeightM": 2.2,
-    "windowSillHeightM": 0.9,
-    "windowHeadHeightM": 2.1,
+    "ceilingHeightMm": 2800,
+    "slabThicknessMm": 120,
+    "doorHeightMm": 2050,
+    "passHeightMm": 2200,
+    "windowSillHeightMm": 900,
+    "windowHeadHeightMm": 2100,
     "outerOpeningKind": "window",
     "innerOpeningKind": "door"
   },
@@ -1088,9 +1088,9 @@
       "room": "客厅",
       "centerXRatio": 0.511827,
       "centerYRatio": 0.583388,
-      "widthM": 2.2,
-      "depthM": 0.9,
-      "heightM": 0.8,
+      "widthMm": 2200,
+      "depthMm": 900,
+      "heightMm": 800,
       "yawDeg": 180.0
     },
     {
@@ -1099,9 +1099,9 @@
       "room": "客厅",
       "centerXRatio": 0.456974,
       "centerYRatio": 0.499616,
-      "widthM": 1.8,
-      "depthM": 0.4,
-      "heightM": 0.5,
+      "widthMm": 1800,
+      "depthMm": 400,
+      "heightMm": 500,
       "yawDeg": 90.0
     },
     {
@@ -1110,9 +1110,9 @@
       "room": "客厅",
       "centerXRatio": 0.529546,
       "centerYRatio": 0.416385,
-      "widthM": 1.2,
-      "depthM": 0.6,
-      "heightM": 0.42,
+      "widthMm": 1200,
+      "depthMm": 600,
+      "heightMm": 420,
       "yawDeg": 0.0
     },
     {
@@ -1121,9 +1121,9 @@
       "room": "主卧",
       "centerXRatio": 0.327774,
       "centerYRatio": 0.532496,
-      "widthM": 1.8,
-      "depthM": 2.0,
-      "heightM": 0.45,
+      "widthMm": 1800,
+      "depthMm": 2000,
+      "heightMm": 450,
       "yawDeg": 0.0
     },
     {
@@ -1132,9 +1132,9 @@
       "room": "主卧",
       "centerXRatio": 0.334152,
       "centerYRatio": 0.63,
-      "widthM": 2.0,
-      "depthM": 0.6,
-      "heightM": 2.2,
+      "widthMm": 2000,
+      "depthMm": 600,
+      "heightMm": 2200,
       "yawDeg": 180.0
     },
     {
@@ -1143,9 +1143,9 @@
       "room": "主卧",
       "centerXRatio": 0.427316,
       "centerYRatio": 0.634698,
-      "widthM": 0.45,
-      "depthM": 0.4,
-      "heightM": 0.55,
+      "widthMm": 450,
+      "depthMm": 400,
+      "heightMm": 550,
       "yawDeg": 180.0
     },
     {
@@ -1154,9 +1154,9 @@
       "room": "次卧",
       "centerXRatio": 0.681148,
       "centerYRatio": 0.491585,
-      "widthM": 1.5,
-      "depthM": 2.0,
-      "heightM": 0.45,
+      "widthMm": 1500,
+      "depthMm": 2000,
+      "heightMm": 450,
       "yawDeg": 90.0
     },
     {
@@ -1165,9 +1165,9 @@
       "room": "次卧",
       "centerXRatio": 0.66584,
       "centerYRatio": 0.590436,
-      "widthM": 1.6,
-      "depthM": 0.6,
-      "heightM": 2.2,
+      "widthMm": 1600,
+      "depthMm": 600,
+      "heightMm": 2200,
       "yawDeg": 180.0
     },
     {
@@ -1176,9 +1176,9 @@
       "room": "次卧",
       "centerXRatio": 0.747655,
       "centerYRatio": 0.571193,
-      "widthM": 0.45,
-      "depthM": 0.4,
-      "heightM": 0.55,
+      "widthMm": 450,
+      "depthMm": 400,
+      "heightMm": 550,
       "yawDeg": 270.0
     },
     {
@@ -1187,9 +1187,9 @@
       "room": "小孩房",
       "centerXRatio": 0.308639,
       "centerYRatio": 0.336726,
-      "widthM": 1.2,
-      "depthM": 2.0,
-      "heightM": 0.45,
+      "widthMm": 1200,
+      "depthMm": 2000,
+      "heightMm": 450,
       "yawDeg": 0.0
     },
     {
@@ -1198,9 +1198,9 @@
       "room": "小孩房",
       "centerXRatio": 0.419981,
       "centerYRatio": 0.316051,
-      "widthM": 1.2,
-      "depthM": 0.6,
-      "heightM": 2.2,
+      "widthMm": 1200,
+      "depthMm": 600,
+      "heightMm": 2200,
       "yawDeg": 270.0
     },
     {
@@ -1209,9 +1209,9 @@
       "room": "小孩房",
       "centerXRatio": 0.403398,
       "centerYRatio": 0.384433,
-      "widthM": 1.2,
-      "depthM": 0.6,
-      "heightM": 0.75,
+      "widthMm": 1200,
+      "depthMm": 600,
+      "heightMm": 750,
       "yawDeg": 180.0
     },
     {
@@ -1220,9 +1220,9 @@
       "room": "餐厅",
       "centerXRatio": 0.535969,
       "centerYRatio": 0.308533,
-      "widthM": 1.4,
-      "depthM": 0.8,
-      "heightM": 0.75,
+      "widthMm": 1400,
+      "depthMm": 800,
+      "heightMm": 750,
       "yawDeg": 0.0
     },
     {
@@ -1231,9 +1231,9 @@
       "room": "餐厅",
       "centerXRatio": 0.456974,
       "centerYRatio": 0.428151,
-      "widthM": 1.2,
-      "depthM": 0.4,
-      "heightM": 0.85,
+      "widthMm": 1200,
+      "depthMm": 400,
+      "heightMm": 850,
       "yawDeg": 90.0
     },
     {
@@ -1242,9 +1242,9 @@
       "room": "厨房",
       "centerXRatio": 0.511501,
       "centerYRatio": 0.240788,
-      "widthM": 1.8,
-      "depthM": 0.6,
-      "heightM": 0.85,
+      "widthMm": 1800,
+      "depthMm": 600,
+      "heightMm": 850,
       "yawDeg": 90.0
     },
     {
@@ -1253,9 +1253,9 @@
       "room": "厨房",
       "centerXRatio": 0.608458,
       "centerYRatio": 0.214945,
-      "widthM": 0.7,
-      "depthM": 0.7,
-      "heightM": 1.85,
+      "widthMm": 700,
+      "depthMm": 700,
+      "heightMm": 1850,
       "yawDeg": 270.0
     },
     {
@@ -1264,9 +1264,9 @@
       "room": "卫生间",
       "centerXRatio": 0.42317,
       "centerYRatio": 0.419204,
-      "widthM": 0.8,
-      "depthM": 0.5,
-      "heightM": 0.85,
+      "widthMm": 800,
+      "depthMm": 500,
+      "heightMm": 850,
       "yawDeg": 270.0
     },
     {
@@ -1275,9 +1275,9 @@
       "room": "卫生间",
       "centerXRatio": 0.412965,
       "centerYRatio": 0.460605,
-      "widthM": 0.9,
-      "depthM": 0.9,
-      "heightM": 2.0,
+      "widthMm": 900,
+      "depthMm": 900,
+      "heightMm": 2000,
       "yawDeg": 180.0
     },
     {
@@ -1286,9 +1286,9 @@
       "room": "卫生间",
       "centerXRatio": 0.283127,
       "centerYRatio": 0.418735,
-      "widthM": 0.4,
-      "depthM": 0.7,
-      "heightM": 0.75,
+      "widthMm": 400,
+      "depthMm": 700,
+      "heightMm": 750,
       "yawDeg": 0.0
     },
     {
@@ -1297,9 +1297,9 @@
       "room": "玄关",
       "centerXRatio": 0.610009,
       "centerYRatio": 0.423903,
-      "widthM": 1.0,
-      "depthM": 0.35,
-      "heightM": 1.2,
+      "widthMm": 1000,
+      "depthMm": 350,
+      "heightMm": 1200,
       "yawDeg": 90.0
     },
     {
@@ -1308,9 +1308,9 @@
       "room": "玄关",
       "centerXRatio": 0.721472,
       "centerYRatio": 0.414506,
-      "widthM": 0.6,
-      "depthM": 0.35,
-      "heightM": 0.45,
+      "widthMm": 600,
+      "depthMm": 350,
+      "heightMm": 450,
       "yawDeg": 270.0
     },
     {
@@ -1319,9 +1319,9 @@
       "room": "阳台",
       "centerXRatio": 0.460801,
       "centerYRatio": 0.622388,
-      "widthM": 0.6,
-      "depthM": 0.6,
-      "heightM": 0.85,
+      "widthMm": 600,
+      "depthMm": 600,
+      "heightMm": 850,
       "yawDeg": 0.0
     },
     {
@@ -1330,9 +1330,9 @@
       "room": "阳台",
       "centerXRatio": 0.580989,
       "centerYRatio": 0.625207,
-      "widthM": 0.8,
-      "depthM": 0.4,
-      "heightM": 1.0,
+      "widthMm": 800,
+      "depthMm": 400,
+      "heightMm": 1000,
       "yawDeg": 270.0
     }
   ],
@@ -1503,7 +1503,7 @@
     {
       "id": "cam-bird-overview",
       "kind": "bird",
-      "eyeHeightM": 12.0,
+      "eyeHeightMm": 12000,
       "yawDeg": 0.0,
       "pitchDeg": -90.0,
       "fovDeg": 50.0
@@ -1512,7 +1512,7 @@
       "id": "cam-room-客厅",
       "kind": "room",
       "room": "客厅",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 180.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0
@@ -1521,7 +1521,7 @@
       "id": "cam-room-次卧",
       "kind": "room",
       "room": "次卧",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 180.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0
@@ -1530,7 +1530,7 @@
       "id": "cam-room-餐厅",
       "kind": "room",
       "room": "餐厅",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 0.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0
@@ -1539,7 +1539,7 @@
       "id": "cam-room-厨房",
       "kind": "room",
       "room": "厨房",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 0.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0
@@ -1548,7 +1548,7 @@
       "id": "cam-room-卫生间",
       "kind": "room",
       "room": "卫生间",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 270.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0
@@ -1557,7 +1557,7 @@
       "id": "cam-room-玄关",
       "kind": "room",
       "room": "玄关",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 270.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0
@@ -1566,7 +1566,7 @@
       "id": "cam-room-阳台",
       "kind": "room",
       "room": "阳台",
-      "eyeHeightM": 1.55,
+      "eyeHeightMm": 1550,
       "yawDeg": 270.0,
       "pitchDeg": 0.0,
       "fovDeg": 65.0

@@ -17,22 +17,22 @@ from render3d_worker.models import CameraSpec, Mesh, ScenePackage, SurfaceMateri
 WIDTH_PX = 320
 HEIGHT_PX = 240
 ASPECT_RATIO = WIDTH_PX / HEIGHT_PX
-CEILING_M = 2.8
-WALL_THICKNESS_M = 0.2
+CEILING_MM = 2800.0
+WALL_THICKNESS_MM = 200.0
 MATERIAL_ID = "mat"
 
 CLOSET_NAME = "储物间"
-CLOSET_SIZE_M = 1.0
-"""1 米见方的封闭小间：平视、眼高 1.55 米时地板进不了画面，怎么站都是墙面图。"""
+CLOSET_SIZE_MM = 1000.0
+"""1000 毫米见方的封闭小间：平视、眼高 1550 毫米时地板进不了画面，怎么站都是墙面图。"""
 
 TARGET_ROOM = "书房"
 OTHER_ROOM = "客厅"
-TARGET_X_M = (0.0, 3.0)
-OTHER_X_M = (3.0 + WALL_THICKNESS_M, 9.0)
-ROOM_Y_M = (0.0, 3.0)
-PARTITION_X_M = (3.0, 3.0 + WALL_THICKNESS_M)
-DOORWAY_Y_M = (1.0, 2.0)
-DOOR_TOP_M = 2.05
+TARGET_X_MM = (0.0, 3000.0)
+OTHER_X_MM = (3000.0 + WALL_THICKNESS_MM, 9000.0)
+ROOM_Y_MM = (0.0, 3000.0)
+PARTITION_X_MM = (3000.0, 3000.0 + WALL_THICKNESS_MM)
+DOORWAY_Y_MM = (1000.0, 2000.0)
+DOOR_TOP_MM = 2050.0
 
 AUTO_CAMERA_ID = "room-自动"
 EXPLICIT_CAMERA_ID = "room-显式"
@@ -54,13 +54,13 @@ def _quad(
 
 def _box(
     mesh_id: str,
-    x_m: tuple[float, float],
-    y_m: tuple[float, float],
-    z_m: tuple[float, float],
+    x_mm: tuple[float, float],
+    y_mm: tuple[float, float],
+    z_mm: tuple[float, float],
 ) -> Mesh:
-    x0, x1 = x_m
-    y0, y1 = y_m
-    z0, z1 = z_m
+    x0, x1 = x_mm
+    y0, y1 = y_mm
+    z0, z1 = z_mm
     vertices: list[tuple[float, float, float]] = [
         (x0, y0, z0),
         (x1, y0, z0),
@@ -90,9 +90,11 @@ def _box(
     )
 
 
-def _floor_and_ceiling(room: str, x_m: tuple[float, float], y_m: tuple[float, float]) -> list[Mesh]:
-    x0, x1 = x_m
-    y0, y1 = y_m
+def _floor_and_ceiling(
+    room: str, x_mm: tuple[float, float], y_mm: tuple[float, float]
+) -> list[Mesh]:
+    x0, x1 = x_mm
+    y0, y1 = y_mm
     return [
         _quad(
             f"floor:{room}:0",
@@ -103,17 +105,22 @@ def _floor_and_ceiling(room: str, x_m: tuple[float, float], y_m: tuple[float, fl
         _quad(
             f"ceiling:{room}:0",
             "ceiling",
-            [(x0, y0, CEILING_M), (x1, y0, CEILING_M), (x1, y1, CEILING_M), (x0, y1, CEILING_M)],
+            [
+                (x0, y0, CEILING_MM),
+                (x1, y0, CEILING_MM),
+                (x1, y1, CEILING_MM),
+                (x0, y1, CEILING_MM),
+            ],
             room,
         ),
     ]
 
 
-def _outer_walls(x_m: tuple[float, float], y_m: tuple[float, float]) -> list[Mesh]:
-    x0, x1 = x_m
-    y0, y1 = y_m
-    t = WALL_THICKNESS_M
-    z = (0.0, CEILING_M)
+def _outer_walls(x_mm: tuple[float, float], y_mm: tuple[float, float]) -> list[Mesh]:
+    x0, x1 = x_mm
+    y0, y1 = y_mm
+    t = WALL_THICKNESS_MM
+    z = (0.0, CEILING_MM)
     return [
         _box("wall:south", (x0 - t, x1 + t), (y0 - t, y0), z),
         _box("wall:north", (x0 - t, x1 + t), (y1, y1 + t), z),
@@ -132,7 +139,7 @@ def _scene(meshes: list[Mesh], cameras: list[CameraSpec]) -> ScenePackage:
 
 
 def _closet_scene() -> ScenePackage:
-    size = (0.0, CLOSET_SIZE_M)
+    size = (0.0, CLOSET_SIZE_MM)
     return _scene(
         [*_floor_and_ceiling(CLOSET_NAME, size, size), *_outer_walls(size, size)],
         [
@@ -146,14 +153,14 @@ def _closet_scene() -> ScenePackage:
 
 def _two_room_scene() -> ScenePackage:
     """目标房间 3×3 米，隔一道带门洞的墙连着 5.8×3 米的大房间。"""
-    z = (0.0, CEILING_M)
+    z = (0.0, CEILING_MM)
     meshes = [
-        *_floor_and_ceiling(TARGET_ROOM, TARGET_X_M, ROOM_Y_M),
-        *_floor_and_ceiling(OTHER_ROOM, OTHER_X_M, ROOM_Y_M),
-        *_outer_walls((TARGET_X_M[0], OTHER_X_M[1]), ROOM_Y_M),
-        _box("wall:partition:span:0", PARTITION_X_M, (ROOM_Y_M[0], DOORWAY_Y_M[0]), z),
-        _box("wall:partition:lintel", PARTITION_X_M, DOORWAY_Y_M, (DOOR_TOP_M, CEILING_M)),
-        _box("wall:partition:span:1", PARTITION_X_M, (DOORWAY_Y_M[1], ROOM_Y_M[1]), z),
+        *_floor_and_ceiling(TARGET_ROOM, TARGET_X_MM, ROOM_Y_MM),
+        *_floor_and_ceiling(OTHER_ROOM, OTHER_X_MM, ROOM_Y_MM),
+        *_outer_walls((TARGET_X_MM[0], OTHER_X_MM[1]), ROOM_Y_MM),
+        _box("wall:partition:span:0", PARTITION_X_MM, (ROOM_Y_MM[0], DOORWAY_Y_MM[0]), z),
+        _box("wall:partition:lintel", PARTITION_X_MM, DOORWAY_Y_MM, (DOOR_TOP_MM, CEILING_MM)),
+        _box("wall:partition:span:1", PARTITION_X_MM, (DOORWAY_Y_MM[1], ROOM_Y_MM[1]), z),
     ]
     return _scene(
         meshes, [CameraSpec(id=AUTO_CAMERA_ID, kind="room", room=TARGET_ROOM, fov_deg=FOV_DEG)]
@@ -188,11 +195,11 @@ def test_两间房里选出来的位姿主体是目标房间() -> None:
     check = pose.room_view
     assert check is not None
     assert check.passed
-    assert TARGET_X_M[0] < pose.eye_m[0] < TARGET_X_M[1]
-    assert ROOM_Y_M[0] < pose.eye_m[1] < ROOM_Y_M[1]
+    assert TARGET_X_MM[0] < pose.eye_mm[0] < TARGET_X_MM[1]
+    assert ROOM_Y_MM[0] < pose.eye_mm[1] < ROOM_Y_MM[1]
     assert check.dominance_ratio >= base_render.ROOM_VIEW_MIN_DOMINANCE_RATIO
     assert check.other_room_ratio < check.target_room_ratio
-    assert check.min_depth_m >= base_render.ROOM_EYE_WALL_MARGIN_M
+    assert check.min_depth_mm >= base_render.ROOM_EYE_WALL_MARGIN_MM
 
     views = render_base_views(scene, AUTO_CAMERA_ID, WIDTH_PX, HEIGHT_PX)
     by_room = {entry.room for entry in views.mask_index if entry.semantic == "floor"}
@@ -206,16 +213,16 @@ def test_候选评估确定性() -> None:
     assert first == second
 
     scene = _two_room_scene()
-    floor_xy = base_render._room_floor_triangles_xy_m(scene, TARGET_ROOM)
-    start_xy = base_render._room_view_start_xy_m(scene, TARGET_ROOM, floor_xy)
+    floor_xy = base_render._room_floor_triangles_xy_mm(scene, TARGET_ROOM)
+    start_xy = base_render._room_view_start_xy_mm(scene, TARGET_ROOM, floor_xy)
     poses = base_render._room_view_candidate_poses(
-        floor_xy, base_render._room_furnishing_triangles_xy_m(scene, TARGET_ROOM), start_xy
+        floor_xy, base_render._room_furnishing_triangles_xy_mm(scene, TARGET_ROOM), start_xy
     )
     assert poses, "至少有起点上的候选"
     assert np.allclose(poses[0][0], start_xy)
     assert len({(round(float(eye[0]), 4), round(float(eye[1]), 4), yaw) for eye, yaw in poses}) == (
         len(poses)
     ), "候选位姿不许重复"
-    assert all(TARGET_X_M[0] <= eye[0] <= TARGET_X_M[1] for eye, _ in poses), (
+    assert all(TARGET_X_MM[0] <= eye[0] <= TARGET_X_MM[1] for eye, _ in poses), (
         "候选位置都在目标房间里"
     )
